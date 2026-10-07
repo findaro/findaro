@@ -1,6 +1,6 @@
 # Eval report — M2 query understanding
 
-- Date: 2026-10-07 21:39 UTC · commit `c80f6e7` · arm64 Darwin
+- Date: 2026-10-07 21:41 UTC · commit `f64aa52` · arm64 Darwin
 - Catalog: `data/demo_catalog.jsonl` (3000 docs) · 66 queries · 20 out-of-catalog negatives · 0 holdout queries
 - Planner LLM: Ollama llama3.2:3b (local, no Anthropic key in this environment), 800 ms timeout
 - Baseline: `eval/baselines/m1.json` (M1 on the reviewed query set, nDCG@10 0.808); M1 report kept in `eval/report_m1.md`
@@ -12,8 +12,8 @@
 | price nDCG@10 ≥ 0.85 | 0.900 | ✅ met |
 | hinglish nDCG@10 ≥ 0.8 | 0.909 | ✅ met |
 | no segment regresses by more than 0.02 | worst: plain +0.000 | ✅ met |
-| server p95 ≤ 30 ms, rules-only path | 10.8 ms | ✅ met |
-| server p95 ≤ 1000 ms, LLM path uncached | 790.9 ms (n=1) | ✅ met |
+| server p95 ≤ 30 ms, rules-only path | 11.6 ms | ✅ met |
+| server p95 ≤ 1000 ms, LLM path uncached | 814.5 ms (n=1) | ✅ met |
 
 ## Relevance vs M1
 
@@ -27,9 +27,35 @@
 | hinglish | 13 | 0.505 | **0.909** | +0.404 | 0.460 | 0.938 | 0% |
 | nl | 8 | 0.920 | **0.980** | +0.060 | 0.894 | 0.969 | 0% |
 
+## Analysis
+
+**What moved the numbers**
+
+| Change | Segments it fixed | Example |
+|---|---|---|
+| Price parser (English + Hinglish phrases, ranges, `1.5k`, currency) → strict price filter | price 0.53 → 0.90 | "running shoes under 1000" R@20 0.00 → 1.00 |
+| Units are not prices ("500 g", "65W", "5 L"); bare numbers stay keywords | price, attribute | "kurti between 500 and 1000" no longer returns "Moong Dal 500 g" |
+| Locale pack translation + synonym expansions (`packs/locales/hi-en.yaml`) | hinglish 0.51 → 0.91 | "sarson ka tel" → mustard oil; "mobile charge karne wala tar" → charging cable |
+| Catalog value matching → soft attribute filters (missing field allowed) | hinglish, attribute | "gents chappal" → gender = Men, so women's Kolhapuri chappals drop out |
+| Category-segment boosts, cheap/premium soft sort | plain, hinglish | "sasta pressure cooker" 0.54 → 0.75 |
+| Backfill: exact attribute matches first, then close matches to fill the page | attribute (−0.037 → +0.034) | "red silk saree": 1 exact match, then other silk sarees |
+
+**Remaining misses**
+
+- *q050 "gaadi ke liye phone stand"* (0.33). After review, the ground truth asks for windshield mounts. Nothing in the query says "windshield", so this needs clarification (M3), not query parsing.
+- *q039 "saree under rs 1000"* (0.46, M1 0.65). Only one saree costs ≤ ₹1,000, and it ranks first. The strict price filter removes the 49 right-category sarees that M1 showed and the graded metric rewards. The rest of the page is vector neighbours under ₹1,000 (tea, bellies), which is poor UX. Candidate fix for M3: say "1 match under ₹1,000", then offer "slightly over budget" sarees.
+- *q031 / q038 / q049 / q057* (0.73–0.79). The same pattern, milder: enforcing the constraint removes right-category partial matches, and the filler around the exact matches isn't the best possible.
+
+**Caveats**
+
+- **The lexicon was written with the eval visible.** The M2 brief listed some words (tar, sarson ka tel, bartan, gents, ladkiyon, bacchon), and the eval's Hinglish queries were known while writing `hi-en.yaml` (288 entries, mostly general vocabulary). The Hinglish score is therefore an upper bound until the holdout set exists. `eval/holdout.jsonl` is empty and waiting for Rohit's queries.
+- **The LLM path barely runs on this eval.** Only 1 of 66 queries reaches it, so the "LLM p95 ≤ 1 s" target is met on n=1, and only because of the 800 ms timeout. The separate probe (`eval/llm_queries.jsonl`, 10 queries with words the rules can't read) is more informative. With local `llama3.2:3b` every call times out uncached (p95 ≈ 830 ms incl. fallback). Once its answers are cached, nDCG on the probe rises from 0.57 to 0.69. A faster, stronger planner (Claude Haiku 4.5 needs `ZERCH_ANTHROPIC_API_KEY`, not available in this environment) is the obvious next measurement. The probe was used to fix a prompt bug (the model copied the example price into its answer), so it is not a clean holdout either.
+- **The "no match" floor barely separates.** With e5-small, out-of-catalog queries score 0.901–0.920 on vectors. Untranslated in-catalog Hinglish scores 0.899–0.914. The floor (0.905) is set conservatively, so unknown Hinglish isn't blanked. As a result, 4 of 20 negatives get `none`, 12 get `weak` (no lexical match), and 4 get `good` through accidental word overlap ("sofa set" → dinner set, "laptop" → laptop bag). In-catalog queries never get `none`.
+- **Latency.** 30 ms holds with a warm query embedding (p95 ≈ 11 ms here, 13 ms at 10k docs). A query whose embedding isn't cached pays about 50 ms of CPU e5 inference (p95 ≈ 66 ms at 10k docs), the same as in M1.
+
 ## Query planner
 
-- LLM needed (rules plan unsure): **1/66** queries (2%). Outcomes on the uncached pass: called 1
+- LLM needed (rules plan unsure): **1/66** queries (2%). Outcomes on the uncached pass: timeout 1
 - Plan cache hit rate on repeat runs (LLM-needed queries): **100%** (5/5)
 - Queries where a filter was relaxed after zero results: 0
 
@@ -37,28 +63,28 @@
 
 | Path | n | p50 | p95 | p99 |
 |---|---:|---:|---:|---:|
-| rules only | 325 | 6.0 ms | 10.8 ms | 16.1 ms |
-| LLM, uncached (incl. timeouts) | 1 | 790.9 ms | 790.9 ms | 790.9 ms |
-| LLM plan from cache | 5 | 4.3 ms | 5.7 ms | 5.7 ms |
+| rules only | 325 | 5.7 ms | 11.6 ms | 14.5 ms |
+| LLM, uncached (incl. timeouts) | 1 | 814.5 ms | 814.5 ms | 814.5 ms |
+| LLM plan from cache | 5 | 4.3 ms | 5.0 ms | 5.0 ms |
 
 ### LLM path probe (`eval/llm_queries.jsonl`, 10 queries with words the rules can't read)
 
 - Reached the LLM: 8/10; outcomes: timeout 8
-- Server latency, uncached: p50 821.5 ms, p95 829.5 ms
+- Server latency, uncached: p50 821.8 ms, p95 829.3 ms
 - nDCG@10 uncached (timeouts fall back to rules): **0.570** · with the LLM plan from cache: **0.685**
 
 | query | LLM (uncached) | took | nDCG uncached | nDCG cached plan | semantic text (cached plan) |
 |---|---|---:|---:|---:|---|
-| safai ka kapda gaadi ke liye | timeout | 821.5 ms | 1.00 | 1.00 | Car cleaning cloth |
-| nahane ke baad pehenne wali chappal | timeout | 829.5 ms | 1.00 | 0.00 | Women Flats & Bellies |
-| paani ubalne wali ketli | timeout | 816.4 ms | 0.94 | 1.00 | water kettle |
-| sabzi kaatne ki machine | timeout | 815.2 ms | 0.00 | 1.00 | Vegetable Chopper |
-| makhmali seat cover | not_needed | 11.2 ms | 0.85 | 0.85 | makhmali seat cover |
-| khushboo wala gaadi ka | timeout | 829.2 ms | 0.61 | 1.00 | Car with a pleasant smell |
-| sir ki suraksha ke liye bike | timeout | 820.5 ms | 0.30 | 1.00 | bike safety |
-| haath ke dastane bike chalane ke liye | timeout | 822.9 ms | 0.00 | 0.00 | Bike Helmets |
-| kaan mein lagane wale bina taar ke | timeout | 826.3 ms | 0.00 | 0.00 | Earphones without cable |
-| roti banane ka tawa lohe ka | not_needed | 10.9 ms | 1.00 | 1.00 | roti making tawa iron |
+| safai ka kapda gaadi ke liye | timeout | 821.0 ms | 1.00 | 1.00 | Car cleaning cloth |
+| nahane ke baad pehenne wali chappal | timeout | 829.3 ms | 1.00 | 0.00 | Women Flats & Bellies |
+| paani ubalne wali ketli | timeout | 820.1 ms | 0.94 | 1.00 | water kettle |
+| sabzi kaatne ki machine | timeout | 824.1 ms | 0.00 | 1.00 | Vegetable Chopper |
+| makhmali seat cover | not_needed | 12.2 ms | 0.85 | 0.85 | makhmali seat cover |
+| khushboo wala gaadi ka | timeout | 826.7 ms | 0.61 | 1.00 | Car with a pleasant smell |
+| sir ki suraksha ke liye bike | timeout | 821.8 ms | 0.30 | 1.00 | bike safety |
+| haath ke dastane bike chalane ke liye | timeout | 828.9 ms | 0.00 | 0.00 | Bike Helmets |
+| kaan mein lagane wale bina taar ke | timeout | 821.0 ms | 0.00 | 0.00 | Earphones without cable |
+| roti banane ka tawa lohe ka | not_needed | 10.3 ms | 1.00 | 1.00 | roti making tawa iron |
 
 Cold-embedding and 10k-document numbers: `eval/latency_10k.md` (`scripts/bench.py`).
 
@@ -72,7 +98,7 @@ Cold-embedding and 10k-document numbers: `eval/latency_10k.md` (`scripts/bench.p
 | washing machine | weak | 100 | Kalyaniware 32-Piece Multicolor Melamine Dinner Set / Durabl |
 | football | none | 0 |  |
 | lipstick | weak | 100 | Boltixx Car Perfume - Jasmine Scent for Cars - 1pc |
-| gold necklace | weak | 10 | Prakriti Women's Gold Kolhapuri Chappals / Synthetic Leather |
+| gold necklace | weak | 11 | Prakriti Women's Gold Kolhapuri Chappals / Synthetic Leather |
 | baby diapers | weak | 100 | Tyaag Tees Red Solid Kids T-Shirt for Childrens Wear (5-6Y,  |
 | dog food | weak | 100 | AashirvaadAvenue Chai Patti, 1 kg, Veg, Leaf Tea for Daily U |
 | printer ink cartridge | weak | 100 | Ragamaya Women's Pink Georgette 3/4 Sleeve Kurti Kurta, Prin |
@@ -110,7 +136,7 @@ Cold-embedding and 10k-document numbers: `eval/latency_10k.md` (`scripts/bench.p
 | q011 | typo | presure cooker | 1.00 | 1.00 | 1.00 |  | good | BhumiStore 3 L Silver Aluminium Pressure Cooker |
 | q012 | typo | wirless earbuds | 1.00 | 1.00 | 1.00 |  | good | Fablez White Bluetooth Earbuds for Men, 50 Hours Playba |
 | q013 | typo | kolapuri chappal | 1.00 | 1.00 | 1.00 |  | good | Dhanvi Women's Gold Kolhapuri Chappals / Traditional Sa |
-| q014 | typo | car seet cover | 1.00 | 1.00 | 1.00 | Car, Seat Covers [llm: called] | good | Dhruvix Car Seat Cover Tan / Custom Fit Velvet Seat Cov |
+| q014 | typo | car seet cover | 1.00 | 1.00 | 1.00 | Car [llm: timeout] | good | Dhruvix Red Car Seat Cover / Velvet Universal Fit Car S |
 | q015 | typo | garam masla | 1.00 | 1.00 | 1.00 |  | good | SaralSpice 200g Garam Masala Powder for Veg - Garam Mas |
 | q016 | typo | bluetoth neckband | 1.00 | 1.00 | 1.00 | Neckbands | good | TechRush Blue Bluetooth Neckband for Music, 20 hours Pl |
 | q017 | typo | basmathi rice | 1.00 | 1.00 | 1.00 | Rice | good | HariyaliHub 1 kg Basmati Rice for Daily Cooking / Long  |

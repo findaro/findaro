@@ -16,7 +16,7 @@ from zerch.understand.lexicon import default_lexicon
 from zerch.understand.plan import PlanBoost, PlanFilter, QueryPlan, primary_price_field
 
 SYSTEM = (
-    "You turn e-commerce search queries into a JSON search plan for one specific catalog. Shoppers write in "
+    "You turn search queries into a JSON search plan for one specific catalog. People write in "
     "English, in Hindi typed in Latin letters (Hinglish), or a mix. Use only field names and values that appear "
     "in the catalog summary, spelled exactly as listed. Never invent values. Reply with a single JSON object."
 )
@@ -59,7 +59,7 @@ Query: {json.dumps(query, ensure_ascii=False)}
 A rule-based parser produced: {json.dumps(rules_view, ensure_ascii=False)}
 
 Return JSON with exactly these keys:
-{{"semantic_text": "<what the shopper wants, as a short plain-English product description; no price words>",
+{{"semantic_text": "<what the person is looking for, as a short plain-English description; no price words>",
   "category": "<the one category path from the list that fits best, or null if none fits>",
   "filters": [{{"field": "<field from the list>", "op": "eq", "value": "<value from that field's list>"}},
               {{"field": "{price}", "op": "range", "value": {{"lte": <the number the query gives>}}}}]}}

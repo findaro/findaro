@@ -50,6 +50,7 @@ Do not build M2–M4 early, but do not make choices that block them:
 - No real scraped data anywhere in the repo. Demo data is synthetic (`scripts/gen_demo_catalog.py`).
 - Apache-2.0. Don't add dependencies with incompatible licenses.
 - Keep the search hot path free of network calls other than OpenSearch/Redis (target p95 < 100ms @ 10k docs).
+  The one exception is the M2 planner LLM: conditional, timeout-bounded, cached.
 
 ## Layout
 

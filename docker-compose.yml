@@ -8,6 +8,9 @@ x-app-env: &app-env
   ZERCH_RATE_LIMIT_PER_SECOND: ${ZERCH_RATE_LIMIT_PER_SECOND:-50}
   ZERCH_OLLAMA_URL: ${ZERCH_OLLAMA_URL:-http://host.docker.internal:11434}
   ZERCH_ANTHROPIC_API_KEY: ${ZERCH_ANTHROPIC_API_KEY:-}
+  # Query planner LLM (M2). Set ZERCH_PLANNER_PROVIDER=anthropic (+ key) to use Claude Haiku instead.
+  ZERCH_PLANNER_PROVIDER: ${ZERCH_PLANNER_PROVIDER:-ollama}
+  ZERCH_PLANNER_MODEL: ${ZERCH_PLANNER_MODEL:-llama3.2:3b}
 
 services:
   api:

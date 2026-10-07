@@ -1,0 +1,332 @@
+# Romanised Hindi (Hinglish) shopping vocabulary -> English. A language resource, not a vertical:
+# everyday words people type when shopping, the way they type them (several spellings each).
+
+name: hi-en
+
+function_words: [
+  ke, ka, ki, ko, se, mein, me, mai, main, mei, par, pe, liye, lie, liya, waste, vaste, wala, wali, wale,
+  vala, vali, vale, walla, hai, hain, ho, hona, hoga, hogi, tha, thi, chahiye, chaiye, chahie, chaahiye,
+  aur, ya, bhi, koi, kuch, kuchh, ek, do, jo, jisme, jiske, jaisa, jaise, wo, woh, yeh, ye, mujhe, muje,
+  mera, meri, mere, apna, apni, apne, hum, humko, dikhao, dikha, dikhaiye, batao, bataiye, chahta, chahti,
+  sakta, sakti, karne, karna, karo, kare, karta, karti, wastey, achha, acha, accha, badhiya, badiya,
+  bahut, bohot, zyada, jyada, thoda, thodi, ekdum, ekdam, sabse, best, wala, pls, plz
+]
+
+price:
+  currency: [rupay, rupaye, rupaiye, rupye, rupaye, rupiya, rupiye]
+  # "500 <phrase>" -> price <= 500
+  max_after: ["se kam", "se kum", "ke andar", "ke andr", "ke niche", "ke neeche", "se niche", "se neeche",
+              "tak", "rs tak", "rupaye tak", "tak ka", "tak ki", "tak ke", "ke under", "ke bheetar", "ke bhitar",
+              "se sasta", "se saste", "se sasti", "ke budget", "budget mein", "mein"]
+  # "<phrase> 500" -> price <= 500
+  max_before: ["andar", "budget", "zyada se zyada", "maximum"]
+  # "500 <phrase>" -> price >= 500
+  min_after: ["se zyada", "se jyada", "se upar", "se oopar", "ke upar", "ke oopar", "se mehenga", "se mehnga"]
+  # "500 se 1000", "500 se 1000 tak"
+  range_join: [se]
+
+cheap: [sasta, sasti, saste, sastaa, "kam daam", "kam dam", "kam keemat", "kam kimat", "kam price",
+        "kam paise", "kifayati", "kifaayati", "sasta wala", "sasti wali"]
+expensive: [mehenga, mehnga, mehengi, mehngi, mehenge, mehnge, "mehnga wala", "branded", "acchi quality",
+            "badhiya quality"]
+
+# Word or phrase -> English. Longest phrase wins. Values may list synonyms (space-separated words).
+phrases:
+  # people / audience
+  gents: men
+  mard: men
+  mardon: men
+  purush: men
+  aadmi: men
+  ladke: boys men
+  ladka: boy men
+  ladkon: boys men
+  ladies: women
+  ladiez: women
+  aurat: women
+  aurton: women
+  mahila: women
+  mahilaon: women
+  ladki: girl women
+  ladkiyon: girls women
+  ladkiyo: girls women
+  ladkiyan: girls women
+  bacche: kids
+  bachche: kids
+  bacchon: kids
+  bachon: kids
+  bachchon: kids
+  baccha: kid
+  bachcha: kid
+  shishu: baby
+  baby: baby
+  papa: father men
+  mummy: mother women
+  maa: mother women
+  biwi: wife women
+  pati: husband men
+  dulhan: bride women
+  dulha: groom men
+  # occasions
+  shaadi: wedding
+  shadi: wedding
+  vivah: wedding
+  tyohar: festival festive
+  tyohaar: festival festive
+  diwali: diwali festive
+  pooja: pooja festive
+  puja: pooja festive
+  daftar: office
+  daftar ke: office
+  dafter: office
+  school: school
+  college: college
+  ghar: home
+  gharelu: home household
+  rasoi: kitchen
+  rozana: daily
+  roz: daily
+  garmi: summer
+  garmiyon: summer
+  sardi: winter
+  sardiyon: winter
+  thand: winter cold
+  thanda: cold
+  garam: hot warm
+  baarish: rain rainy
+  barish: rain rainy
+  safar: travel
+  yatra: travel
+  # footwear / clothing
+  joota: shoes
+  joote: shoes
+  jootey: shoes
+  juta: shoes
+  jute: shoes
+  jooti: shoes juttis
+  jutti: juttis
+  chappal: chappal sandals slippers
+  chappals: chappal sandals slippers
+  chappale: chappal sandals slippers
+  kapde: clothes
+  kapda: cloth clothes
+  kapdon: clothes
+  kapdo: clothes
+  kameez: shirt kurta
+  kurta: kurta
+  pajama: pyjama
+  pyjama: pyjama
+  dupatta: dupatta
+  chunni: dupatta
+  topi: cap hat
+  moze: socks
+  moje: socks
+  mojey: socks
+  banyan: vest
+  baniyan: vest
+  chaddi: shorts underwear
+  lungi: lungi
+  shawl: shawl
+  sweater: sweater
+  # home / kitchen
+  bartan: utensils cookware
+  bartano: utensils cookware
+  bartanon: utensils cookware
+  "khana banane": cooking
+  "khana pakane": cooking
+  khana: food
+  pakane: cooking
+  banane: making
+  dabba: box container
+  dibba: box container
+  dabbe: boxes containers
+  dibbe: boxes containers
+  botal: bottle
+  bottle: bottle
+  gilas: glass tumbler
+  glass: glass
+  katori: bowl
+  thali: plate thali
+  plate: plate
+  chamach: spoon
+  chammach: spoon
+  chaku: knife
+  chaaku: knife
+  churi: knife
+  chhuri: knife
+  kadhai: kadai
+  kadai: kadai
+  kadhaai: kadai
+  tava: tawa
+  tawa: tawa
+  patila: pot
+  bhagona: pot
+  cooker: cooker
+  chulha: stove
+  gas: gas stove
+  "kapde rakhne": clothes storage
+  rakhne: storage
+  rakhna: storage
+  almari: wardrobe
+  jhola: bag
+  thaila: bag
+  thela: bag
+  bag: bag
+  balti: bucket
+  chadar: bedsheet
+  chaadar: bedsheet
+  takiya: pillow
+  parda: curtain
+  pankha: fan
+  bijli: electric
+  "garam pani": hot water
+  pani: water
+  paani: water
+  # electronics
+  tar: cable wire
+  taar: cable wire
+  "charge karne": charging
+  "charge karne wala": charging
+  charger: charger
+  "chalane wala": operated
+  battery: battery
+  awaaz: sound audio
+  awaz: sound audio
+  gaana: music
+  gaane: music
+  "kaan mein": earphones
+  "kaan me": earphones
+  "kaan wala": earphones
+  "kaan ke": earphones
+  # vehicles
+  gaadi: car vehicle
+  gadi: car vehicle
+  gaddi: car vehicle
+  car: car
+  motor: motor
+  bike: bike
+  scooty: scooter
+  "do pahiya": two-wheeler bike
+  "char pahiya": car
+  pahiya: wheel tyre
+  # grocery / staples
+  "sarson ka tel": mustard oil
+  "sarso ka tel": mustard oil
+  "sarson tel": mustard oil
+  sarson: mustard
+  sarso: mustard
+  tel: oil
+  ghee: ghee
+  desi: desi
+  atta: atta flour
+  aata: atta flour
+  maida: refined flour
+  besan: besan gram flour
+  chawal: rice
+  chaawal: rice
+  dal: dal pulses
+  daal: dal pulses
+  "toor dal": toor dal
+  "arhar dal": toor dal
+  arhar: toor
+  moong: moong
+  masoor: masoor
+  chana: chana chickpea
+  rajma: rajma kidney beans
+  haldi: turmeric
+  mirchi: chilli
+  mirch: chilli
+  "lal mirch": red chilli
+  dhaniya: coriander
+  jeera: cumin
+  namak: salt
+  cheeni: sugar
+  chini: sugar
+  shakkar: sugar
+  gud: jaggery
+  chai: tea
+  chay: tea
+  "chai patti": tea leaves
+  "chai ki patti": tea leaves
+  patti: leaves
+  kaafi: coffee
+  doodh: milk
+  makhan: butter
+  masala: masala spices
+  "garam masala": garam masala
+  # qualities
+  naya: new
+  purana: old
+  bada: large big
+  badi: large big
+  bade: large big
+  chhota: small
+  chota: small
+  chhoti: small
+  choti: small
+  lamba: long
+  lambi: long
+  halka: light lightweight
+  halki: light lightweight
+  bhaari: heavy
+  bhari: heavy
+  mazboot: strong durable
+  majboot: strong durable
+  tikau: durable
+  mulayam: soft
+  naram: soft
+  narm: soft
+  aaramdayak: comfortable
+  aramdayak: comfortable
+  aaram: comfortable
+  araam: comfortable
+  sundar: beautiful
+  stylish: stylish
+  # colours
+  kaala: black
+  kala: black
+  kaali: black
+  kali: black
+  kaale: black
+  kale: black
+  safed: white
+  safaid: white
+  lal: red
+  laal: red
+  neela: blue
+  neeli: blue
+  nila: blue
+  hara: green
+  hari: green
+  peela: yellow
+  peeli: yellow
+  gulabi: pink
+  bhura: brown
+  bhure: brown
+  sunehra: gold golden
+  sunehri: gold golden
+  chandi: silver
+  sona: gold
+  narangi: orange
+  baingani: purple
+  aasmani: sky blue
+  # materials
+  chamda: leather
+  chamde: leather
+  chamra: leather
+  sooti: cotton
+  suti: cotton
+  resham: silk
+  reshmi: silk
+  lohe: iron
+  loha: iron
+  steel: steel
+  tamba: copper
+  tambe: copper
+  peetal: brass
+  pital: brass
+  lakdi: wood wooden
+  lakdi ka: wooden
+  plastic: plastic
+  kaanch: glass
+  kanch: glass

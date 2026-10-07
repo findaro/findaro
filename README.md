@@ -4,7 +4,8 @@ Open-source AI search as a service. Push your catalog as JSON or CSV and call on
 You get hybrid retrieval (BM25 + multilingual vectors), typo tolerance, Hinglish-friendly matching, filters,
 facets and highlighting. You don't need to define a schema: zerch infers field roles from your data.
 
-Status: **M1 (core)**. Query understanding (M2), chat search (M3) and a JS SDK (M4) come next; see `CLAUDE.md`.
+Status: **M2 (query understanding)** on top of the M1 core. Chat search (M3) and a JS SDK (M4) come next; see
+`CLAUDE.md`.
 License: Apache-2.0.
 
 ## 5-minute quickstart
@@ -87,7 +88,9 @@ All endpoints take `Authorization: Bearer <key>`. The `X-Zerch-Key: <key>` heade
   "sort": "price:asc",
   "page": 1, "size": 20,
   "facets": ["color", "brand", "price"],
-  "highlight": true
+  "highlight": true,
+  "understand": true,
+  "debug": false
 }
 ```
 
@@ -101,6 +104,66 @@ The response contains `total`, `hits[]` (`id`, `score`, `document`, `highlights`
 term counts for facet, category and boolean fields, and min/max stats for numeric fields. The response also has
 `took_ms` and `cached`. Results are cached in Redis for 60 s per data version. Send `Cache-Control: no-cache` to
 bypass the cache. Each key is limited to 50 requests per second (`ZERCH_RATE_LIMIT_PER_SECOND`).
+
+### Query understanding (`understand`, on by default)
+
+Before retrieval, the engine turns the query into a plan built only from this project's own fields and values.
+It recognises:
+- **Prices**, in English and Hinglish: "under 500", "500 ke andar", "1000 se kam", "between 500 and 1000",
+  "₹500-₹1000", "1.5k".
+- **Quantities**: "5 L", "65W" and "500 g" are matched as quantities, never as prices.
+- **Attribute values** from the catalog: colours, materials, audience, sizes, brands.
+- **Category names.**
+- **Cheap or premium intent**: "sasta", "premium".
+- **Hinglish words**, translated through the locale packs (`packs/locales/*.yaml`).
+
+What it understood comes back in `understood`. This field is meant for search UIs (M3 and M4 build on it):
+
+```json
+"understood": {
+  "query": "500 ke andar kaale joote",
+  "semantic_text": "black shoes",
+  "chips": [
+    {"label": "Under ₹500", "kind": "filter", "field": "price", "op": "range", "value": {"lte": 500.0},
+     "source": "500 ke andar", "confidence": 0.95},
+    {"label": "Black", "kind": "filter", "field": "color", "op": "eq", "value": "Black",
+     "source": "black", "confidence": 0.85}
+  ],
+  "relaxations": [],
+  "match_quality": "good",
+  "source": "rules",
+  "close_matches": []
+}
+```
+
+- **`chips`**: what the engine applied, one chip per constraint:
+  - `filter`: hard for prices; an inferred attribute instead excludes documents with a different value.
+  - `boost`: ranks matching documents higher.
+  - `sort`: re-ranks toward lower or higher prices while keeping relevance.
+
+  To let a user remove a chip, send the request again with `understand: false`, plus explicit `filters` for
+  the chips they kept. An explicit filter always overrides the inferred one on the same field.
+- **`relaxations`**: inferred filters the engine dropped because the query returned nothing with them.
+- **`match_quality`**:
+  - `good`: some results match the query's words.
+  - `weak`: results match on meaning only, or a filter had to be relaxed.
+  - `none`: nothing relevant was found, so no results are returned instead of random neighbours.
+- **`close_matches`**: ids of page-1 results that match the query but not every inferred attribute. When exact
+  matches don't fill a page, close matches follow them.
+- **`source`**:
+  - `rules`: the fast path, used for almost every query.
+  - `llm` / `cache`: the rules found words they couldn't account for, so the LLM planner rewrote the query.
+  - `off`: understanding was off for this request (`understand: false`).
+
+The planner runs on Ollama, or on Claude Haiku with `ZERCH_PLANNER_PROVIDER=anthropic` and
+`ZERCH_ANTHROPIC_API_KEY`. It waits at most `ZERCH_PLANNER_TIMEOUT_MS` (default 800) and then falls back to the
+rules plan. A late answer is still cached for the next identical query. The planner's output is validated
+against the schema, and it can only rewrite the text and boost results, never add filters, except a price
+the query states.
+
+`"debug": true` adds the full plan, timings per stage (`understand`, `embed`, `retrieve`, `fetch`, `total`), the
+planner outcome (`not_needed`, `called`, `timeout`, `cache`, `error`), and the retrieval signals behind
+`match_quality`.
 
 ### Schema roles
 
@@ -136,6 +199,19 @@ new index, followed by an atomic alias swap. Search keeps working throughout.
 - **Fusion:** Reciprocal Rank Fusion (k=60) over the top 100 results from each retriever. Vector candidates
   scoring well below the best vector hit are dropped, so `total`, facets and sorted results reflect real matches.
 
+### Locale packs
+
+`packs/locales/en.yaml` and `packs/locales/hi-en.yaml` hold the language data the query parser uses:
+- function words;
+- price phrases ("under", "ke andar", "se kam");
+- cheap and premium words;
+- units;
+- about 290 Hinglish words and phrases mapped to English ("tar" → cable, "sarson ka tel" → mustard oil,
+  "gents" → men).
+
+These are language resources, not catalog vocabulary. Each project's own values (colours, categories, brands)
+come from its data. `ZERCH_LOCALE_PACKS` picks which packs load.
+
 ## Development
 
 ```bash
@@ -159,3 +235,6 @@ Run a single worker in M1. Jobs for a project run in order.
 - `uv run python eval/run.py --setup` imports the catalog into a new project, then writes `eval/report.md` with
   nDCG@10, recall@20, the zero-result rate and latency. That report is the **M1 baseline** that M2 must beat.
 - `uv run python scripts/bench.py` runs the 10k-document latency benchmark and writes `eval/latency_10k.md`.
+- `eval/report.md` compares M2 with the M1 baseline per segment and lists the target checks. It also covers
+  planner call and cache rates, latency per path, out-of-catalog queries and the human holdout
+  (`eval/holdout.jsonl`, never tuned on; format in `eval/README.md`).

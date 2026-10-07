@@ -21,6 +21,8 @@ class SearchRequest(BaseModel):
     facets: list[str] | None = None  # None = every facet-enabled field
     facet_size: int = Field(20, ge=1, le=200)
     highlight: bool = True
+    understand: bool = True  # parse the query into filters/sort/boosts (M2); false = plain M1 retrieval
+    debug: bool = False  # include the full plan, per-stage timings and retrieval signals
 
     @field_validator("sort", mode="before")
     @classmethod
@@ -52,6 +54,37 @@ class Hit(BaseModel):
     highlights: dict[str, str] | None = None
 
 
+class Chip(BaseModel):
+    """One thing the engine understood, ready to show (and let the user remove) in a search UI."""
+
+    label: str  # e.g. "Under ₹500", "Black", "Men", "Pressure Cookers", "Lower prices first"
+    kind: Literal["filter", "boost", "sort"]
+    field: str
+    op: str  # eq | in | range | asc | desc
+    value: Any = None
+    source: str  # words in the query it came from, when known
+    confidence: float
+
+
+class RelaxedFilter(BaseModel):
+    field: str
+    value: Any
+    label: str
+    reason: str
+
+
+class Understood(BaseModel):
+    query: str
+    semantic_text: str
+    chips: list[Chip] = Field(default_factory=list)
+    relaxations: list[RelaxedFilter] = Field(default_factory=list)
+    match_quality: Literal["good", "weak", "none"] = "good"
+    source: Literal["rules", "llm", "cache", "off"] = "off"
+    # Results on this page that match the query but not every inferred attribute (shown after exact matches
+    # when exact matches don't fill the page). Their ids are listed so a UI can label them.
+    close_matches: list[str] = Field(default_factory=list)
+
+
 class SearchResponse(BaseModel):
     query: str
     total: int
@@ -60,4 +93,6 @@ class SearchResponse(BaseModel):
     hits: list[Hit]
     facets: dict[str, Any]
     took_ms: float
+    understood: Understood | None = None
+    debug: dict[str, Any] | None = None
     cached: bool = False

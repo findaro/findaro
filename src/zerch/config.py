@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.1:8b"
     anthropic_api_key: str | None = None
-    anthropic_model: str = "claude-sonnet-5-5"
+    anthropic_model: str = "claude-sonnet-5-5"  # scripts (demo catalog generation)
 
     # Search
     search_cache_ttl: int = 60  # seconds; 0 disables
@@ -42,6 +42,18 @@ class Settings(BaseSettings):
     # compressed, but relevant items sit in a cluster above a visible gap; without a cutoff every
     # query "matches" rank_window documents, which breaks totals, facets and sorted results.
     knn_relative_cutoff: float = 0.02
+
+    # Query understanding (M2)
+    locale_packs: str = "en,hi-en"  # packs/locales/<name>.yaml, comma-separated
+    understand_llm: bool = True  # allow the LLM planner when the rules plan is unsure
+    planner_provider: str | None = None  # defaults to llm_provider
+    planner_model: str | None = None  # default: claude-haiku-4-5 on anthropic, ollama_model on ollama
+    planner_timeout_ms: int = 800  # past this the rules plan is used; the LLM answer is still cached
+    planner_confidence_threshold: float = 0.6
+    plan_cache_ttl: int = 7 * 86_400
+    # Vector-only results whose best k-NN score is below this floor are "no match" (match_quality=none).
+    # Calibrated on the eval set (eval/calibrate_floor.py).
+    match_floor: float = 0.905
 
     # Ingest
     max_upload_mb: int = 50

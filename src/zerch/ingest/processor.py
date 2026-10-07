@@ -7,6 +7,7 @@ import logging
 from typing import Any
 
 import numpy as np
+from opensearchpy import TransportError
 from sqlalchemy import select, text, update
 
 from zerch import store
@@ -16,6 +17,7 @@ from zerch.index.normalize import DocError, normalize
 from zerch.ingest.parse import PayloadError, parse
 from zerch.schema import Schema, SchemaError, flatten, infer_fields, infer_schema
 from zerch.state import State
+from zerch.understand import dictionary
 
 log = logging.getLogger("zerch.ingest")
 MAX_ERRORS = 1000
@@ -118,6 +120,13 @@ async def run_job(state: State, job: dict[str, Any]) -> None:
                                                              else "completed_with_errors")
         await progress.flush(status=status, finished_at=store.now())
         log.info("job %s %s: ok=%d failed=%d", jid, status, progress.succeeded, progress.failed)
+        if progress.succeeded:
+            try:
+                built = await dictionary.refresh(state, pid)
+                if built:
+                    log.info("dictionary for %s rebuilt in %s ms (%d docs)", pid, built["build_ms"], built["n_docs"])
+            except Exception:  # noqa: BLE001 - search falls back to the previous dictionary
+                log.exception("dictionary rebuild failed for %s", pid)
     except (JobFailed, SchemaError) as e:
         await progress.flush(status="failed", message=str(e), finished_at=store.now())
         log.warning("job %s failed: %s", jid, e)
@@ -238,8 +247,14 @@ async def reindex(state: State, pid: str, progress: Progress) -> None:
             await conn.execute(update(jobs).where(jobs.c.id == progress.jid).values(total=total))
         # Fields that arrived after the pending schema was written still need roles.
         await ops.create_index(state.os, new_index, schema, state.embedder.dim)
-        resp = await state.os.search(index=old_index, scroll="2m", size=500,
-                                     body={"query": {"match_all": {}}, "_source": ["zz_raw", "zz_vec", "zz_ehash"]})
+        try:
+            resp = await state.os.search(index=old_index, scroll="2m", size=500, body={
+                "query": {"match_all": {}}, "_source": ["zz_raw", "zz_vec", "zz_ehash"]})
+        except TransportError:
+            # Indices with derived vector source can't return vectors: re-embed everything instead.
+            log.warning("reindex %s: vectors not retrievable from %s, re-embedding", pid, old_index)
+            resp = await state.os.search(index=old_index, scroll="2m", size=500, body={
+                "query": {"match_all": {}}, "_source": ["zz_raw", "zz_ehash"]})
         scroll_id = resp.get("_scroll_id")
         try:
             while hits := resp["hits"]["hits"]:

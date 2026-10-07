@@ -67,13 +67,14 @@ async def run(args: argparse.Namespace) -> None:
                 await asyncio.sleep(1)
 
         results = {}
-        # Cold: a unique suffix per request forces a fresh query embedding (CPU e5 inference).
+        # Cold: a unique number per request forces a fresh query embedding (CPU e5 inference). A number,
+        # not a word: an unknown word would send the query to the LLM planner instead.
         cold_c: list[float] = []
         cold_s: list[float] = []
         t = time.perf_counter()
         for i, q in enumerate(queries * 2):
             t1 = time.perf_counter()
-            r = await c.post("/v1/search", json={"query": f"{q} v{i}", "size": 20}, headers=h)
+            r = await c.post("/v1/search", json={"query": f"{q} {i + 2}", "size": 20}, headers=h)
             r.raise_for_status()
             cold_c.append((time.perf_counter() - t1) * 1000)
             cold_s.append(r.json()["took_ms"])

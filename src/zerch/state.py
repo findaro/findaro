@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
+from typing import Any
 
 import redis.asyncio as aioredis
 from opensearchpy import AsyncOpenSearch
@@ -20,6 +22,7 @@ class State:
     os: AsyncOpenSearch
     redis: aioredis.Redis
     embedder: Embedder
+    planner: Any = None  # zerch.llm.LLM used by the query planner; None disables the LLM path
 
     async def close(self) -> None:
         await self.os.close()
@@ -33,4 +36,19 @@ async def create_state(settings: Settings | None = None, embedder: Embedder | No
     await init_db(db)
     os_client = AsyncOpenSearch(hosts=[settings.opensearch_url], timeout=30, http_compress=False, maxsize=25)
     r = aioredis.from_url(settings.redis_url, decode_responses=False)
-    return State(settings=settings, db=db, os=os_client, redis=r, embedder=embedder or get_embedder())
+    return State(settings=settings, db=db, os=os_client, redis=r, embedder=embedder or get_embedder(),
+                 planner=make_planner(settings))
+
+
+def make_planner(settings: Settings) -> Any:
+    if not settings.understand_llm:
+        return None
+    from zerch.llm import LLMError, get_llm
+
+    try:
+        provider = settings.planner_provider or settings.llm_provider
+        model = settings.planner_model or ("claude-haiku-4-5" if provider == "anthropic" else None)
+        return get_llm(provider, model)
+    except LLMError as e:
+        logging.getLogger("zerch").warning("query planner LLM disabled: %s", e)
+        return None

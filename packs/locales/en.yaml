@@ -1,0 +1,70 @@
+# English query-understanding pack. Language resource only: no product or vertical vocabulary.
+name: en
+
+# Words that carry no retrieval meaning in a shopping query.
+function_words: [
+  a, an, the, and, or, of, for, with, without, to, in, on, at, by, from, is, it, its, this, that, these,
+  those, my, me, i, we, our, you, your, some, something, anything, any, one, ones, thing, things, which,
+  who, what, want, wanted, need, needed, looking, look, find, show, get, buy, buying, please, good, nice,
+  best, great, top, quality, new, latest, can, could, would, should, will, while, when, where, so, also,
+  very, really, just, like, use, used, using, item, items, product, products, stuff, kind, type, sort,
+  online, shop, shopping
+]
+
+price:
+  currency: [rs, "rs.", inr, rupee, rupees, re, "/-", "₹"]
+  # "<phrase> 500" -> price <= 500
+  max_before: ["under", "below", "less than", "lesser than", "upto", "up to", "max", "maximum", "within",
+               "not more than", "no more than", "budget", "budget of", "at most", "cheaper than", "lower than"]
+  # "500 <phrase>" -> price <= 500
+  max_after: ["or less", "and below", "or below", "and under", "max", "maximum", "or under"]
+  # "<phrase> 500" -> price >= 500
+  min_before: ["above", "over", "more than", "greater than", "at least", "minimum", "min", "starting",
+               "starting from", "costlier than", "higher than"]
+  # "500 <phrase>" -> price >= 500
+  min_after: ["and above", "or more", "plus", "+", "onwards", "or above"]
+  # range connectors: "between 500 and 1000", "from 500 to 1000", "500 to 1000", "500-1000"
+  range_open: [between, from]
+  range_join: [and, to, "-"]
+
+# Soft sort intent.
+cheap: [cheap, cheapest, cheaper, budget, affordable, inexpensive, "low price", "low cost", "lowest price",
+        "value for money", economical]
+expensive: [expensive, premium, luxury, costly, "high end", "high-end", priciest, "top end"]
+
+# Number + unit = a quantity, never a price. Keys are canonical units.
+units:
+  mg: [mg, milligram, milligrams]
+  g: [g, gm, gms, gram, grams, gr, grm]
+  kg: [kg, kgs, kilo, kilos, kilogram, kilograms]
+  ml: [ml, millilitre, milliliter, millilitres, milliliters]
+  l: [l, ltr, ltrs, litre, liter, litres, liters, lt, lit]
+  w: [w, watt, watts]
+  kw: [kw]
+  mah: [mah]
+  v: [v, volt, volts]
+  inch: [inch, inches, '"']
+  cm: [cm, cms]
+  mm: [mm]
+  m: [m, meter, metre, meters, metres, mtr, mtrs]
+  ft: [ft, feet, foot]
+  gb: [gb]
+  tb: [tb]
+  mp: [mp, megapixel]
+  hz: [hz]
+  pcs: [pc, pcs, piece, pieces]
+  pack: [pack, packs]
+  hours: [hour, hours, hr, hrs, h]
+  y: [y, yr, yrs, year, years]
+
+# Field-name hints that bind a unit quantity to a numeric field (e.g. a numeric "weight_kg" field).
+unit_field_hints:
+  kg: [weight, wt, kg]
+  g: [weight, wt, grams, g]
+  l: [volume, capacity, litre, liter, l]
+  ml: [volume, capacity, ml]
+  w: [wattage, power, watt, w]
+  mah: [battery, capacity, mah]
+  inch: [screen, display, size, inch]
+  gb: [storage, ram, memory, gb]
+  pcs: [pieces, pcs, pack, count]

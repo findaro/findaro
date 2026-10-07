@@ -85,7 +85,7 @@ def search_fields(schema: Schema) -> list[str]:
     return out
 
 
-def lexical_query(schema: Schema, q: str) -> dict[str, Any]:
+def lexical_query(schema: Schema, q: str, expansions: list[str] | None = None) -> dict[str, Any]:
     should: list[dict[str, Any]] = []
     fields = search_fields(schema)
     if fields:
@@ -98,7 +98,45 @@ def lexical_query(schema: Schema, q: str) -> dict[str, Any]:
         should.append({"match_phrase": {f"f.{t.key}": {"query": q, "slop": 2, "boost": 2.0}}})
     idf = schema.id_field
     should.append({"term": {f"f.{idf.key}.norm": {"value": q.strip().lower(), "boost": 20.0}}})
+    if expansions:
+        # synonyms from the locale pack: any one of them is enough, at a lower weight than the query words
+        should.append({"match": {"zz_all": {"query": " ".join(expansions), "boost": 0.6}}})
     return {"bool": {"should": should, "minimum_should_match": 1}}
+
+
+def plan_filter_clause(schema: Schema, f: Any) -> dict[str, Any] | None:
+    """Compile a validated PlanFilter. Non-strict filters also let through documents lacking the field."""
+    spec = schema.get(f.field)
+    if spec is None:
+        return None
+    if spec.role in NUMBER_ROLES:
+        path = f"f.{spec.key}"
+        if f.op == "range":
+            clause: dict[str, Any] = {"range": {path: f.value}}
+        else:
+            clause = {"terms": {path: f.value if isinstance(f.value, list) else [f.value]}}
+    elif spec.role == Role.boolean:
+        path = f"f.{spec.key}"
+        clause = {"term": {path: f.value}}
+    elif spec.role == Role.category:
+        path = f"zz_path.{spec.key}"
+        vals = f.value if isinstance(f.value, list) else [f.value]
+        clause = {"terms": {f"{path}.norm": [_norm_path(str(v)) for v in vals]}}
+    else:
+        path = f"f.{spec.key}"
+        vals = f.value if isinstance(f.value, list) else [f.value]
+        clause = {"terms": {f"{path}.norm": [str(v).lower() for v in vals]}}
+    if f.strict:
+        return clause
+    return {"bool": {"should": [clause, {"bool": {"must_not": [{"exists": {"field": path}}]}}],
+                     "minimum_should_match": 1}}
+
+
+def docvalue_path(schema: Schema, field: str) -> str | None:
+    spec = schema.get(field)
+    if spec is None or spec.role in TEXT_ROLES:
+        return None
+    return f"zz_path.{spec.key}" if spec.role == Role.category else f"f.{spec.key}"
 
 
 def knn_clause(vec: list[float], k: int, filters: list[dict[str, Any]]) -> dict[str, Any]:
@@ -179,7 +217,7 @@ def sort_clause(schema: Schema, sort: list[Any]) -> list[dict[str, Any]]:
     return out
 
 
-def highlight(schema: Schema, q: str) -> dict[str, Any] | None:
+def highlight(schema: Schema, q: str, expansions: list[str] | None = None) -> dict[str, Any] | None:
     fields: dict[str, Any] = {}
     for f in schema.by_role(Role.title):
         fields[f"f.{f.key}"] = {"number_of_fragments": 0}
@@ -192,8 +230,8 @@ def highlight(schema: Schema, q: str) -> dict[str, Any] | None:
         "post_tags": ["</em>"],
         "require_field_match": False,
         "fields": fields,
-        "highlight_query": {"multi_match": {"query": q, "fields": list(fields), "fuzziness": "AUTO",
-                                            "prefix_length": 1}},
+        "highlight_query": {"multi_match": {"query": " ".join([q, *(expansions or [])]), "fields": list(fields),
+                                            "fuzziness": "AUTO", "prefix_length": 1}},
     }
 
 

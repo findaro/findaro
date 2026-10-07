@@ -65,7 +65,9 @@ def index_body(schema: Schema, dim: int, shards: int = 1) -> dict[str, Any]:
     return {
         "settings": {
             "index": {"number_of_shards": shards, "number_of_replicas": 0, "knn": True, "refresh_interval": "1s",
-                      "max_result_window": 10_000},
+                      "max_result_window": 10_000,
+                      # Keep vectors in _source so a reindex can reuse them instead of re-embedding.
+                      "knn.derived_source.enabled": False},
             **analysis_settings(),
         },
         "mappings": {

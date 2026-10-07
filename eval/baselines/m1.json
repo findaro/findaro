@@ -1,0 +1,992 @@
+[
+ {
+  "id": "q001",
+  "query": "pressure cooker",
+  "type": "plain",
+  "total": 50,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "Dunedar 7.5 L Black Aluminium Pressure Cooker",
+   "Aahwan Aluminium Pressure Cooker 7.5 Litre Black for Home Kitchen Cooking Pressure Cookers",
+   "BhumiStore 5 Litre Stainless Steel Pressure Cooker Black"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q002",
+  "query": "bluetooth earbuds",
+  "type": "plain",
+  "total": 54,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "DigiCraft Blue Bluetooth Earbuds | 24 Hours Playback | Wireless Earbuds",
+   "Sparkzen Blue Bluetooth Earbuds | Long Lasting 40 Hours Playback | Wireless Earbuds",
+   "TechRush Grey Bluetooth Earbuds for 24 Hours Music Play"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q003",
+  "query": "kolhapuri chappals",
+  "type": "plain",
+  "total": 50,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "Aadivaan Women's Tan Kolhapuri Chappals - Best Quality Kolhapuri Chappals for Women - Pack of 1 (Tan)",
+   "Prakriti Women's Gold Kolhapuri Chappals | Synthetic Leather, Pack of 1",
+   "Aadivaan Women's Black Kolhapuri Chappals for Women, Genuine Leather Kolhapuri"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q004",
+  "query": "car seat cover",
+  "type": "plain",
+  "total": 54,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "Dhruvix Red Car Seat Cover | Velvet Universal Fit Car Seat Cover",
+   "Dhruvix Car Seat Cover Tan | Custom Fit Velvet Seat Covers for Car, Car Interior Accessories",
+   "Dhruvix Car Seat Cover for Universal Fit - Black Velvet - Protect Your Car Seats"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q005",
+  "query": "garam masala",
+  "type": "plain",
+  "total": 56,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 45,
+  "top3": [
+   "SaralSpice 200g Garam Masala Powder for Veg - Garam Masala for Cooking",
+   "SaralSpice Garam Masala | Veg | 200 g Pack",
+   "SaralSpice Garam Masala Powder | Pure Garam Masala Powder for Chutney, Dals, 50 g, Veg"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q006",
+  "query": "desi ghee",
+  "type": "plain",
+  "total": 44,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 45,
+  "top3": [
+   "DishaDhaba 500 ml Desi Ghee for Veg Diet - Pure Buffalo Ghee",
+   "DishaDhaba Desi Ghee 1 L | Veg Buffalo Milk Ghee for Cooking",
+   "SampoornaStore 500ml Veg Buffalo Desi Ghee - Pack of 1"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q007",
+  "query": "leggings",
+  "type": "plain",
+  "total": 52,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "Ragamaya Women's White Leggings for Women, Cotton Lycra Leggings Pack of 1",
+   "Saveraa Women's Beige Leggings for Women - Cotton Lycra | Leggings for Ladies",
+   "Kaviya Kraft Women's Navy Blue Cotton Lycra Leggings | Legging for Women (XS, S)"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q008",
+  "query": "electric kettle",
+  "type": "plain",
+  "total": 50,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "Nirvana Nest Black 1.8L 1200W Electric Kettle Plastic | Fast Boiling Electric Kettle for Home",
+   "Aahwan Silver 1 L Electric Kettle | Fast Boiling, Plastic, 1200W",
+   "Aahwan Stainless Steel Electric Kettle, 1.8 L, Black, 1200W"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q009",
+  "query": "dinner set",
+  "type": "plain",
+  "total": 50,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "Aahwan Multicolor 24-Piece Stainless Steel Dinner Set | Complete Dinner Set for Family",
+   "BhumiStore Melamine Dinner Set - 24 Pcs Silver Dinnerware Set for Home",
+   "Nirvana Nest Multicolor Melamine Dinner Set for 40 People | Party Dinnerware Set, Pack of 1"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q010",
+  "query": "neckband",
+  "type": "plain",
+  "total": 50,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "ChargeOn Grey Neckband for Men and Women - 30 Hours Playback",
+   "DigiCraft Blue Neckband with 20 Hours Playback for Music Lovers",
+   "TechRush Blue Bluetooth Neckband for Music, 20 hours Playback, Blue"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q011",
+  "query": "presure cooker",
+  "type": "typo",
+  "total": 67,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "BhumiStore 3 L Silver Aluminium Pressure Cooker",
+   "Kalyaniware 3 L Silver Aluminium Pressure Cooker for Quick and Easy Cooking",
+   "HariharaHome Silver 7.5 L Aluminium Pressure Cooker for Cooking"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q012",
+  "query": "wirless earbuds",
+  "type": "typo",
+  "total": 105,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "Fablez White Bluetooth Earbuds for Men, 50 Hours Playback, Latest Wireless Earbuds",
+   "Vibrota Green Wireless Earbuds for Men | Long Playtime Bluetooth Ear Headphones",
+   "Sparkzen Grey Colour Wireless Earbuds | 24 hours Playback | Bluetooth Earbuds"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q013",
+  "query": "kolapuri chappal",
+  "type": "typo",
+  "total": 50,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "Aadivaan Women's Tan Kolhapuri Chappals - Best Quality Kolhapuri Chappals for Women - Pack of 1 (Tan)",
+   "Aadivaan Women's Black Kolhapuri Chappals for Women, Genuine Leather Kolhapuri",
+   "Kalyanx Women's Tan Kolhapuri Chappals for Women (UK 3, UK 4)"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q014",
+  "query": "car seet cover",
+  "type": "typo",
+  "total": 55,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "Dhruvix Red Car Seat Cover | Velvet Universal Fit Car Seat Cover",
+   "Dhruvix Car Seat Cover Tan | Custom Fit Velvet Seat Covers for Car, Car Interior Accessories",
+   "KritiCraze Red Universal Car Seat Cover - Fabric, Red, Car"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q015",
+  "query": "garam masla",
+  "type": "typo",
+  "total": 59,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 45,
+  "top3": [
+   "SaralSpice 200g Garam Masala Powder for Veg - Garam Masala for Cooking",
+   "SaralSpice Garam Masala Powder | Pure Garam Masala Powder for Chutney, Dals, 50 g, Veg",
+   "SaralSpice Garam Masala | Veg | 200 g Pack"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q016",
+  "query": "bluetoth neckband",
+  "type": "typo",
+  "total": 25,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "TechRush Blue Bluetooth Neckband for Music, 20 hours Playback, Blue",
+   "KritiKraft Grey Bluetooth Neckband - Long Lasting Battery Life, 20 hours Playback",
+   "Proxima Long Lasting Blue Neckband for Music, 40 Hours Playback | Bluetooth Headphones"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q017",
+  "query": "basmathi rice",
+  "type": "typo",
+  "total": 46,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 46,
+  "top3": [
+   "HariyaliHub 1 kg Basmati Rice for Daily Cooking | Long Grain Basmati Rice",
+   "RashtriyaRice 10 kg Basmati Rice - 10 kg, Veg, Long Grain",
+   "AashirvaadAvenue Basmati Rice - Long Grain - 1 kg - Veg"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q018",
+  "query": "runing shoes",
+  "type": "typo",
+  "total": 65,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "VedaVibes White Men's Running Shoes for Men | Lightweight Running Shoe",
+   "Sohum Running Shoes White | Best Quality Knit Running Shoes for Men, UK 8, UK 9, Slip-On Closure",
+   "Nirmaan Men's OLIVE Mesh Running Shoes | Slip-On Running Shoes for Men (Olive)"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q019",
+  "query": "electrik kettle",
+  "type": "typo",
+  "total": 50,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "SuruchiSpace White 1.5 L Electric Kettle, Best Quality Electric Kettle for Office Home Use, 1500W",
+   "SuruchiSpace 1500W Silver Electric Kettle for Office, Home, Kitchen - 1.8 L (1 Piece)",
+   "Aartikraft Electric Kettle 1 Litre | Silver Color, Plastic Material, 1200W Wattage"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q020",
+  "query": "helmat for bike",
+  "type": "typo",
+  "total": 50,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "RohanRide Blue Bike Helmet | ABS Plastic Bike Helmet for Men, Open Face Helmet",
+   "RohanRide Black ABS Plastic Half Face Helmet for Bike - Safe and Stylish Bike Helmet for Men L, M",
+   "KritiCraze Red Fibreglass Full Face Bike Helmet for Men - Large - Bike Helmet"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q021",
+  "query": "lether formal shoes",
+  "type": "typo",
+  "total": 119,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "Sohum Men's Brown Slip-On Formal Shoes | Brown Synthetic Leather Formal Shoes for Men",
+   "Kalyanx Men's Wine Leather Formal Slip-On Shoes | Genuine Leather Shoes",
+   "Sohum Men's Brown Genuine Leather Formal Shoes, for Men, UK 8 & 9"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q022",
+  "query": "black running shoes for men",
+  "type": "attribute",
+  "total": 67,
+  "ndcg10": 0.9188493327447292,
+  "recall20": 1.0,
+  "n_relevant": 7,
+  "top3": [
+   "Sohum Men's Black Black Men's Running Shoes | Black Running Shoes for Men UK 6-10",
+   "Aadivaan Men's Black Running Shoes | Lightweight | for Men | Slip-On | UK 9, 10",
+   "Anantara Men's Black Sports Running Shoes | Lightweight Walking Shoes for Men's Gym Jogging"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q023",
+  "query": "white canvas sneakers men",
+  "type": "attribute",
+  "total": 20,
+  "ndcg10": 0.9599811799864374,
+  "recall20": 1.0,
+  "n_relevant": 4,
+  "top3": [
+   "Nirmaan Men's Casual White Canvas Sneakers for Running | Walking Shoes for Men",
+   "Aadivaan Men's White Canvas Slip-On Casual Sneakers (UK 6-11)",
+   "VedaVibes Men's White Canvas Casual Sneakers | Lace-Up Shoes for Men - UK 8, UK 9"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q024",
+  "query": "brown formal shoes genuine leather",
+  "type": "attribute",
+  "total": 35,
+  "ndcg10": 0.9371212594481321,
+  "recall20": 1.0,
+  "n_relevant": 5,
+  "top3": [
+   "Sohum Men's Brown Genuine Leather Formal Shoes, for Men, UK 8 & 9",
+   "Sohum Men's Brown Slip-On Formal Shoes | Brown Synthetic Leather Formal Shoes for Men",
+   "Saptak Men's Brown Genuine Leather Lace-Up Formal Shoes, Pack of 1"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q025",
+  "query": "65W usb-c charger",
+  "type": "attribute",
+  "total": 80,
+  "ndcg10": 0.8787634555103936,
+  "recall20": 1.0,
+  "n_relevant": 2,
+  "top3": [
+   "Sparkzen White 65W USB-C Mobile Charger - Fast Charging",
+   "Jatanix Black 65W USB-C Mobile Charger for Quick Power Backup",
+   "ChargeOn 65W Micro USB White Fast Mobile Charger for Quick Charging"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q026",
+  "query": "20000mAh power bank",
+  "type": "attribute",
+  "total": 51,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 17,
+  "top3": [
+   "Connecta Power Bank 20000mAh | Connecta Black Power Bank 20000mAh for Mobile Charging",
+   "TechRush 20000mAh White Power Bank for Mobile Phone, Dual USB Charging",
+   "TechRush Blue Power Bank | High Capacity 20000mAh Power Bank (22.5W)"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q027",
+  "query": "stainless steel water bottle 1 L",
+  "type": "attribute",
+  "total": 72,
+  "ndcg10": 0.8283062657588284,
+  "recall20": 1.0,
+  "n_relevant": 5,
+  "top3": [
+   "Aahwan Stainless Steel Water Bottle 1.5 L Silver for Office School Gym, Fridge Bottle",
+   "Kalyaniware Pink Stainless Steel Water Bottle 1 L for Office School Gym, Fridge Bottle Pack of 1",
+   "HariharaHome Silver Color 1.5 L Stainless Steel Water Bottle | Pack of 1"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q028",
+  "query": "cast iron tawa",
+  "type": "attribute",
+  "total": 50,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 13,
+  "top3": [
+   "SuruchiSpace Black Cast Iron Tawa | Black Cast Iron Tawa 28 cm for Indian Cooking",
+   "AyushKitchen Black Cast Iron Tawa - 26 cm Cooking Pan for Indian Cooking",
+   "Aahwan Heavy Duty Black Cast Iron Tawa for Men - 26 cm Cooking Tawa for Daily Cooking"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q029",
+  "query": "black full face helmet",
+  "type": "attribute",
+  "total": 25,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 1,
+  "top3": [
+   "NirvaanGear Black Color ABS Plastic Full Face Helmet for Bikes | M - L",
+   "NirvaanGear Yellow Color Polycarbonate Full Face Bike Helmet for Men - M",
+   "NirvaanGear Open Face Bike Helmet Black | ABS Plastic Helmet, Bike Safety Gear"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q030",
+  "query": "slim fit black jeans",
+  "type": "attribute",
+  "total": 37,
+  "ndcg10": 0.9664515752024123,
+  "recall20": 1.0,
+  "n_relevant": 2,
+  "top3": [
+   "Duniya Style Men's Slim Fit Black Denim Jeans for Mens",
+   "Jalvaar Men's Black Slim Fit Jeans | Jalvaar Men's Slim Fit Jeans 30-38 Black",
+   "Ragamaya Men's Slim Fit Black Denim Jeans (30, 32, 34)"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q031",
+  "query": "white cotton kurta for men",
+  "type": "attribute",
+  "total": 34,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 3,
+  "top3": [
+   "Niyati Wear Men's White Cotton Printed Kurtas | Casual Wear for Men",
+   "Veda Vibes Men's White Printed Cotton Kurtas (S, M)",
+   "Ragamaya Men's Embroidered White Kurtas for Men - Pack of 1 (S, M, L, XL, XXL, 3XL)"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q032",
+  "query": "red silk saree",
+  "type": "attribute",
+  "total": 15,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 1,
+  "top3": [
+   "Aaramyaa Women's Red Silk Embroidered Saree for Women | Free Size | Festive Wear",
+   "Ragamaya Blue Embroidered Silk Saree | Free Size, Women's Designer Saree",
+   "Saveraa Yellow Silk Woven Saree for Women - Free Size"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q033",
+  "query": "kachi ghani mustard oil 1 L",
+  "type": "attribute",
+  "total": 24,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 7,
+  "top3": [
+   "DishaDhaba Mustard Oil | 1 L",
+   "AashirvaadAvenue Mustard Oil | 1 L",
+   "PragatiProvisions Mustard Oil | 1 L"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q034",
+  "query": "wireless mouse",
+  "type": "attribute",
+  "total": 39,
+  "ndcg10": 0.6424293576721358,
+  "recall20": 0.8461538461538461,
+  "n_relevant": 13,
+  "top3": [
+   "Fablez Wireless White Computer Mouse | Long Lasting White Computer Wireless Mouse for Home Office",
+   "DigiCraft Wireless Mouse for Laptop, Computer, PC, Notebook - Black | Bluetooth Mouse",
+   "Fablez White Bluetooth Wireless Mouse for Computer | Cordless Mouse"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q035",
+  "query": "toor dal 1 kg",
+  "type": "attribute",
+  "total": 62,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 14,
+  "top3": [
+   "Aashirvaad Avenue Toor Dal 1 kg - Best Quality Toor Dal for Daily Cooking - Veg",
+   "SampoornaStore 1 kg Toor Dal - Pack of 1 - Veg",
+   "KirtiKitchen Toor Dal 1 kg Pack for Daily Cooking, Pure Veg, No Adulteration"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q036",
+  "query": "running shoes under 1000",
+  "type": "price",
+  "total": 105,
+  "ndcg10": 0.3844102377610974,
+  "recall20": 0.0,
+  "n_relevant": 7,
+  "top3": [
+   "Kalyanx Men's Black Running Mesh Lace-Up Sports Shoes for Running - UK 9, 10",
+   "AADIVAAN Men White Running Shoes | Mesh Lace-Up Running Shoes for Mens",
+   "Nirmaan Men's OLIVE Mesh Running Shoes | Slip-On Running Shoes for Men (Olive)"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q037",
+  "query": "bluetooth earbuds below 1500",
+  "type": "price",
+  "total": 82,
+  "ndcg10": 0.6262753345308759,
+  "recall20": 0.4444444444444444,
+  "n_relevant": 9,
+  "top3": [
+   "Sparkzen Blue Bluetooth Earbuds | Long Lasting 40 Hours Playback | Wireless Earbuds",
+   "Jatanix Black Bluetooth Earbuds - 24 Hours Playback, Best Wireless Earbuds",
+   "TechRush Grey Bluetooth Earbuds for 24 Hours Music Play"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q038",
+  "query": "men's t-shirt under 300",
+  "type": "price",
+  "total": 100,
+  "ndcg10": 0.47001826010185915,
+  "recall20": 0.25,
+  "n_relevant": 4,
+  "top3": [
+   "Duniya Style Grey Oversized Men's T-Shirt | Cotton Blend Print Full Sleeve T-Shirt",
+   "Kaviya Kraft Olive Colour Men's Oversized T-Shirt - Cotton Fabric, Full Sleeve",
+   "Ragamaya Men's Oversized Navy Blue Striped Polyester Full Sleeve T-Shirt for Men"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q039",
+  "query": "saree under rs 1000",
+  "type": "price",
+  "total": 100,
+  "ndcg10": 0.6461459647339004,
+  "recall20": 0.0,
+  "n_relevant": 1,
+  "top3": [
+   "Kaalpaash Women's Purple Georgette Woven Saree for Ladies - Free Size",
+   "Ragamaya Women's Pink Silk Free Size Woven Saree",
+   "Ragamaya Women's Silk Purple Saree - Woven Pattern, Free Size, Festive Wear"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q040",
+  "query": "dash cam under 3000",
+  "type": "price",
+  "total": 50,
+  "ndcg10": 0.484774783212832,
+  "recall20": 0.3125,
+  "n_relevant": 16,
+  "top3": [
+   "Dhruvix 2K Dash Cam for Cars - Black, Car Dash Camera, Parking Monitor",
+   "Dhruvix 2K Black Dash Cam for Cars | Black Car Dash Cam with 2K Resolution",
+   "RohanRide Black 4K Dash Cam | Secure Your Car's Safety with This Advanced Dash Camera"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q041",
+  "query": "20000mah power bank under 1500",
+  "type": "price",
+  "total": 50,
+  "ndcg10": 0.671630132011541,
+  "recall20": 1.0,
+  "n_relevant": 8,
+  "top3": [
+   "Connecta Power Bank 20000mAh | Connecta Black Power Bank 20000mAh for Mobile Charging",
+   "Jatanix 20000mAh Grey Power Bank | Super High Capacity Mobile Charger",
+   "TechRush Blue Power Bank | High Capacity 20000mAh Power Bank (22.5W)"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q042",
+  "query": "5 L pressure cooker under 2000",
+  "type": "price",
+  "total": 100,
+  "ndcg10": 0.8125952066495404,
+  "recall20": 1.0,
+  "n_relevant": 1,
+  "top3": [
+   "Dunedar 7.5 L Black Aluminium Pressure Cooker",
+   "Aahwan 5L Silver Aluminium Pressure Cooker | Aluminium Pressure Cooker",
+   "BhumiStore 5 Litre Stainless Steel Pressure Cooker Black"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q043",
+  "query": "laptop bag under 800",
+  "type": "price",
+  "total": 51,
+  "ndcg10": 0.492852869232737,
+  "recall20": 0.6,
+  "n_relevant": 5,
+  "top3": [
+   "DigiCraft Grey Laptop Bag for Men | 17 Inch Laptop Tote Bag, Office School Gym Bag",
+   "DigiCraft Grey Synthetic Leather Laptop Bag - 17 Inch Laptop Computer Bag, Grey",
+   "DigiCraft Brown Laptop Bag | Stylish Synthetic Leather Laptop Bag for 15.6 inch Laptops"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q044",
+  "query": "kurti between 500 and 1000",
+  "type": "price",
+  "total": 113,
+  "ndcg10": 0.14924484087098233,
+  "recall20": 0.16666666666666666,
+  "n_relevant": 12,
+  "top3": [
+   "Kirti Kitchen Moong Dal 500 g - Best Quality Moong Dal for Daily Cooking - Veg",
+   "Ragamaya Women's Pink Georgette 3/4 Sleeve Kurti Kurta, Printed, S-XL",
+   "DishaDhaba Toor Dal (500g) | 100% Pure Vegetarian Pulse for Daily Cooking"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q045",
+  "query": "car perfume under 300",
+  "type": "price",
+  "total": 50,
+  "ndcg10": 0.5518406486177496,
+  "recall20": 0.4666666666666667,
+  "n_relevant": 15,
+  "top3": [
+   "KritiCraze Jasmine Car Perfume, 100ml, Transparent, Best Car Perfume for Men, Women",
+   "KritiCraze Ocean Car Perfume for Car - Black, 100ml, For Car Interior",
+   "PulsarPro Blue Car Perfume for Men - Rose Fragrance (For Car)"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q046",
+  "query": "500 ke andar black shoes",
+  "type": "hinglish",
+  "total": 132,
+  "ndcg10": 0.44281305753755207,
+  "recall20": 0.25,
+  "n_relevant": 23,
+  "top3": [
+   "Anantara Men's Black Sports Running Shoes | Lightweight Walking Shoes for Men's Gym Jogging",
+   "Anantara Kids School Shoes | Black School Shoes for Boys & Girls - UK 2, UK 3, UK 4",
+   "Anantara Kids School Black Lace-Up Shoes - Black (UK 13C, UK 1)"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q047",
+  "query": "kapde rakhne wala bag",
+  "type": "hinglish",
+  "total": 100,
+  "ndcg10": 0.7877736340270853,
+  "recall20": 0.7,
+  "n_relevant": 50,
+  "top3": [
+   "Saajni Beige Non-Woven Pack of 2 Clothes Storage Organiser Bag for Home Use",
+   "BhumiStore Non-Stick Kadai 2.5 L Copper - For Men & Women, Pack of 1",
+   "PrakritiPots Beige Non-Woven 2 Pack Clothes Storage Organiser Bag, Perfect for Home and Office"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q048",
+  "query": "ladkiyon ke liye kurti",
+  "type": "hinglish",
+  "total": 100,
+  "ndcg10": 0.9363792118010482,
+  "recall20": 0.85,
+  "n_relevant": 50,
+  "top3": [
+   "Kaviya Kraft Women's Printed Pink Rayon 3/4 Sleeve Kurti Kurta for Festive Wear",
+   "Ragamaya Embroidered Maroon Cotton Women's Kurti for Festive Wear S M L",
+   "Tyaag Tees Embroidered Rayon Kurti for Women | White - 3/4 Sleeve - L, XL, XXL"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q049",
+  "query": "sasta pressure cooker",
+  "type": "hinglish",
+  "total": 51,
+  "ndcg10": 0.5395680778261054,
+  "recall20": 0.42857142857142855,
+  "n_relevant": 14,
+  "top3": [
+   "BhumiStore 5 Litre Stainless Steel Pressure Cooker Black",
+   "Saajni Pressure Cooker 3L Aluminium Pressure Cooker for Men - Black",
+   "HariharaHome Black Stainless Steel 7.5 L Pressure Cooker"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q050",
+  "query": "gaadi ke liye phone stand",
+  "type": "hinglish",
+  "total": 100,
+  "ndcg10": 0.33333333333333337,
+  "recall20": 0.13333333333333333,
+  "n_relevant": 15,
+  "top3": [
+   "Veloxo Car Phone Holder | Dashboard Mount Black Plastic Phone Stand",
+   "VegaVibe Car Air Vent Mobile Phone Holder for Dashboard, Black",
+   "KavyaKraft Grey Plastic Car Dashboard Phone Holder | Easy Mount"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q051",
+  "query": "chai patti 1 kg",
+  "type": "hinglish",
+  "total": 37,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 15,
+  "top3": [
+   "AashirvaadAvenue Chai Patti | 1 kg",
+   "BhavnaBazaar Chai Patti | 1 kg",
+   "KirtiKitchen Chai Patti 1 kg, Leaf Tea, Veg Product"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q052",
+  "query": "gents chappal",
+  "type": "hinglish",
+  "total": 70,
+  "ndcg10": 0.0,
+  "recall20": 0.0,
+  "n_relevant": 100,
+  "top3": [
+   "Dhanvi Women's Gold Genuine Leather Kolhapuri Chappals - Lace-Up, Comfortable, Women's Footwear",
+   "Raghini Women's Tan Kolhapuri Chappals | Genuine Leather, Comfortable Fit (UK 5-7)",
+   "Aadivaan Women's Gold Genuine Leather Kolhapuri Chappals for Women (UK 5-8)"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q053",
+  "query": "shaadi ke liye silk saree",
+  "type": "hinglish",
+  "total": 100,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 11,
+  "top3": [
+   "Kaalpaash Maroon Silk Saree for Women, Woven, Free Size",
+   "Ragamaya Yellow Embroidered Silk Saree for Women - Free Size - Festive Wear",
+   "Ragamaya Blue Embroidered Silk Saree | Free Size, Women's Designer Saree"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q054",
+  "query": "khana banane ke bartan",
+  "type": "hinglish",
+  "total": 100,
+  "ndcg10": 0.1487639058405727,
+  "recall20": 0.25,
+  "n_relevant": 150,
+  "top3": [
+   "ChandrakalaChoice Extra Long Grain Basmati Rice 5kg | Pure Veg Food Grains",
+   "DishaDhaba Best Besan for Roti Making, Gujarati Chickpea Flour 1 Kg Veg, Pack of 1",
+   "AashirvaadAvenue Best Besan for Dosa, Pakora, Pakoda | 1 kg Veg Besan"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q055",
+  "query": "mobile charge karne wala tar",
+  "type": "hinglish",
+  "total": 137,
+  "ndcg10": 0.0,
+  "recall20": 0.0,
+  "n_relevant": 50,
+  "top3": [
+   "KritiKraft Black 18W USB-C Mobile Fast Charging Cable for Mobile (Black)",
+   "Aahvaan 65W Micro USB Mobile Charger | Black Colour - Fast Charging for Mobile Phones",
+   "Aahvaan White Mobile Charger | 45W Micro USB Mobile Charger"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q056",
+  "query": "sarson ka tel",
+  "type": "hinglish",
+  "total": 100,
+  "ndcg10": 0.0,
+  "recall20": 0.0,
+  "n_relevant": 45,
+  "top3": [
+   "Sparkzen Red Lightning Connector 2m Length Long Mobile Cable for Android Phone",
+   "Sparkzen Wireless Bluetooth Earbuds | Long Lasting Music Play Earphone for Men - White, 50 hours Playback",
+   "Zyroxo Car Mobile Holder, Black Aluminium, Air Vent Mount, For All Car Models"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q057",
+  "query": "1000 se kam mein earbuds",
+  "type": "hinglish",
+  "total": 100,
+  "ndcg10": 0.6571097601840389,
+  "recall20": 0.6666666666666666,
+  "n_relevant": 3,
+  "top3": [
+   "KritiKraft Wireless Blue Earbuds for Men, Long Play Bluetooth Music, 24 Hours Playtime",
+   "TechRush Grey Bluetooth Earbuds for 24 Hours Music Play",
+   "Proxima Wireless Earbuds for Men - Bluetooth Headphones for Gym Running (Black, 40 hours Playback)"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q058",
+  "query": "bacchon ke school ke joote",
+  "type": "hinglish",
+  "total": 100,
+  "ndcg10": 0.7162874455029681,
+  "recall20": 0.7,
+  "n_relevant": 50,
+  "top3": [
+   "Aahvaan Men's Laptop Bag | Black, 14 Inch Laptop Computer Backpack for Office School Travel",
+   "Lokeshwar Black Colour Kids School Shoes, Synthetic Leather Material, UK 13C & UK 1 Size Available",
+   "Sohum Kids School Shoes - Black Canvas (UK 1, UK 2) - Closure Type Velcro"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q059",
+  "query": "something to carry water to office",
+  "type": "nl",
+  "total": 78,
+  "ndcg10": 0.9305687780632227,
+  "recall20": 0.95,
+  "n_relevant": 50,
+  "top3": [
+   "Dunedar Blue Water Bottle | 1 Litre Plastic Water Bottle for Office School Gym, Blue",
+   "Aartikraft Copper Water Bottle 1 L - Eco Friendly Water Bottle for Office School Gym, Pink",
+   "AyushKitchen Copper Water Bottle 750 ml, Best Quality Copper Water Bottle for Office School Gym Use"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q060",
+  "query": "shoes for jogging in the morning",
+  "type": "nl",
+  "total": 104,
+  "ndcg10": 0.8236998933965709,
+  "recall20": 0.75,
+  "n_relevant": 50,
+  "top3": [
+   "Anantara Men's Black Sports Running Shoes | Lightweight Walking Shoes for Men's Gym Jogging",
+   "Shreyas Men's Sports Running Shoes | Lightweight Walking Shoes for Mens Gym Jogging (Black, UK 8)",
+   "Raghini Men's Canvas Black Casual Sneakers UK 8, UK 9 Slip-On Shoes - Best for Men for Gym Jogging"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q061",
+  "query": "comfortable footwear for women under 1000",
+  "type": "nl",
+  "total": 118,
+  "ndcg10": 0.6714920520082945,
+  "recall20": 0.7,
+  "n_relevant": 111,
+  "top3": [
+   "Kalyanx Women's Pink Bellies Flats | Comfortable Walking Shoes for Women (UK 3-6)",
+   "Raghini Women's Tan Kolhapuri Chappals | Genuine Leather, Comfortable Fit (UK 5-7)",
+   "Sohum Women's Maroon Kolhapuri Chappals | Synthetic Leather Women's Shoes UK 6-8"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q062",
+  "query": "fast charger for my phone",
+  "type": "nl",
+  "total": 95,
+  "ndcg10": 0.9363792118010482,
+  "recall20": 0.75,
+  "n_relevant": 50,
+  "top3": [
+   "Sparkzen 45W Black USB-C Mobile Charger - Fast Charging for All Phones",
+   "Fablez 20W White Micro USB Fast Charging Mobile Phone Charger for Mobile",
+   "DigiCraft 33W Black Lightning Quick Mobile Charger - Fast Charging for Mobile Phones"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q063",
+  "query": "cover to protect my scooter from rain and dust",
+  "type": "nl",
+  "total": 84,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "RohanRide Universal Fit Blue Bike Body Cover - Waterproof Bike Cover",
+   "KritiCraze Universal Bike Body Cover in Blue, Polyester Material, Bike Size",
+   "Boltixx Universal Bike Body Cover | Black Nylon Bike Cover for Men"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q064",
+  "query": "keep my car smelling fresh",
+  "type": "nl",
+  "total": 50,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "Veloxo Car Perfume - Jasmine Scented Car Air Freshener for Cars",
+   "Dhruvix Car Perfume - Fresh Lemon Fragrance for Cars, Blue, 100ml",
+   "Dhruvix Car Perfume - Lemon Scented, Transparent - Best for Cars, Long Rides, Fruity Fresh"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q065",
+  "query": "oil for cooking",
+  "type": "nl",
+  "total": 102,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 90,
+  "top3": [
+   "DishaDhaba 5 Litre Refined Sunflower Oil for Veg Diet | Pure Edible Oil for Cooking",
+   "DishaDhaba 5 L Refined Sunflower Oil for Cooking - Veg, Pack of 1",
+   "DishaDhaba 1 L Refined Sunflower Oil | Veg Edible Oil for Daily Cooking (1 L)"
+  ],
+  "needs_review": false
+ },
+ {
+  "id": "q066",
+  "query": "camera that records the road while driving",
+  "type": "nl",
+  "total": 50,
+  "ndcg10": 1.0,
+  "recall20": 1.0,
+  "n_relevant": 50,
+  "top3": [
+   "KavyaKraft Car Dash Cam Recorder | 1080p Video Recording, Black, Car DVR, Perfect for Travel",
+   "Veloxo 1080p HD Car Dash Cam Black for Cars - Car DVR Camera Recorder",
+   "RohanRide 1080p Car Black Dash Cam for Safe Car Driving (Black)"
+  ],
+  "needs_review": false
+ }
+]

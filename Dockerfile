@@ -13,7 +13,8 @@ RUN /app/.venv/bin/python -c "from sentence_transformers import SentenceTransfor
 SentenceTransformer('${EMBEDDING_MODEL}').save('/models/embedding')" && rm -rf /models/hub /models/xet
 
 COPY src ./src
+COPY packs ./packs
 RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --no-editable
-ENV PATH="/app/.venv/bin:$PATH" HF_HUB_OFFLINE=1 ZERCH_EMBEDDING_MODEL=/models/embedding
+ENV PATH="/app/.venv/bin:$PATH" HF_HUB_OFFLINE=1 ZERCH_EMBEDDING_MODEL=/models/embedding ZERCH_PACKS_DIR=/app/packs
 EXPOSE 8000
 CMD ["uvicorn", "zerch.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

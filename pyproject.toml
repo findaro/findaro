@@ -19,6 +19,7 @@ dependencies = [
     "orjson>=3.10",
     "sentence-transformers>=3.0",
     "torch>=2.3",
+    "pyyaml>=6.0.3",
 ]
 
 [dependency-groups]

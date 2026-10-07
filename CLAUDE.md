@@ -12,15 +12,18 @@ and later a chat-style refinement mode. Open source (Apache-2.0) from day one; h
 
 | | Milestone | Status |
 |---|---|---|
-| **M1** | Core: projects/keys, ingestion, schema inference, hybrid search, demo catalog, eval baseline | in progress |
-| M2 | AI query understanding (filters/price/attributes inferred from the query, Hinglish normalisation) | not started |
+| M1 | Core: projects/keys, ingestion, schema inference, hybrid search, demo catalog, eval baseline | done |
+| **M2** | AI query understanding (filters/price/attributes inferred from the query, Hinglish normalisation) | done (holdout pending) |
 | M3 | Chat search (conversational refinement over the M2 query representation) | not started |
 | M4 | JS SDK / drop-in widget (uses the browser-safe `search_key`) | not started |
 
 Do not build M2–M4 early, but do not make choices that block them:
 - Search request/response shapes are versioned (`/v1`) and additive. M2 will add a parsed-query
   representation that compiles to the same `filters`/`sort` structure M1 accepts.
-- The LLM provider interface (`zerch.llm`) exists in M1 but is **not** used in the search hot path.
+- M2's `understood` response block (chips, relaxations, match_quality, close_matches) is the contract M3 (chat
+  refinement) and M4 (widget chips) build on. Change it additively only.
+- The LLM is used in search only by the M2 planner, only when the rules plan can't account for some words, and
+  behind a timeout with the rules plan as fallback. Never put an LLM call on the path unconditionally.
 - `search_key` is browser-safe (read-only, search only, CORS allowed) so M4 can ship without changes.
 - `eval/` is the gate: M2 must beat `eval/report.md` (the M1 baseline).
 
@@ -40,14 +43,18 @@ Do not build M2–M4 early, but do not make choices that block them:
   mention products, shoes, prices-in-INR, categories of any specific catalog, etc. Field roles
   (title, price, facet, category...) are inferred from data and overridable via the schema API.
   Vertical knowledge lives only in `scripts/`, `data/`, `eval/` (demo material).
-  Language-level resources (stopwords, Hinglish spelling normalisation) are allowed; they are not verticals.
+  Language-level resources (stopwords, Hinglish spelling normalisation, `packs/locales/*.yaml`) are allowed;
+  they are not verticals. Query understanding gets catalog knowledge (colours, categories, brands) only from the
+  per-project value dictionary built from the data (`zerch.understand.dictionary`).
+- Eval hygiene: never tune on `eval/holdout.jsonl`. `eval/report.md` compares against `eval/baselines/m1.json`.
 - No real scraped data anywhere in the repo. Demo data is synthetic (`scripts/gen_demo_catalog.py`).
 - Apache-2.0. Don't add dependencies with incompatible licenses.
 - Keep the search hot path free of network calls other than OpenSearch/Redis (target p95 < 100ms @ 10k docs).
 
 ## Layout
 
-- `src/zerch/` — service (`api/`, `index/`, `search/`, `ingest/`, `schema/`, `embeddings/`, `llm/`)
+- `src/zerch/` — service (`api/`, `index/`, `search/`, `ingest/`, `schema/`, `embeddings/`, `llm/`, `understand/`)
+- `packs/locales/` — language packs for query understanding (en, hi-en)
 - `src/zerch/worker.py` — ingest job worker (separate compose service)
 - `scripts/` — demo catalog generator, benchmark
 - `data/` — generated demo catalog (committed)

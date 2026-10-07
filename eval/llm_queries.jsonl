@@ -1,0 +1,10 @@
+{"id": "l001", "query": "safai ka kapda gaadi ke liye", "type": "llm", "predicate": {"cat": "Auto Accessories > Car > Microfiber Cloths"}}
+{"id": "l002", "query": "nahane ke baad pehenne wali chappal", "type": "llm", "predicate": {"cat": ["Footwear > Men > Flip Flops & Slippers", "Footwear > Men > Sandals & Floaters"]}}
+{"id": "l003", "query": "paani ubalne wali ketli", "type": "llm", "predicate": {"cat": "Home & Kitchen > Appliances > Electric Kettles"}}
+{"id": "l004", "query": "sabzi kaatne ki machine", "type": "llm", "predicate": {"cat": "Home & Kitchen > Kitchen Tools > Vegetable Choppers"}}
+{"id": "l005", "query": "makhmali seat cover", "type": "llm", "predicate": {"cat": "Auto Accessories > Car > Seat Covers", "material": "Velvet"}}
+{"id": "l006", "query": "khushboo wala gaadi ka", "type": "llm", "predicate": {"cat": "Auto Accessories > Car > Car Perfumes"}}
+{"id": "l007", "query": "sir ki suraksha ke liye bike", "type": "llm", "predicate": {"cat": "Auto Accessories > Bike > Helmets"}}
+{"id": "l008", "query": "haath ke dastane bike chalane ke liye", "type": "llm", "predicate": {"cat": "Auto Accessories > Bike > Riding Gloves"}}
+{"id": "l009", "query": "kaan mein lagane wale bina taar ke", "type": "llm", "predicate": {"cat": "Electronics Accessories > Audio > Bluetooth Earbuds"}}
+{"id": "l010", "query": "roti banane ka tawa lohe ka", "type": "llm", "predicate": {"cat": "Home & Kitchen > Cookware > Tawa", "material": ["Iron", "Cast Iron"]}}

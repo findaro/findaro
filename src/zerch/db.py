@@ -73,6 +73,17 @@ job_payloads = Table(
 )
 
 
+# Per-project value dictionary for query understanding (zlib-compressed JSON), rebuilt after ingest.
+project_dicts = Table(
+    "project_dicts",
+    metadata,
+    Column("project_id", String(40), ForeignKey("projects.id", ondelete="CASCADE"), primary_key=True),
+    Column("data_version", Integer, nullable=False),
+    Column("built_at", DateTime(timezone=True), server_default=func.now(), nullable=False),
+    Column("payload", LargeBinary, nullable=False),
+)
+
+
 def make_engine(url: str) -> AsyncEngine:
     return create_async_engine(url, pool_size=10, max_overflow=10, pool_pre_ping=True)
 

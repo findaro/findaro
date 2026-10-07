@@ -35,6 +35,8 @@ def make_settings(**over: Any) -> Settings:
         search_cache_ttl=0,
         rate_limit_per_second=0,
         bulk_batch_size=50,
+        match_floor=0.0,  # the hash embedder's scores aren't on e5's scale
+        understand_llm=True,
     )
     base.update(over)
     return Settings(_env_file=None, **base)

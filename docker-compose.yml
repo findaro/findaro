@@ -1,0 +1,80 @@
+name: zerch
+
+x-app-env: &app-env
+  ZERCH_DATABASE_URL: postgresql+asyncpg://zerch:zerch@postgres:5432/zerch
+  ZERCH_OPENSEARCH_URL: http://opensearch:9200
+  ZERCH_REDIS_URL: redis://redis:6379/0
+  ZERCH_BOOTSTRAP_TOKEN: ${ZERCH_BOOTSTRAP_TOKEN:-}
+  ZERCH_RATE_LIMIT_PER_SECOND: ${ZERCH_RATE_LIMIT_PER_SECOND:-50}
+  ZERCH_OLLAMA_URL: ${ZERCH_OLLAMA_URL:-http://host.docker.internal:11434}
+  ZERCH_ANTHROPIC_API_KEY: ${ZERCH_ANTHROPIC_API_KEY:-}
+
+services:
+  api:
+    build: .
+    image: zerch:dev
+    environment: *app-env
+    ports: ["8000:8000"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      opensearch: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  worker:
+    image: zerch:dev
+    command: ["python", "-m", "zerch.worker"]
+    environment: *app-env
+    depends_on:
+      api: {condition: service_healthy}
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: zerch
+      POSTGRES_PASSWORD: zerch
+      POSTGRES_DB: zerch
+    ports: ["54329:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zerch"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  opensearch:
+    build: docker/opensearch
+    image: zerch-opensearch:3.5.0
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      OPENSEARCH_JAVA_OPTS: -Xms1g -Xmx1g
+      bootstrap.memory_lock: "true"
+    ulimits:
+      memlock: {soft: -1, hard: -1}
+      nofile: {soft: 65536, hard: 65536}
+    ports: ["19200:9200"]
+    volumes: [osdata:/usr/share/opensearch/data]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=2s || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+
+  redis:
+    image: redis:7-alpine
+    ports: ["63799:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  pgdata:
+  osdata:

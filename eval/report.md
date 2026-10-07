@@ -1,6 +1,6 @@
 # Eval report — M2 query understanding
 
-- Date: 2026-10-07 21:41 UTC · commit `f64aa52` · arm64 Darwin
+- Date: 2026-10-07 21:49 UTC · commit `5915584` · arm64 Darwin
 - Catalog: `data/demo_catalog.jsonl` (3000 docs) · 66 queries · 20 out-of-catalog negatives · 0 holdout queries
 - Planner LLM: Ollama llama3.2:3b (local, no Anthropic key in this environment), 800 ms timeout
 - Baseline: `eval/baselines/m1.json` (M1 on the reviewed query set, nDCG@10 0.808); M1 report kept in `eval/report_m1.md`
@@ -12,8 +12,8 @@
 | price nDCG@10 ≥ 0.85 | 0.900 | ✅ met |
 | hinglish nDCG@10 ≥ 0.8 | 0.909 | ✅ met |
 | no segment regresses by more than 0.02 | worst: plain +0.000 | ✅ met |
-| server p95 ≤ 30 ms, rules-only path | 11.6 ms | ✅ met |
-| server p95 ≤ 1000 ms, LLM path uncached | 814.5 ms (n=1) | ✅ met |
+| server p95 ≤ 30 ms, rules-only path | 11.9 ms | ✅ met |
+| server p95 ≤ 1000 ms, LLM path uncached | 811.3 ms (n=1) | ✅ met |
 
 ## Relevance vs M1
 
@@ -63,56 +63,56 @@
 
 | Path | n | p50 | p95 | p99 |
 |---|---:|---:|---:|---:|
-| rules only | 325 | 5.7 ms | 11.6 ms | 14.5 ms |
-| LLM, uncached (incl. timeouts) | 1 | 814.5 ms | 814.5 ms | 814.5 ms |
-| LLM plan from cache | 5 | 4.3 ms | 5.0 ms | 5.0 ms |
+| rules only | 325 | 5.8 ms | 11.9 ms | 16.1 ms |
+| LLM, uncached (incl. timeouts) | 1 | 811.3 ms | 811.3 ms | 811.3 ms |
+| LLM plan from cache | 5 | 4.1 ms | 128.8 ms | 128.8 ms |
 
 ### LLM path probe (`eval/llm_queries.jsonl`, 10 queries with words the rules can't read)
 
 - Reached the LLM: 8/10; outcomes: timeout 8
-- Server latency, uncached: p50 821.8 ms, p95 829.3 ms
+- Server latency, uncached: p50 822.7 ms, p95 825.0 ms
 - nDCG@10 uncached (timeouts fall back to rules): **0.570** · with the LLM plan from cache: **0.685**
 
 | query | LLM (uncached) | took | nDCG uncached | nDCG cached plan | semantic text (cached plan) |
 |---|---|---:|---:|---:|---|
-| safai ka kapda gaadi ke liye | timeout | 821.0 ms | 1.00 | 1.00 | Car cleaning cloth |
-| nahane ke baad pehenne wali chappal | timeout | 829.3 ms | 1.00 | 0.00 | Women Flats & Bellies |
-| paani ubalne wali ketli | timeout | 820.1 ms | 0.94 | 1.00 | water kettle |
-| sabzi kaatne ki machine | timeout | 824.1 ms | 0.00 | 1.00 | Vegetable Chopper |
-| makhmali seat cover | not_needed | 12.2 ms | 0.85 | 0.85 | makhmali seat cover |
-| khushboo wala gaadi ka | timeout | 826.7 ms | 0.61 | 1.00 | Car with a pleasant smell |
-| sir ki suraksha ke liye bike | timeout | 821.8 ms | 0.30 | 1.00 | bike safety |
-| haath ke dastane bike chalane ke liye | timeout | 828.9 ms | 0.00 | 0.00 | Bike Helmets |
-| kaan mein lagane wale bina taar ke | timeout | 821.0 ms | 0.00 | 0.00 | Earphones without cable |
-| roti banane ka tawa lohe ka | not_needed | 10.3 ms | 1.00 | 1.00 | roti making tawa iron |
+| safai ka kapda gaadi ke liye | timeout | 815.6 ms | 1.00 | 1.00 | Car cleaning cloth |
+| nahane ke baad pehenne wali chappal | timeout | 823.8 ms | 1.00 | 0.00 | Women Flats & Bellies |
+| paani ubalne wali ketli | timeout | 825.0 ms | 0.94 | 1.00 | water kettle |
+| sabzi kaatne ki machine | timeout | 820.0 ms | 0.00 | 1.00 | Vegetable chopper |
+| makhmali seat cover | not_needed | 12.6 ms | 0.85 | 0.85 | makhmali seat cover |
+| khushboo wala gaadi ka | timeout | 823.9 ms | 0.61 | 1.00 | Car with fragrance smell |
+| sir ki suraksha ke liye bike | timeout | 818.3 ms | 0.30 | 1.00 | bike safety |
+| haath ke dastane bike chalane ke liye | timeout | 823.1 ms | 0.00 | 0.00 | bike helmets |
+| kaan mein lagane wale bina taar ke | timeout | 822.7 ms | 0.00 | 0.00 | Earphones without cable |
+| roti banane ka tawa lohe ka | not_needed | 10.4 ms | 1.00 | 1.00 | roti making tawa iron |
 
 Cold-embedding and 10k-document numbers: `eval/latency_10k.md` (`scripts/bench.py`).
 
 ## Out-of-catalog queries
 
-`match_quality` on 20 queries with nothing relevant in the catalog: good 3, none 3, weak 14
+`match_quality` on 20 queries with nothing relevant in the catalog: good 4, none 4, weak 12
 
 | query | match_quality | total | top result |
 |---|---|---:|---|
 | refrigerator | weak | 100 | HariharaHome Silver 7.5 L Aluminium Pressure Cooker for Cook |
-| washing machine | weak | 100 | Kalyaniware 32-Piece Multicolor Melamine Dinner Set / Durabl |
+| washing machine | good | 100 | Aahwan Blue Non-Woven Clothes Storage Organiser Bag Pack of  |
 | football | none | 0 |  |
 | lipstick | weak | 100 | Boltixx Car Perfume - Jasmine Scent for Cars - 1pc |
 | gold necklace | weak | 11 | Prakriti Women's Gold Kolhapuri Chappals / Synthetic Leather |
 | baby diapers | weak | 100 | Tyaag Tees Red Solid Kids T-Shirt for Childrens Wear (5-6Y,  |
-| dog food | weak | 100 | AashirvaadAvenue Chai Patti, 1 kg, Veg, Leaf Tea for Daily U |
-| printer ink cartridge | weak | 100 | Ragamaya Women's Pink Georgette 3/4 Sleeve Kurti Kurta, Prin |
-| sofa set | good | 500 | Kaviya Kraft Women's Woven Purple Silk Saree / Free Size for |
+| dog food | none | 0 |  |
+| printer ink cartridge | weak | 100 | Duniya Style Women's Pink Cotton Full Sleeve Printed Top (XS |
+| sofa set | good | 107 | KritiCraze Custom Fit Black Velvet Car Seat Cover for Cars |
 | guitar strings | none | 0 |  |
 | badminton racket | weak | 100 | RuchiRack Stainless Steel Water Bottle 1 Litre for Office Sc |
-| face wash | weak | 100 | KavyaKraft Luxury Jasmine Car Perfume / Car Freshener for Ca |
+| face wash | weak | 100 | Veloxo Car Perfume - Jasmine Scented Car Air Freshener for C |
 | umbrella | none | 0 |  |
 | wrist watch | weak | 100 | Jatanix Grey Neckband with 30 hours Playback / Wireless Earb |
 | school textbooks | weak | 100 | SAPTAK WHITE SCHOOL SHOES FOR KIDS / UK 1 & 2 / Synthetic Le |
 | ceiling fan | weak | 100 | Saajni Silver Stainless Steel 1 L Electric Kettle - Fast Boi |
 | yoga mat | weak | 100 | Ragamaya Women's Black Cotton Lycra Leggings for Yoga, Gym,  |
 | sunglasses | weak | 100 | Kalyanx Women's Beige Canvas Sneakers for Running, Gym, Jogg |
-| aata chakki machine | good | 92 | DishaDhaba 5 kg Whole Wheat Atta - Pure Veg / 5kg Whole Whea |
+| aata chakki machine | good | 92 | SaralSpice Besan Atta / 1 kg Pack of Gram Flour for Veg Cook |
 | laptop | good | 93 | DigiCraft Brown Laptop Bag / Stylish Synthetic Leather Lapto |
 
 ## Holdout

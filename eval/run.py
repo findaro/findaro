@@ -31,6 +31,7 @@ ROOT = Path(__file__).resolve().parent.parent
 QUERIES = ROOT / "eval" / "queries.jsonl"
 CATALOG = ROOT / "data" / "demo_catalog.jsonl"
 REPORT = ROOT / "eval" / "report.md"
+NOTES = ROOT / "eval" / "baseline_notes.md"  # optional hand-written notes, included in the report
 RESULTS = ROOT / "eval" / "results"
 
 
@@ -161,6 +162,8 @@ def main() -> None:
         if by_type.get(typ):
             nd, rc, zr = agg(by_type[typ])
             lines.append(f"| {typ} | {len(by_type[typ])} | {nd:.3f} | {rc:.3f} | {zr:.1%} |")
+    if NOTES.exists():
+        lines += ["", NOTES.read_text().strip()]
     lines += [
         "",
         "## Latency (uncached, sequential)",
@@ -183,7 +186,10 @@ def main() -> None:
         top = (r["top3"][0] if r["top3"] else "—").replace("|", "/")[:70]
         lines.append(f"| {r['id']} | {r['type']}{flag} | {r['query']} | {r['ndcg10']:.2f} | {r['recall20']:.2f} | "
                      f"{r['n_relevant']} | {r['total']} | {top} |")
-    lines += ["", "⚑ = query/predicate marked `needs_review` in `eval/queries.jsonl`.", ""]
+    if any(r["needs_review"] for r in rows):
+        lines += ["", "⚑ = query/predicate marked `needs_review` in `eval/queries.jsonl`.", ""]
+    else:
+        lines += [""]
     Path(args.report).write_text("\n".join(lines))
     RESULTS.mkdir(exist_ok=True)
     (RESULTS / f"{datetime.now(UTC).strftime('%Y%m%dT%H%M%S')}.json").write_text(json.dumps(rows, indent=1))

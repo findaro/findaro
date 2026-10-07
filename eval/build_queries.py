@@ -4,8 +4,9 @@ Each query has a predicate over the catalog's structured attributes (which the g
 they are ground truth). Relevance grades:
     2 = satisfies the full predicate (category + attributes + price)
     1 = right category, but some attribute or price constraint is off
-Hinglish and natural-language queries are marked needs_review: a human should check that the
-predicate captures what the query means.
+Hinglish and natural-language queries need a human check that the predicate captures what the query
+means. Decisions live in eval/reviews.json (approved / changed predicate / dropped); a query of those
+types without a decision is written with needs_review: true.
 
     uv run python eval/build_queries.py
 """
@@ -18,6 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "data" / "demo_catalog.jsonl"
 OUT = ROOT / "eval" / "queries.jsonl"
+REVIEWS = ROOT / "eval" / "reviews.json"
 
 FW, AP, EL, HK, AU, GR = ("Footwear", "Apparel", "Electronics Accessories", "Home & Kitchen", "Auto Accessories",
                           "Grocery Staples")
@@ -143,16 +145,27 @@ def grade(doc: dict, pred: dict) -> int:
 
 def main() -> None:
     docs = [json.loads(line) for line in CATALOG.read_text().splitlines() if line.strip()]
+    decisions = json.loads(REVIEWS.read_text())["decisions"] if REVIEWS.exists() else {}
+    n = 0
     with open(OUT, "w") as f:
         for i, (typ, query, pred) in enumerate(Q, 1):
+            qid = f"q{i:03d}"  # ids stay positional even when a query is dropped
+            decision = decisions.get(qid, {})
+            if decision.get("status") == "dropped":
+                continue
+            if decision.get("status") == "changed":
+                pred = decision["predicate"]
             rel = [d["id"] for d in docs if grade(d, pred) == 2]
             partial = [d["id"] for d in docs if grade(d, pred) == 1]
-            row = {"id": f"q{i:03d}", "query": query, "type": typ, "predicate": pred, "relevant": rel,
-                   "partial": partial, "needs_review": typ in ("hinglish", "nl")}
+            row = {"id": qid, "query": query, "type": typ, "predicate": pred, "relevant": rel,
+                   "partial": partial, "needs_review": typ in ("hinglish", "nl") and not decision}
+            if decision:
+                row["review"] = decision["status"]
+            n += 1
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
             if not rel:
                 print(f"warning: {query!r} has no fully relevant docs")
-    print(f"wrote {len(Q)} queries to {OUT.relative_to(ROOT)}")
+    print(f"wrote {n} queries to {OUT.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

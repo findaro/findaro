@@ -1,6 +1,6 @@
 # Eval report — M1 baseline
 
-- Date: 2026-10-07 20:22 UTC · commit `26e8d41`
+- Date: 2026-10-07 20:55 UTC · commit `051f265`
 - Catalog: `data/demo_catalog.jsonl` (3000 docs) · 66 queries (`eval/queries.jsonl`)
 - Machine: arm64 Darwin · API at http://localhost:8000
 - Retrieval: BM25 (cross-field + fuzzy + phonetic) ∥ k-NN (multilingual-e5-small), RRF fusion. No query understanding (M2).
@@ -9,18 +9,18 @@
 
 | Segment | Queries | nDCG@10 | Recall@20 | Zero-result rate |
 |---|---:|---:|---:|---:|
-| **All** | 66 | **0.818** | **0.804** | 0.0% |
+| **All** | 66 | **0.808** | **0.791** | 0.0% |
 | plain | 10 | 1.000 | 1.000 | 0.0% |
 | typo | 11 | 1.000 | 1.000 | 0.0% |
 | attribute | 14 | 0.938 | 0.989 | 0.0% |
 | price | 10 | 0.529 | 0.424 | 0.0% |
-| hinglish | 13 | 0.556 | 0.527 | 0.0% |
+| hinglish | 13 | 0.505 | 0.460 | 0.0% |
 | nl | 8 | 0.920 | 0.894 | 0.0% |
 
 ## Notes on this baseline
 
 - **Where M1 is weak, and what M2 has to fix.** Price-constrained queries score 0.53 nDCG@10 and Hinglish
-  queries 0.56. M1 does not parse "under 1000", "500 ke andar" or "sasta" into filters, so it ranks the right
+  queries 0.51. M1 does not parse "under 1000", "500 ke andar" or "sasta" into filters, so it ranks the right
   product type but ignores the price constraint. Hinglish words that the vector model doesn't know (`sarson ka
   tel`, `tar`, `gents chappal`) miss completely.
 - **Zero-result rate is 0%** because the vector retriever always returns its nearest neighbours. Low-confidence
@@ -28,9 +28,10 @@
 - **Label noise.** Ground truth comes from the generator's structured attributes, not from the LLM-written
   titles. A small fraction of titles drift: for example, 4 of 100 chargers are titled as "charging cable".
   Expect a few points of noise per query.
-- **Needs review (⚑).** 21 Hinglish and natural-language queries carry `needs_review: true` in
-  `eval/queries.jsonl`. Please check that each predicate matches what the query means before M2 is measured
-  against them.
+- **Reviewed.** Rohit reviewed all 21 Hinglish and natural-language queries on 2026-10-07: 15 approved and
+  6 changed, with decisions in `eval/reviews.json`. Only q050 ("gaadi ke liye phone stand", narrowed to
+  windshield mounts) changes which documents count as relevant. The other changes add a gender that the
+  category already implies.
 - Latency at 10k documents is in `eval/latency_10k.md`: server p95 10 ms with query embeddings warm, and 65 ms
   when the query embedding has to be computed (CPU e5-small inside Docker).
 
@@ -38,8 +39,8 @@
 
 | | p50 | p95 | p99 |
 |---|---:|---:|---:|
-| Server `took_ms` | 5.6 ms | 9.6 ms | 15.7 ms |
-| Client wall time | 7.9 ms | 12.4 ms | 24.5 ms |
+| Server `took_ms` | 5.4 ms | 9.6 ms | 15.6 ms |
+| Client wall time | 7.6 ms | 12.6 ms | 22.7 ms |
 
 330 timed requests (5 per query) at 3000 docs. See `eval/latency_10k.md` for the 10k-document benchmark (`scripts/bench.py`).
 
@@ -92,26 +93,24 @@
 | q043 | price | laptop bag under 800 | 0.49 | 0.60 | 5 | 51 | DigiCraft Grey Laptop Bag for Men / 17 Inch Laptop Tote Bag, Office Sc |
 | q044 | price | kurti between 500 and 1000 | 0.15 | 0.17 | 12 | 113 | Kirti Kitchen Moong Dal 500 g - Best Quality Moong Dal for Daily Cooki |
 | q045 | price | car perfume under 300 | 0.55 | 0.47 | 15 | 50 | KritiCraze Jasmine Car Perfume, 100ml, Transparent, Best Car Perfume f |
-| q046 | hinglish ⚑ | 500 ke andar black shoes | 0.44 | 0.25 | 23 | 132 | Anantara Men's Black Sports Running Shoes / Lightweight Walking Shoes  |
-| q047 | hinglish ⚑ | kapde rakhne wala bag | 0.79 | 0.70 | 50 | 100 | Saajni Beige Non-Woven Pack of 2 Clothes Storage Organiser Bag for Hom |
-| q048 | hinglish ⚑ | ladkiyon ke liye kurti | 0.94 | 0.85 | 50 | 100 | Kaviya Kraft Women's Printed Pink Rayon 3/4 Sleeve Kurti Kurta for Fes |
-| q049 | hinglish ⚑ | sasta pressure cooker | 0.54 | 0.43 | 14 | 51 | BhumiStore 5 Litre Stainless Steel Pressure Cooker Black |
-| q050 | hinglish ⚑ | gaadi ke liye phone stand | 1.00 | 1.00 | 50 | 100 | Veloxo Car Phone Holder / Dashboard Mount Black Plastic Phone Stand |
-| q051 | hinglish ⚑ | chai patti 1 kg | 1.00 | 1.00 | 15 | 37 | AashirvaadAvenue Chai Patti / 1 kg |
-| q052 | hinglish ⚑ | gents chappal | 0.00 | 0.00 | 100 | 70 | Dhanvi Women's Gold Genuine Leather Kolhapuri Chappals - Lace-Up, Comf |
-| q053 | hinglish ⚑ | shaadi ke liye silk saree | 1.00 | 1.00 | 11 | 100 | Kaalpaash Maroon Silk Saree for Women, Woven, Free Size |
-| q054 | hinglish ⚑ | khana banane ke bartan | 0.15 | 0.25 | 150 | 100 | ChandrakalaChoice Extra Long Grain Basmati Rice 5kg / Pure Veg Food Gr |
-| q055 | hinglish ⚑ | mobile charge karne wala tar | 0.00 | 0.00 | 50 | 137 | KritiKraft Black 18W USB-C Mobile Fast Charging Cable for Mobile (Blac |
-| q056 | hinglish ⚑ | sarson ka tel | 0.00 | 0.00 | 45 | 100 | Sparkzen Red Lightning Connector 2m Length Long Mobile Cable for Andro |
-| q057 | hinglish ⚑ | 1000 se kam mein earbuds | 0.66 | 0.67 | 3 | 100 | KritiKraft Wireless Blue Earbuds for Men, Long Play Bluetooth Music, 2 |
-| q058 | hinglish ⚑ | bacchon ke school ke joote | 0.72 | 0.70 | 50 | 100 | Aahvaan Men's Laptop Bag / Black, 14 Inch Laptop Computer Backpack for |
-| q059 | nl ⚑ | something to carry water to office | 0.93 | 0.95 | 50 | 78 | Dunedar Blue Water Bottle / 1 Litre Plastic Water Bottle for Office Sc |
-| q060 | nl ⚑ | shoes for jogging in the morning | 0.82 | 0.75 | 50 | 104 | Anantara Men's Black Sports Running Shoes / Lightweight Walking Shoes  |
-| q061 | nl ⚑ | comfortable footwear for women under 1000 | 0.67 | 0.70 | 111 | 118 | Kalyanx Women's Pink Bellies Flats / Comfortable Walking Shoes for Wom |
-| q062 | nl ⚑ | fast charger for my phone | 0.94 | 0.75 | 50 | 95 | Sparkzen 45W Black USB-C Mobile Charger - Fast Charging for All Phones |
-| q063 | nl ⚑ | cover to protect my scooter from rain and dust | 1.00 | 1.00 | 50 | 84 | RohanRide Universal Fit Blue Bike Body Cover - Waterproof Bike Cover |
-| q064 | nl ⚑ | keep my car smelling fresh | 1.00 | 1.00 | 50 | 50 | Veloxo Car Perfume - Jasmine Scented Car Air Freshener for Cars |
-| q065 | nl ⚑ | oil for cooking | 1.00 | 1.00 | 90 | 102 | DishaDhaba 5 Litre Refined Sunflower Oil for Veg Diet / Pure Edible Oi |
-| q066 | nl ⚑ | camera that records the road while driving | 1.00 | 1.00 | 50 | 50 | KavyaKraft Car Dash Cam Recorder / 1080p Video Recording, Black, Car D |
-
-⚑ = query/predicate marked `needs_review` in `eval/queries.jsonl`.
+| q046 | hinglish | 500 ke andar black shoes | 0.44 | 0.25 | 23 | 132 | Anantara Men's Black Sports Running Shoes / Lightweight Walking Shoes  |
+| q047 | hinglish | kapde rakhne wala bag | 0.79 | 0.70 | 50 | 100 | Saajni Beige Non-Woven Pack of 2 Clothes Storage Organiser Bag for Hom |
+| q048 | hinglish | ladkiyon ke liye kurti | 0.94 | 0.85 | 50 | 100 | Kaviya Kraft Women's Printed Pink Rayon 3/4 Sleeve Kurti Kurta for Fes |
+| q049 | hinglish | sasta pressure cooker | 0.54 | 0.43 | 14 | 51 | BhumiStore 5 Litre Stainless Steel Pressure Cooker Black |
+| q050 | hinglish | gaadi ke liye phone stand | 0.33 | 0.13 | 15 | 100 | Veloxo Car Phone Holder / Dashboard Mount Black Plastic Phone Stand |
+| q051 | hinglish | chai patti 1 kg | 1.00 | 1.00 | 15 | 37 | AashirvaadAvenue Chai Patti / 1 kg |
+| q052 | hinglish | gents chappal | 0.00 | 0.00 | 100 | 70 | Dhanvi Women's Gold Genuine Leather Kolhapuri Chappals - Lace-Up, Comf |
+| q053 | hinglish | shaadi ke liye silk saree | 1.00 | 1.00 | 11 | 100 | Kaalpaash Maroon Silk Saree for Women, Woven, Free Size |
+| q054 | hinglish | khana banane ke bartan | 0.15 | 0.25 | 150 | 100 | ChandrakalaChoice Extra Long Grain Basmati Rice 5kg / Pure Veg Food Gr |
+| q055 | hinglish | mobile charge karne wala tar | 0.00 | 0.00 | 50 | 137 | KritiKraft Black 18W USB-C Mobile Fast Charging Cable for Mobile (Blac |
+| q056 | hinglish | sarson ka tel | 0.00 | 0.00 | 45 | 100 | Sparkzen Red Lightning Connector 2m Length Long Mobile Cable for Andro |
+| q057 | hinglish | 1000 se kam mein earbuds | 0.66 | 0.67 | 3 | 100 | KritiKraft Wireless Blue Earbuds for Men, Long Play Bluetooth Music, 2 |
+| q058 | hinglish | bacchon ke school ke joote | 0.72 | 0.70 | 50 | 100 | Aahvaan Men's Laptop Bag / Black, 14 Inch Laptop Computer Backpack for |
+| q059 | nl | something to carry water to office | 0.93 | 0.95 | 50 | 78 | Dunedar Blue Water Bottle / 1 Litre Plastic Water Bottle for Office Sc |
+| q060 | nl | shoes for jogging in the morning | 0.82 | 0.75 | 50 | 104 | Anantara Men's Black Sports Running Shoes / Lightweight Walking Shoes  |
+| q061 | nl | comfortable footwear for women under 1000 | 0.67 | 0.70 | 111 | 118 | Kalyanx Women's Pink Bellies Flats / Comfortable Walking Shoes for Wom |
+| q062 | nl | fast charger for my phone | 0.94 | 0.75 | 50 | 95 | Sparkzen 45W Black USB-C Mobile Charger - Fast Charging for All Phones |
+| q063 | nl | cover to protect my scooter from rain and dust | 1.00 | 1.00 | 50 | 84 | RohanRide Universal Fit Blue Bike Body Cover - Waterproof Bike Cover |
+| q064 | nl | keep my car smelling fresh | 1.00 | 1.00 | 50 | 50 | Veloxo Car Perfume - Jasmine Scented Car Air Freshener for Cars |
+| q065 | nl | oil for cooking | 1.00 | 1.00 | 90 | 102 | DishaDhaba 5 Litre Refined Sunflower Oil for Veg Diet / Pure Edible Oi |
+| q066 | nl | camera that records the road while driving | 1.00 | 1.00 | 50 | 50 | KavyaKraft Car Dash Cam Recorder / 1080p Video Recording, Black, Car D |

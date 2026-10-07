@@ -1,0 +1,102 @@
+{
+ "reviewed_by": "Rohit",
+ "reviewed_at": "2026-10-07",
+ "source": "eval review page (claude.ai artifact 4eUQcroxpHWgwKQSJDuyZm)",
+ "decisions": {
+  "q046": {
+   "status": "approved"
+  },
+  "q047": {
+   "status": "approved"
+  },
+  "q048": {
+   "status": "changed",
+   "predicate": {
+    "cat": "Apparel > Women > Kurtis",
+    "gender": [
+     "Women",
+     "Kids"
+    ]
+   }
+  },
+  "q049": {
+   "status": "approved"
+  },
+  "q050": {
+   "status": "changed",
+   "predicate": {
+    "cat": "Auto Accessories > Car > Phone Holders",
+    "mount": "Windshield"
+   }
+  },
+  "q051": {
+   "status": "approved"
+  },
+  "q052": {
+   "status": "changed",
+   "predicate": {
+    "cat": [
+     "Footwear > Men > Sandals & Floaters",
+     "Footwear > Men > Flip Flops & Slippers"
+    ],
+    "gender": "Men"
+   }
+  },
+  "q053": {
+   "status": "changed",
+   "predicate": {
+    "cat": "Apparel > Women > Sarees",
+    "gender": "Women",
+    "material": "Silk"
+   }
+  },
+  "q054": {
+   "status": "approved"
+  },
+  "q055": {
+   "status": "approved"
+  },
+  "q056": {
+   "status": "approved"
+  },
+  "q057": {
+   "status": "approved"
+  },
+  "q058": {
+   "status": "changed",
+   "predicate": {
+    "cat": "Footwear > Kids > School Shoes",
+    "gender": "Kids"
+   }
+  },
+  "q059": {
+   "status": "approved"
+  },
+  "q060": {
+   "status": "approved"
+  },
+  "q061": {
+   "status": "changed",
+   "predicate": {
+    "cat": "Footwear > Women",
+    "gender": "Women",
+    "price_max": 1000
+   }
+  },
+  "q062": {
+   "status": "approved"
+  },
+  "q063": {
+   "status": "approved"
+  },
+  "q064": {
+   "status": "approved"
+  },
+  "q065": {
+   "status": "approved"
+  },
+  "q066": {
+   "status": "approved"
+  }
+ }
+}

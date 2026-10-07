@@ -1,6 +1,6 @@
 # Eval report — M1 baseline
 
-- Date: 2026-10-07 20:14 UTC · commit `unknown`
+- Date: 2026-10-07 20:22 UTC · commit `26e8d41`
 - Catalog: `data/demo_catalog.jsonl` (3000 docs) · 66 queries (`eval/queries.jsonl`)
 - Machine: arm64 Darwin · API at http://localhost:8000
 - Retrieval: BM25 (cross-field + fuzzy + phonetic) ∥ k-NN (multilingual-e5-small), RRF fusion. No query understanding (M2).
@@ -17,12 +17,29 @@
 | hinglish | 13 | 0.556 | 0.527 | 0.0% |
 | nl | 8 | 0.920 | 0.894 | 0.0% |
 
+## Notes on this baseline
+
+- **Where M1 is weak, and what M2 has to fix.** Price-constrained queries score 0.53 nDCG@10 and Hinglish
+  queries 0.56. M1 does not parse "under 1000", "500 ke andar" or "sasta" into filters, so it ranks the right
+  product type but ignores the price constraint. Hinglish words that the vector model doesn't know (`sarson ka
+  tel`, `tar`, `gents chappal`) miss completely.
+- **Zero-result rate is 0%** because the vector retriever always returns its nearest neighbours. Low-confidence
+  queries therefore show weak results instead of an empty page. M2 should decide when to return nothing.
+- **Label noise.** Ground truth comes from the generator's structured attributes, not from the LLM-written
+  titles. A small fraction of titles drift: for example, 4 of 100 chargers are titled as "charging cable".
+  Expect a few points of noise per query.
+- **Needs review (⚑).** 21 Hinglish and natural-language queries carry `needs_review: true` in
+  `eval/queries.jsonl`. Please check that each predicate matches what the query means before M2 is measured
+  against them.
+- Latency at 10k documents is in `eval/latency_10k.md`: server p95 10 ms with query embeddings warm, and 65 ms
+  when the query embedding has to be computed (CPU e5-small inside Docker).
+
 ## Latency (uncached, sequential)
 
 | | p50 | p95 | p99 |
 |---|---:|---:|---:|
-| Server `took_ms` | 6.6 ms | 10.7 ms | 15.9 ms |
-| Client wall time | 8.9 ms | 13.4 ms | 18.2 ms |
+| Server `took_ms` | 5.6 ms | 9.6 ms | 15.7 ms |
+| Client wall time | 7.9 ms | 12.4 ms | 24.5 ms |
 
 330 timed requests (5 per query) at 3000 docs. See `eval/latency_10k.md` for the 10k-document benchmark (`scripts/bench.py`).
 

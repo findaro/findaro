@@ -6,7 +6,7 @@ Notion MCP was not authorised in the session, so tracking lives here.
 |---|---|---|
 | AI search SaaS: M1 | Claude Code: ai-search M1 | Done (eval queries reviewed 2026-10-07) |
 | AI search SaaS: M2 | Claude Code: ai-search M2 | Done (holdout: nDCG@10 0.818, written by gpt-5.5) |
-| AI search SaaS: M3 | Claude Code: ai-search M3 | Waiting on Rohit (no ZERCH_ANTHROPIC_API_KEY; gate not passed) |
+| AI search SaaS: M3 | Claude Code: ai-search M3 | In progress (Rohit approved OpenAI in place of Haiku, 2026-10-08) |
 
 ## M1 status (2026-10-08)
 
@@ -33,3 +33,4 @@ work stopped before starting. Holdout step from the gate is done: M2 on `eval/ho
 (M1 0.540), recorded in eval/report.md.
 
 Waiting on Rohit: an Anthropic key, or approval to run M3 on an OpenAI model instead of claude-haiku-4-5.
+Update: Rohit approved running M3 on an OpenAI model instead of claude-haiku-4-5. M3 in progress.

@@ -245,6 +245,7 @@ class _Result:
     lexical_hits: int = 0
     vector_top: float | None = None
     timings: dict[str, float] = field(default_factory=dict)
+    focus: str | None = None  # category path the lexical matches agree on (filler/backfill stay inside it)
 
 
 async def search(state: State, pid: str, project: dict[str, Any], schema: Schema | None, req: SearchRequest,
@@ -303,33 +304,20 @@ async def search(state: State, pid: str, project: dict[str, Any], schema: Schema
     if plan is not None:
         plan.relaxations = relaxations
 
-    # Backfill: inferred attribute filters ("red", "silk") can leave a short page. Show the exact matches
-    # first, then fill the page from the same query without those attribute filters (price stays strict).
     close: list[str] = []
-    soft = [f for f in plan.filters if not f.strict] if plan is not None else []
-    if soft and not req.sort and offset == 0 and 0 < result.total < req.size:  # first page only
-        loose = plan.model_copy(update={"filters": [f for f in plan.filters if f.strict]})
-        wide = await _retrieve(state, pid, schema, req, loose, explicit, aggs, hard_sort, 0)
-        seen = {h.id for h in result.hits}
-        extra = [h for h in wide.hits if h.id not in seen][: req.size - len(result.hits)]
-        if extra:
-            close = [h.id for h in extra]
-            result.hits = result.hits + extra
-            result.total = max(result.total, wide.total)
-            for k, v in wide.timings.items():
-                result.timings[f"backfill_{k}"] = v
+    if plan is not None and not req.sort and offset == 0 and 0 < result.total < req.size:
+        close = await _backfill(state, pid, schema, req, plan, explicit, aggs, result)
 
     semantic = plan.semantic_text if plan is not None else q
     quality = "good"
     if plan is not None and semantic:
-        if result.lexical_hits == 0:
-            top = result.vector_top if result.vector_top is not None else 0.0
-            quality = "weak" if top >= s.match_floor else "none"
-        elif relaxations:
+        quality = match_quality(schema, plan, result, s.match_floor)
+        if quality == "good" and relaxations:
             quality = "weak"
     if quality == "none":
         result = _Result(hits=[], total=0, aggs=None, lexical_hits=0, vector_top=result.vector_top,
                          timings=result.timings)
+        close = []
 
     understood = build_understood(req.query, plan, schema, _symbol(schema, cached_dictionary(pid)), quality,
                                   relaxations, semantic)
@@ -343,6 +331,7 @@ async def search(state: State, pid: str, project: dict[str, Any], schema: Schema
                            "total": round((time.perf_counter() - t0) * 1000, 2)},
             "lexical_hits": result.lexical_hits,
             "vector_top_score": result.vector_top,
+            "focus_category": result.focus,
         }
     resp = SearchResponse(query=req.query, total=result.total, page=req.page, size=req.size, hits=result.hits,
                           facets=Q.read_facets(schema, req.facets, result.aggs), understood=understood, debug=debug,
@@ -350,6 +339,131 @@ async def search(state: State, pid: str, project: dict[str, Any], schema: Schema
     if ckey:
         await state.redis.set(ckey, resp.model_dump_json(), ex=ttl)
     return resp
+
+
+def _category_path(schema: Schema) -> tuple[Any, str] | tuple[None, None]:
+    cats = schema.by_role(Role.category)
+    return (cats[0], f"zz_path.{cats[0].key}") if cats else (None, None)
+
+
+def focus_category(lex_hits: list[dict[str, Any]], path: str, plan: QueryPlan | None) -> str | None:
+    """Deepest category prefix holding >= 60% of the top lexical matches' score (never a bare root level).
+
+    Score-weighted so a weak fuzzy match can't outvote a strong exact one. Falls back to a single category
+    the rules matched in the query when there are no lexical matches."""
+    top = [h for h in lex_hits[:10] if (h.get("fields") or {}).get(path)]
+    if top:
+        counts: dict[str, float] = {}
+        total = sum(h.get("_score") or 1.0 for h in top)
+        for h in top:
+            for p in h["fields"][path]:
+                counts[p] = counts.get(p, 0.0) + (h.get("_score") or 1.0)
+        ok = [p for p, c in counts.items() if c >= 0.6 * total and " > " in p]
+        if ok:
+            return max(ok, key=lambda p: (p.count(" > "), counts[p]))
+        return None
+    if plan is not None:
+        cats = [b.value for b in plan.boosts if b.origin == "category" and isinstance(b.value, str)]
+        if len(set(cats)) == 1 and " > " in cats[0]:
+            return cats[0]
+    return None
+
+
+_WORD = __import__("re").compile(r"[a-z0-9]+")
+
+
+def _coverage(keywords: list[str], hits: list[Hit], schema: Schema) -> float:
+    """Best fraction of query keywords found in one of the top results' text (titles, categories, values)."""
+    from zerch.understand.dictionary import levenshtein
+    from zerch.understand.lexicon import fold, singular
+
+    words = [singular(w) for w in keywords if w.isalpha() and len(w) > 1]
+    if not words:
+        return 1.0
+    text_fields = [f.name for f in schema.fields if f.searchable]
+    best = 0.0
+    for h in hits[:3]:
+        doc_words = set()
+        for name in text_fields:
+            v = h.document.get(name)
+            for x in v if isinstance(v, list) else [v]:
+                if x is not None:
+                    doc_words.update(singular(t) for t in _WORD.findall(fold(str(x))))
+        hit = 0
+        for w in words:
+            if w in doc_words or (len(w) >= 5 and any(abs(len(d) - len(w)) <= 1 and levenshtein(w, d, 1) <= 1
+                                                      for d in doc_words)):
+                hit += 1
+        best = max(best, hit / len(words))
+    return best
+
+
+def match_quality(schema: Schema, plan: QueryPlan, result: _Result, floor: float) -> str:
+    """good | weak | none from planner signals, lexical overlap and the vector score.
+
+    - catalog evidence: the rules recognised a value or category of this catalog in the query, or the
+      LLM's category agrees with where the results are
+    - lexical overlap: how many query words the top results actually contain
+    """
+    evidence = any(f.origin in ("facet", "quantity") for f in plan.filters) or any(
+        b.origin in ("facet", "category") for b in plan.boosts)
+    if not evidence and result.focus:
+        evidence = any(b.origin == "llm" and isinstance(b.value, str) and
+                       (result.focus == b.value or result.focus.startswith(b.value + " > ") or
+                        b.value.startswith(result.focus)) for b in plan.boosts)
+    if result.lexical_hits == 0:
+        top = result.vector_top if result.vector_top is not None else 0.0
+        return "weak" if evidence or top >= floor else "none"
+    cov = _coverage(plan.keywords, result.hits, schema)
+    if cov < 0.6:
+        return "weak" if evidence or cov >= 0.34 else "none" if (result.vector_top or 0) < floor else "weak"
+    if plan.unparsed_tokens and not evidence and plan.source == "rules":
+        return "weak"  # words the catalog has never seen and nothing else to anchor them
+    return "good"
+
+
+async def _backfill(state: State, pid: str, schema: Schema, req: SearchRequest, plan: QueryPlan,
+                    explicit: list[dict[str, Any]], aggs: dict[str, Any], result: _Result) -> list[str]:
+    """Fill a short first page, never outside the query's category.
+
+    1. inferred attribute filters ("red", "silk") left few matches: same query without them
+    2. a hard price cap left few matches: same category, cheapest items just over budget
+    Exact matches stay first; the added ids are returned as close matches."""
+    need = req.size - len(result.hits)
+    seen = {h.id for h in result.hits}
+    added: list[Hit] = []
+    cat_spec, cat_path = _category_path(schema)
+    focus_filter = ([{"terms": {f"{cat_path}.norm": [Q._norm_path(result.focus)]}}]
+                    if result.focus and cat_path else [])
+    soft = [f for f in plan.filters if not f.strict]
+    if soft and need > 0:
+        loose = plan.model_copy(update={"filters": [f for f in plan.filters if f.strict]})
+        wide = await _retrieve(state, pid, schema, req, loose, explicit + focus_filter, aggs, None, 0)
+        for h in wide.hits:
+            if h.id not in seen and len(added) < need:
+                added.append(h)
+                seen.add(h.id)
+        for k, v in wide.timings.items():
+            result.timings[f"backfill_{k}"] = v
+    price = next((f for f in plan.filters if f.origin == "price" and isinstance(f.value, dict)), None)
+    cap = price.value.get("lte", price.value.get("lt")) if price else None
+    if cap is not None and focus_filter and len(added) < need and len(result.hits) < 3:
+        spec = schema.get(price.field)
+        others = [Q.plan_filter_clause(schema, f) for f in plan.filters if f is not price and f.strict]
+        body = {"query": {"bool": {"filter": [*explicit, *focus_filter, *[c for c in others if c],
+                                              {"range": {f"f.{spec.key}": {"gt": cap}}}]}},
+                "size": need - len(added), "_source": _SRC, "sort": [{f"f.{spec.key}": {"order": "asc"}}]}
+        t = time.perf_counter()
+        r = await state.os.search(index=alias_name(state.settings.index_prefix, pid), body=body)
+        result.timings["backfill_budget"] = round((time.perf_counter() - t) * 1000, 2)
+        names = Q.key_to_name(schema)
+        for h in r["hits"]["hits"]:
+            if h["_id"] not in seen:
+                added.append(_hit(h, 0.0, names))
+                seen.add(h["_id"])
+    if added:
+        result.hits = result.hits + added
+    return [h.id for h in added]
 
 
 async def _retrieve(state: State, pid: str, schema: Schema, req: SearchRequest, plan: QueryPlan | None,
@@ -414,7 +528,9 @@ async def _retrieve(state: State, pid: str, schema: Schema, req: SearchRequest, 
 
     # Pass 1: rank both retrievers over the window (ids + the few doc values re-ranking needs).
     rr = _rerank_spec(schema, plan, soft)
-    extra: dict[str, Any] = {"docvalue_fields": rr.fields} if rr.fields else {}
+    _, cat_path = _category_path(schema)
+    dv = sorted(set(rr.fields) | ({cat_path} if cat_path else set()))
+    extra: dict[str, Any] = {"docvalue_fields": dv} if dv else {}
     lex_body = {"query": {"bool": {"filter": filters, "must": [lexical]}}, "size": window, "_source": False,
                 "track_total_hits": False, **extra}
     t = time.perf_counter()
@@ -422,7 +538,17 @@ async def _retrieve(state: State, pid: str, schema: Schema, req: SearchRequest, 
     timings["retrieve"] = round((time.perf_counter() - t) * 1000, 2)
     knn_hits = knn_r["hits"]["hits"]
     vec_hits = Q.accept_vector_hits(knn_hits, s.knn_min_score, s.knn_relative_cutoff)
-    fused = rrf([lex_r["hits"]["hits"], vec_hits], s.rrf_k)
+    lex_hits = lex_r["hits"]["hits"]
+    focus = focus_category(lex_hits, cat_path, plan) if cat_path and plan is not None else None
+    if focus:
+        # Vector neighbours from other categories are filler, not results ("saree under 1000" -> no tea).
+        # Weak lexical matches from other categories (e.g. a description that mentions the word) go too.
+        top_score = max((h.get("_score") or 0.0) for h in lex_hits) if lex_hits else 0.0
+        lex_hits = [h for h in lex_hits if focus in (h.get("fields") or {}).get(cat_path, [])
+                    or (h.get("_score") or 0.0) >= 0.5 * top_score]
+        lex_ids = {h["_id"] for h in lex_hits}
+        vec_hits = [h for h in vec_hits if h["_id"] in lex_ids or focus in (h.get("fields") or {}).get(cat_path, [])]
+    fused = rrf([lex_hits, vec_hits], s.rrf_k)
     fused = _apply_rerank(fused, rr, 1.0 / (s.rrf_k + 1))
     page = fused[offset : offset + req.size]
     page_ids = [d for d, _, _ in page]
@@ -439,6 +565,6 @@ async def _retrieve(state: State, pid: str, schema: Schema, req: SearchRequest, 
     by_id = {h["_id"]: h for h in docs_r["hits"]["hits"]}
     return _Result(hits=[_hit(by_id[d], sc, names) for d, sc, _ in page if d in by_id],
                    total=uni_r["hits"]["total"]["value"], aggs=uni_r.get("aggregations"),
-                   lexical_hits=len(lex_r["hits"]["hits"]),
-                   vector_top=knn_hits[0]["_score"] if knn_hits else None, timings=timings)
+                   lexical_hits=len(lex_hits), vector_top=knn_hits[0]["_score"] if knn_hits else None,
+                   timings=timings, focus=focus)
 

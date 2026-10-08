@@ -38,10 +38,15 @@ async def test_hinglish_price_and_colour(loaded, catalog):
     labels = [c["label"] for c in res["understood"]["chips"]]
     assert "Under ₹1,000" in labels and "Black" in labels
     assert res["hits"]
-    for h in res["hits"]:
+    close = set(res["understood"]["close_matches"])
+    exact = [h for h in res["hits"] if h["id"] not in close]
+    for h in exact:
         assert h["document"]["price"] <= 1000
         assert h["document"]["color"] == "Black"
     assert "Running Shoes" in res["hits"][0]["document"]["title"]
+    for h in res["hits"]:
+        if h["id"] in close:  # backfill stays in the matched category, just over budget
+            assert h["document"]["category"].startswith("Footwear")
 
 
 async def test_bare_number_is_not_a_price(loaded):
@@ -89,6 +94,17 @@ async def test_backfill_close_matches(loaded, catalog):
     assert set(ids[: len(exact)]) == {d["id"] for d in exact}  # exact matches first
     assert close and close == ids[len(exact):]  # then close matches (that still match the query) follow
     assert all("Phone Cover" in h["document"]["title"] for h in res["hits"])
+
+
+async def test_budget_backfill_stays_in_category(loaded, catalog):
+    res = await loaded.search(query="kolhapuri chappal under 300", size=10)
+    close = set(res["understood"]["close_matches"])
+    exact = [h for h in res["hits"] if h["id"] not in close]
+    assert all(h["document"]["price"] <= 300 for h in exact)
+    assert close, "two chappals under 300: the page should be filled with chappals just over budget"
+    over = [h["document"]["price"] for h in res["hits"] if h["id"] in close]
+    assert over == sorted(over) and all(p > 300 for p in over)
+    assert all("Kolhapuri" in h["document"]["title"] for h in res["hits"])
 
 
 async def test_match_quality_none_returns_nothing(state, loaded):

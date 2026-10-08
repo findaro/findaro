@@ -1,6 +1,6 @@
 """M3 chat eval: scripted multi-turn conversations against /v1/chat. Writes the M3 section of eval/report.md.
 
-    uv run python eval/run_chat.py --search-key zk_search_... [--judge-model gpt-5.5]
+    uv run python eval/run_chat.py --search-key zk_search_... [--judge --judge-model gpt-4.1-mini]
 
 Per turn: turn type, required/forbidden plan filters (from the `understood` chips), nDCG@10 against the turn's
 predicate, whether a clarifier appeared, groundedness of the answer text (LLM judge: every factual claim must
@@ -126,14 +126,16 @@ def main() -> None:
     ap.add_argument("--base-url", default="http://localhost:8000")
     ap.add_argument("--search-key", required=True)
     ap.add_argument("--judge-provider", default="openai")
-    ap.add_argument("--judge-model", default="gpt-5.5")
+    ap.add_argument("--judge-model", default="gpt-4.1-mini")
     ap.add_argument("--chat-model", default="see docker-compose.yml / ZERCH_CHAT_MODEL")
-    ap.add_argument("--no-judge", action="store_true")
+    ap.add_argument("--judge", action="store_true",
+                    help="LLM groundedness judge (paid API calls, ~68 per run). Off by default: the numeric check "
+                         "runs for free, and answers are written to eval/results for manual review.")
     args = ap.parse_args()
 
     from zerch.llm import get_llm
 
-    judge_llm = None if args.no_judge else get_llm(args.judge_provider, args.judge_model)
+    judge_llm = get_llm(args.judge_provider, args.judge_model) if args.judge else None
     docs = [json.loads(line) for line in (ROOT / "data" / "demo_catalog.jsonl").read_text().splitlines() if line]
     by_id = {d["id"]: d for d in docs}
     convs = [json.loads(line) for line in (EVAL / "conversations.jsonl").read_text().splitlines() if line.strip()]

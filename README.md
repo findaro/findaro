@@ -4,7 +4,7 @@ Open-source AI search as a service. Push your catalog as JSON or CSV and call on
 You get hybrid retrieval (BM25 + multilingual vectors), typo tolerance, Hinglish-friendly matching, filters,
 facets and highlighting. You don't need to define a schema: zerch infers field roles from your data.
 
-Status: **M2 (query understanding)** on top of the M1 core. Chat search (M3) and a JS SDK (M4) come next; see
+Status: **M3 (chat search)** on top of M1 (core) and M2 (query understanding). A JS SDK (M4) comes next; see
 `CLAUDE.md`.
 License: Apache-2.0.
 
@@ -165,6 +165,78 @@ the query states.
 planner outcome (`not_needed`, `called`, `timeout`, `cache`, `error`), and the retrieval signals behind
 `match_quality`.
 
+### Chat (`POST /v1/chat`)
+
+This is conversational search: refine the results over several turns, ask about the products on screen, and
+pick from clarifying chips. Use the search key. The response is a stream of
+[Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events).
+
+```bash
+curl -N -X POST localhost:8000/v1/chat -H "authorization: Bearer $SEARCH" -H 'content-type: application/json' \
+  -d '{"message": "saree under 1000"}'
+```
+
+```text
+event: session
+data: {"session_id": "chs_7B0uhvAOuBNcn2-8", "turn": 1}
+
+event: plan
+data: {"understood": {...same shape as /v1/search...}, "delta": {"turn_type": "new", "added": ["Under ₹1,000", "Sarees"], "removed": []}}
+
+event: results
+data: {"items": [{"id": "AP-00437", "score": 0.057, "document": {...}}, ...], "total": 10, "facets": {...}, "match_quality": "good", "close_matches": [...]}
+
+event: clarify
+data: {"question": "Only 1 match under ₹1,000. Want to see options slightly over budget?", "reason": "budget", "field": "price",
+       "chips": [{"label": "Show slightly over budget", "count": null, "plan_patch": {"price": {"lte": 1300.0}}}, ...]}
+
+event: text
+data: {"delta": "Only one saree is under ₹1,000: "}
+...
+event: done
+data: {"timings": {"plan": 2.1, "search": 21.4, "results": 21.9, "first_token": 730.0, "total": 1150.2}, "turn_type": "new"}
+```
+
+To continue the conversation, send the `session_id` back with the next message: `{"session_id": "chs_...",
+"message": "sasta wala"}`. To pick a chip, send its `plan_patch` as `apply`, along with its label as the
+message: `{"session_id": "...", "message": "Show slightly over budget", "apply": {"price": {"lte": 1300}}}`.
+Sessions live in Redis for 30 minutes.
+
+| Event | When | Payload |
+|---|---|---|
+| `session` | first | `session_id`, `turn` |
+| `plan` | always | `understood` (chips, relaxations, match quality); `delta`: turn type plus chips added or removed versus the previous turn |
+| `results` | as soon as the search returns, before any text | `items`, `total`, `facets`, `match_quality`, `close_matches` (`unchanged: true` for questions and chit-chat) |
+| `clarify` | optional, at most one per turn | `question`; `chips` built from the result set's own facet counts; `plan_patch` for each chip |
+| `text` | streamed | answer deltas: 1–3 sentences, product ids cited as `[ID]`, same language as the user (Hinglish in, Hinglish out) |
+| `done` | last | `timings` (ms since the request), `turn_type` |
+
+**How turns are handled.** Rules classify most turns; the LLM is only used when the rules can't tell.
+- **New search:** runs the M2 planner on the message.
+- **Refinement:** changes the current plan. Examples: "cheaper" / "aur sasta" lowers the price ceiling and
+  sorts cheapest first; "under 500" / "500 ke andar" sets the price range; "only black" / "sirf cotton" adds a
+  filter; "not plastic" / "black nahi" excludes; "bigger" / "chhota" moves along a size attribute such as
+  "5 L" or "1 kg".
+- **Question about shown products** ("is the second one lace-up?", "sabse sasta kaunsa?"): answered only from
+  those products' fields. If the field isn't there, the answer says it doesn't know.
+- **Chit-chat:** one line that steers back to searching.
+
+**Clarifying questions** are asked at most once per turn, and only:
+- when a price cap leaves fewer than 3 exact matches (chip: "Show slightly over budget");
+- when a new search matches weakly;
+- when the results span several product categories;
+- for a bare, broad query whose results spread across one attribute.
+
+They are never asked right after the user answered one, or when the user says "just show" / "bas dikha do".
+
+**Answers** are grounded: the model sees only the products on screen. Comparisons such as cheapest or highest
+rated are computed in code, not by the model. Without a chat LLM configured, answers fall back to plain
+templates.
+
+**Model:** `ZERCH_CHAT_PROVIDER` / `ZERCH_CHAT_MODEL` choose it. The default is OpenAI `gpt-4.1-mini` when
+`OPENAI_API_KEY` is set, otherwise Claude Haiku 4.5 when `ZERCH_ANTHROPIC_API_KEY` is set. `scripts/chat_cli.py`
+is a terminal client for trying conversations.
+
 ### Schema roles
 
 On first ingest, zerch infers one role per field from the field names and value statistics. Fields that first
@@ -235,6 +307,8 @@ Run a single worker in M1. Jobs for a project run in order.
 - `uv run python eval/run.py --setup` imports the catalog into a new project, then writes `eval/report.md` with
   nDCG@10, recall@20, the zero-result rate and latency. That report is the **M1 baseline** that M2 must beat.
 - `uv run python scripts/bench.py` runs the 10k-document latency benchmark and writes `eval/latency_10k.md`.
+- `uv run python eval/run_chat.py --search-key ...` runs the M3 chat eval: 25 scripted conversations, with an
+  LLM judge for groundedness. It writes the M3 section of `eval/report.md`.
 - `eval/report.md` compares M2 with the M1 baseline per segment and lists the target checks. It also covers
   planner call and cache rates, latency per path, out-of-catalog queries and the human holdout
   (`eval/holdout.jsonl`, never tuned on; format in `eval/README.md`).

@@ -352,7 +352,11 @@ def main() -> None:
         L.append(f"| {r['id']} | {r['type']} | {r['query']} | {b_txt} | {r['ndcg10']:.2f} | {r['recall20']:.2f} | "
                  f"{chips.replace('|', '/')}{llm} | {r['quality']} | {r['top'][:55].replace('|', '/')} |")
     L.append("")
-    Path(args.report).write_text("\n".join(L))
+    # keep the M3 chat section (written by eval/run_chat.py) when regenerating
+    old = Path(args.report).read_text() if Path(args.report).exists() else ""
+    m3 = old[old.index("<!-- M3:BEGIN -->"): old.index("<!-- M3:END -->") + len("<!-- M3:END -->")] \
+        if "<!-- M3:BEGIN -->" in old and "<!-- M3:END -->" in old else ""
+    Path(args.report).write_text("\n".join(L) + ("\n" + m3 + "\n" if m3 else ""))
     RESULTS.mkdir(exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
     (RESULTS / f"{stamp}.json").write_text(json.dumps({"rows": rows, "negatives": neg, "holdout": hold_rows,

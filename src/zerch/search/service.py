@@ -195,6 +195,8 @@ def _value_label(v: Any) -> str:
 
 
 def _filter_label(f: PlanFilter, schema: Schema, symbol: str) -> str:
+    if f.op == "not":
+        return f"Not {_value_label(f.value)}"
     spec = schema.get(f.field)
     if spec is not None and spec.role == Role.price and f.op == "range":
         return describe_price(f, symbol)
@@ -249,7 +251,9 @@ class _Result:
 
 
 async def search(state: State, pid: str, project: dict[str, Any], schema: Schema | None, req: SearchRequest,
-                 use_cache: bool = True, use_plan_cache: bool = True) -> SearchResponse:
+                 use_cache: bool = True, use_plan_cache: bool = True,
+                 plan_override: QueryPlan | None = None) -> SearchResponse:
+    """Run a search. `plan_override` (chat turns) skips query understanding and executes that plan."""
     t0 = time.perf_counter()
     s = state.settings
     ttl = s.search_cache_ttl if use_cache else 0
@@ -278,7 +282,9 @@ async def search(state: State, pid: str, project: dict[str, Any], schema: Schema
     plan: QueryPlan | None = None
     info: dict[str, Any] = {}
     t_u = time.perf_counter()
-    if req.understand and q:
+    if plan_override is not None:
+        plan, info = plan_override.model_copy(deep=True), {"llm": "not_needed"}
+    elif req.understand and q:
         plan, info = await understand(state, pid, project, schema, q, use_plan_cache)
         # Explicit filters win; the words behind an overridden inferred filter leave the search text too
         # ("black kurta" + filters={color: White} searches for "kurta").
@@ -311,7 +317,7 @@ async def search(state: State, pid: str, project: dict[str, Any], schema: Schema
     semantic = plan.semantic_text if plan is not None else q
     quality = "good"
     if plan is not None and semantic:
-        quality = match_quality(schema, plan, result, s.match_floor)
+        quality = match_quality(schema, plan, result, s.match_floor, cached_dictionary(pid))
         if quality == "good" and relaxations:
             quality = "weak"
     if quality == "none":
@@ -372,16 +378,21 @@ def focus_category(lex_hits: list[dict[str, Any]], path: str, plan: QueryPlan | 
 _WORD = __import__("re").compile(r"[a-z0-9]+")
 
 
-def _coverage(keywords: list[str], hits: list[Hit], schema: Schema) -> float:
-    """Best fraction of query keywords found in one of the top results' text (titles, categories, values)."""
+def _coverage(keywords: list[str], hits: list[Hit], schema: Schema, expansions: list[str] | None = None,
+              missing: list[str] | None = None) -> float:
+    """Best fraction of query keywords found in one of the top results' text (titles, categories, values).
+
+    A keyword also counts as found when one of the plan's synonym expansions is. Words missing from the best
+    result are appended to `missing`."""
     from zerch.understand.dictionary import levenshtein
     from zerch.understand.lexicon import fold, singular
 
     words = [singular(w) for w in keywords if w.isalpha() and len(w) > 1]
     if not words:
         return 1.0
+    alts = {singular(w) for w in expansions or []}
     text_fields = [f.name for f in schema.fields if f.searchable]
-    best = 0.0
+    best, best_missing = 0.0, list(words)
     for h in hits[:3]:
         doc_words = set()
         for name in text_fields:
@@ -389,23 +400,32 @@ def _coverage(keywords: list[str], hits: list[Hit], schema: Schema) -> float:
             for x in v if isinstance(v, list) else [v]:
                 if x is not None:
                     doc_words.update(singular(t) for t in _WORD.findall(fold(str(x))))
-        hit = 0
+        hit, miss = 0, []
+        alt_hit = bool(alts & doc_words)
         for w in words:
             if w in doc_words or (len(w) >= 5 and any(abs(len(d) - len(w)) <= 1 and levenshtein(w, d, 1) <= 1
                                                       for d in doc_words)):
                 hit += 1
-        best = max(best, hit / len(words))
+            elif alt_hit:
+                hit += 1
+                alt_hit = False  # one synonym match covers one word
+            else:
+                miss.append(w)
+        if hit / len(words) > best:
+            best, best_missing = hit / len(words), miss
+    if missing is not None:
+        missing.extend(best_missing)
     return best
 
 
-def match_quality(schema: Schema, plan: QueryPlan, result: _Result, floor: float) -> str:
+def match_quality(schema: Schema, plan: QueryPlan, result: _Result, floor: float, dictionary: Any = None) -> str:
     """good | weak | none from planner signals, lexical overlap and the vector score.
 
     - catalog evidence: the rules recognised a value or category of this catalog in the query, or the
       LLM's category agrees with where the results are
     - lexical overlap: how many query words the top results actually contain
     """
-    evidence = any(f.origin in ("facet", "quantity") for f in plan.filters) or any(
+    evidence = any(f.origin in ("facet", "quantity", "chat") for f in plan.filters) or any(
         b.origin in ("facet", "category") for b in plan.boosts)
     if not evidence and result.focus:
         evidence = any(b.origin == "llm" and isinstance(b.value, str) and
@@ -414,8 +434,14 @@ def match_quality(schema: Schema, plan: QueryPlan, result: _Result, floor: float
     if result.lexical_hits == 0:
         top = result.vector_top if result.vector_top is not None else 0.0
         return "weak" if evidence or top >= floor else "none"
-    cov = _coverage(plan.keywords, result.hits, schema)
+    missing: list[str] = []
+    cov = _coverage(plan.keywords, result.hits, schema, plan.expansions, missing)
     if cov < 0.6:
+        # the results don't contain some query words; that's fine only if the catalog knows those words
+        # (the query is just phrased differently) and the rules recognised something concrete in it
+        known = dictionary is not None and all(dictionary.in_vocab(w) for w in missing)
+        if evidence and known and cov >= 0.34:
+            return "good"
         return "weak" if evidence or cov >= 0.34 else "none" if (result.vector_top or 0) < floor else "weak"
     if plan.unparsed_tokens and not evidence and plan.source == "rules":
         return "weak"  # words the catalog has never seen and nothing else to anchor them

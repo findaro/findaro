@@ -126,6 +126,8 @@ def plan_filter_clause(schema: Schema, f: Any) -> dict[str, Any] | None:
         path = f"f.{spec.key}"
         vals = f.value if isinstance(f.value, list) else [f.value]
         clause = {"terms": {f"{path}.norm": [str(v).lower() for v in vals]}}
+    if f.op == "not":
+        return {"bool": {"must_not": [clause]}}
     if f.strict:
         return clause
     return {"bool": {"should": [clause, {"bool": {"must_not": [{"exists": {"field": path}}]}}],

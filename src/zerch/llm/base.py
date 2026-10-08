@@ -43,7 +43,8 @@ def parse_json(text: str) -> Any:
     raise LLMError(f"could not parse JSON from LLM output: {text[:200]!r}")
 
 
-def get_llm(provider: str | None = None, model: str | None = None) -> LLM:
+def get_llm(provider: str | None = None, model: str | None = None,
+            reasoning_effort: str | None = None) -> LLM:
     from zerch.config import get_settings
 
     settings = get_settings()
@@ -63,5 +64,6 @@ def get_llm(provider: str | None = None, model: str | None = None) -> LLM:
 
         if not settings.openai_api_key:
             raise LLMError("OPENAI_API_KEY is not set")
-        return OpenAILLM(api_key=settings.openai_api_key, model=model or settings.openai_model)
+        return OpenAILLM(api_key=settings.openai_api_key, model=model or settings.openai_model,
+                         reasoning_effort=reasoning_effort)
     raise LLMError(f"unknown LLM provider {provider!r}")

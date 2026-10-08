@@ -13,8 +13,8 @@ and later a chat-style refinement mode. Open source (Apache-2.0) from day one; h
 | | Milestone | Status |
 |---|---|---|
 | M1 | Core: projects/keys, ingestion, schema inference, hybrid search, demo catalog, eval baseline | done |
-| **M2** | AI query understanding (filters/price/attributes inferred from the query, Hinglish normalisation) | done (holdout pending) |
-| M3 | Chat search (conversational refinement over the M2 query representation) | not started |
+| M2 | AI query understanding (filters/price/attributes inferred from the query, Hinglish normalisation) | done |
+| **M3** | Chat search (conversational refinement over the M2 query representation) | done (conversations need review) |
 | M4 | JS SDK / drop-in widget (uses the browser-safe `search_key`) | not started |
 
 Do not build M2–M4 early, but do not make choices that block them:
@@ -25,6 +25,9 @@ Do not build M2–M4 early, but do not make choices that block them:
 - The LLM is used in search only by the M2 planner, only when the rules plan can't account for some words, and
   behind a timeout with the rules plan as fallback. Never put an LLM call on the path unconditionally.
 - `search_key` is browser-safe (read-only, search only, CORS allowed) so M4 can ship without changes.
+- `/v1/chat` SSE event sequence (session, plan, results, clarify?, text*, done) and chip `plan_patch` shape are
+  the contract M4's widget builds on. Change additively.
+- Chat answers must stay grounded: the model only sees products on screen; comparisons are computed in code.
 - `eval/` is the gate: M2 must beat `eval/report.md` (the M1 baseline).
 
 ## Stack
@@ -34,7 +37,8 @@ Do not build M2–M4 early, but do not make choices that block them:
 - Postgres: projects, keys (hashed), schemas, ingest jobs + payloads
 - Redis: search/embedding cache, per-key rate limit
 - Embeddings: local `intfloat/multilingual-e5-small` behind `zerch.embeddings.Embedder`
-- LLM: `zerch.llm` provider interface (Ollama + Anthropic). Used by scripts only in M1.
+- LLM: `zerch.llm` provider interface (Ollama, Anthropic, OpenAI). M2 planner (conditional), M3 chat answers
+  (OpenAI gpt-4.1-mini by default, approved in place of Haiku), eval judge/holdout generation (gpt-5.5).
 - docker compose for everything: `docker compose up -d --build`
 
 ## Rules
@@ -54,7 +58,8 @@ Do not build M2–M4 early, but do not make choices that block them:
 
 ## Layout
 
-- `src/zerch/` — service (`api/`, `index/`, `search/`, `ingest/`, `schema/`, `embeddings/`, `llm/`, `understand/`)
+- `src/zerch/` — service (`api/`, `index/`, `search/`, `ingest/`, `schema/`, `embeddings/`, `llm/`, `understand/`,
+  `chat/`)
 - `packs/locales/` — language packs for query understanding (en, hi-en)
 - `src/zerch/worker.py` — ingest job worker (separate compose service)
 - `scripts/` — demo catalog generator, benchmark

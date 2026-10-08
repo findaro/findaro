@@ -4,10 +4,12 @@ from typing import Any
 
 import orjson
 from fastapi import APIRouter, Depends, File, Query, Request, Response, UploadFile
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, ValidationError
 
 from zerch import store
 from zerch.auth import Principal, authenticate, cached_project, check_bootstrap, forget_project, require_admin
+from zerch.chat.service import ChatRequest, chat_turn
 from zerch.errors import ApiError
 from zerch.index import ops
 from zerch.ingest.parse import PayloadError, detect_format
@@ -220,3 +222,19 @@ async def search(body: SearchRequest, request: Request, p: Principal = Depends(p
     bypass_plans = request.headers.get("x-zerch-plan-cache", "").lower() == "bypass"
     return await run_search(state, p.project_id, project, schema, body, use_cache=not no_cache,
                             use_plan_cache=not bypass_plans)
+
+
+# --- chat -----------------------------------------------------------------------------------------
+
+@router.post("/v1/chat", response_class=StreamingResponse)
+async def chat(body: ChatRequest, p: Principal = Depends(principal),
+               state: State = Depends(get_state)) -> StreamingResponse:
+    """Conversational search over Server-Sent Events: session, plan, results, clarify?, text*, done."""
+    if not body.message.strip() and body.apply is None:
+        raise ApiError(400, "empty_message", "send a message (or a clarifier chip's plan_patch as `apply`)")
+    project = await cached_project(state, p.project_id)
+    if project is None:
+        raise ApiError(404, "not_found", "project not found")
+    schema = store.load_schema(project["schema"])
+    return StreamingResponse(chat_turn(state, p.project_id, project, schema, body), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

@@ -155,6 +155,8 @@ class RulesParser:
         def bare(i: int) -> int | None:  # "rs 500 shoes", "2k earbuds" -> upper bound
             if not price_num(i) or not (currency_near(i) or texts[i].endswith("k")):
                 return None
+            if not currency_near(i) and self.d is not None and value_key(texts[i], lex) in self.d.values:
+                return None  # "4K" is a catalog value (resolution), not 4,000
             start = i
             while start > 0 and _match(texts, start - 1, lex.currency, 1):
                 start -= 1
@@ -218,8 +220,9 @@ class RulesParser:
                 if orig in words:  # expansion: keep the word, add synonyms
                     toks[i].translated = [orig]
                     toks[i].expansions = [w for w in words if w != orig]
-                elif d is not None and d.in_vocab(orig):
-                    i += 1
+                elif d is not None and d.in_vocab(orig) and not any(
+                        value_key(w, lex) in d.values or value_key(w, lex) in d.segments for w in words):
+                    i += 1  # the catalog uses this word itself and the translation isn't a catalog value
                     continue
                 else:
                     # main word: the translation the catalog actually uses (a facet value, else a corpus word)
@@ -291,6 +294,7 @@ class RulesParser:
                             elif val not in (prev.value if isinstance(prev.value, list) else [prev.value]):
                                 vals = prev.value if isinstance(prev.value, list) else [prev.value]
                                 prev.value, prev.op = [*vals, val], "in"
+                                prev.text = f"{prev.text} {words}"
                         else:
                             boosts.append(PlanBoost(field=fld, value=val, weight=1.0, origin="facet", text=words))
                     else:

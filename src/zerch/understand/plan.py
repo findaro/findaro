@@ -11,7 +11,7 @@ from zerch.schema.model import NUMBER_ROLES, Role, Schema
 
 class PlanFilter(BaseModel):
     field: str
-    op: Literal["eq", "in", "range"]
+    op: Literal["eq", "in", "range", "not"]  # not = exclude these values
     value: Any  # str | list[str] | {"gte"/"lte"/...: number}
     # strict=False: documents that lack the field still pass; documents with a different value don't.
     # Used for inferred attribute filters, so "wireless earbuds" never drops earbuds that have no
@@ -103,9 +103,10 @@ def validate_plan(plan: QueryPlan, schema: Schema, dictionary: Any | None) -> Qu
             continue
         if f.op == "range" and (spec.role not in NUMBER_ROLES or not isinstance(v, dict)):
             continue
-        if f.op in ("eq", "in") and isinstance(v, dict):
+        if f.op in ("eq", "in", "not") and isinstance(v, dict):
             continue
-        filters.append(f.model_copy(update={"value": v, "op": "in" if isinstance(v, list) else f.op}))
+        op = f.op if f.op in ("range", "not") else ("in" if isinstance(v, list) else f.op)
+        filters.append(f.model_copy(update={"value": v, "op": op}))
     boosts = []
     for b in plan.boosts:
         v = canon(b.field, b.value)

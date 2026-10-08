@@ -77,3 +77,41 @@ async def _state_with(state, **over):
     from dataclasses import replace
 
     return replace(state, settings=make_settings(**over))
+
+
+async def test_allowed_origins(client, project):
+    from zerch.auth import origin_allowed
+
+    body = {"query": "x"}
+    pid = project.id
+    s = lambda origin: {**project.searcher, "origin": origin}  # noqa: E731
+    # no origin (server-to-server) and localhost (dev) always work
+    assert (await client.post("/v1/search", json=body, headers=project.searcher)).status_code == 200
+    assert (await client.post("/v1/search", json=body, headers=s("http://localhost:5173"))).status_code == 200
+    r = await client.post("/v1/search", json=body, headers=s("https://shop.example.com"))
+    assert r.status_code == 403 and r.json()["error"]["code"] == "origin_not_allowed"
+    # admin keys never from a browser
+    r = await client.post("/v1/search", json=body, headers={**project.admin, "origin": "http://localhost:3000"})
+    assert r.status_code == 403 and r.json()["error"]["code"] == "admin_key_in_browser"
+
+    r = await client.put(f"/v1/projects/{pid}/settings", json={"allowed_origins": ["https://shop.example.com/",
+                                                                                   "https://*.example.org"]},
+                         headers=project.admin)
+    assert r.status_code == 200 and r.json() == {"allowed_origins": ["https://shop.example.com",
+                                                                     "https://*.example.org"]}
+    assert (await client.post("/v1/search", json=body, headers=s("https://shop.example.com"))).status_code == 200
+    assert (await client.post("/v1/search", json=body, headers=s("https://m.example.org"))).status_code == 200
+    assert (await client.post("/v1/search", json=body, headers=s("https://evil.com"))).status_code == 403
+    r = await client.put(f"/v1/projects/{pid}/settings", json={"allowed_origins": ["shop.example.com"]},
+                         headers=project.admin)
+    assert r.status_code == 400
+    r = await client.put(f"/v1/projects/{pid}/settings", json={"allowed_origins": []}, headers=project.searcher)
+    assert r.status_code == 403
+    # preflight is answered for any origin so a blocked site gets a readable 403, not an opaque CORS error
+    r = await client.options("/v1/search", headers={"origin": "https://evil.com",
+                                                    "access-control-request-method": "POST"})
+    assert r.status_code == 200
+
+    assert origin_allowed("https://a.b.example.org", ["https://*.example.org"], False)
+    assert not origin_allowed("https://example.org.evil.com", ["https://*.example.org"], False)
+    assert not origin_allowed("http://localhost:3000", [], False)

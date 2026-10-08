@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hmac
+import re
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -49,8 +50,42 @@ async def authenticate(request: Request, state: State) -> Principal:
     if row is None:
         raise ApiError(401, "unauthorized", "invalid API key")
     p = Principal(key_id=row["id"], project_id=row["project_id"], kind=row["kind"])
+    await check_origin(request, state, p)
     await rate_limit(state, p)
     return p
+
+
+_LOCAL = re.compile(r"^https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$")
+
+
+def origin_allowed(origin: str, allowed: list[str], allow_localhost: bool) -> bool:
+    origin = origin.rstrip("/").lower()
+    if allow_localhost and _LOCAL.match(origin):
+        return True
+    for pattern in allowed:
+        pattern = pattern.rstrip("/").lower()
+        if pattern == "*" or pattern == origin:
+            return True
+        if "*." in pattern:  # https://*.example.com matches one or more subdomain levels
+            scheme, _, host = pattern.partition("://*.")
+            if origin.startswith(scheme + "://") and origin.endswith("." + host):
+                return True
+    return False
+
+
+async def check_origin(request: Request, state: State, p: Principal) -> None:
+    """Browsers always send Origin on cross-site requests; server-to-server calls usually don't."""
+    origin = request.headers.get("origin")
+    if not origin:
+        return
+    if p.kind == "admin":
+        raise ApiError(403, "admin_key_in_browser", "admin keys must stay server-side; use the search key")
+    project = await cached_project(state, p.project_id)
+    allowed = (project or {}).get("allowed_origins") or []
+    if not origin_allowed(origin, allowed, state.settings.allow_localhost_origins):
+        raise ApiError(403, "origin_not_allowed",
+                       f"origin {origin} is not in this project's allowed_origins "
+                       "(PUT /v1/projects/{id}/settings with the admin key)")
 
 
 async def rate_limit(state: State, p: Principal) -> None:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import orjson
@@ -38,6 +39,10 @@ class CreateProject(BaseModel):
     name: str = Field("default", max_length=200)
 
 
+class ProjectSettings(BaseModel):
+    allowed_origins: list[str] | None = Field(None, max_length=100)
+
+
 class DeleteIds(BaseModel):
     ids: list[str] = Field(min_length=1, max_length=100_000)
 
@@ -69,8 +74,27 @@ async def get_project(project_id: str, _: Principal = Depends(admin_for),
         "project_id": p["id"], "name": p["name"], "created_at": p["created_at"].isoformat(),
         "document_count": await ops.count(state.os, ops.alias_name(state.settings.index_prefix, project_id)),
         "has_schema": p["schema"] is not None, "schema_version": p["schema_version"],
-        "reindex_pending": p["pending_schema"] is not None,
+        "reindex_pending": p["pending_schema"] is not None, "allowed_origins": p["allowed_origins"] or [],
     }
+
+
+@router.put("/v1/projects/{project_id}/settings")
+async def put_settings(project_id: str, body: ProjectSettings, _: Principal = Depends(admin_for),
+                       state: State = Depends(get_state)) -> dict[str, Any]:
+    """Project settings. `allowed_origins`: browser origins that may use the search key
+    (exact like "https://shop.example.com", or "https://*.example.com"; localhost always works in dev)."""
+    values: dict[str, Any] = {}
+    if body.allowed_origins is not None:
+        bad = [o for o in body.allowed_origins if o != "*" and not re.match(r"^https?://[^/\s]+$", o.rstrip("/"))]
+        if bad:
+            raise ApiError(400, "invalid_origin", f"origins look like https://shop.example.com; got {bad}")
+        values["allowed_origins"] = [o.rstrip("/") for o in body.allowed_origins]
+    if values:
+        async with state.db.begin() as conn:
+            await store.update_project(conn, project_id, **values)
+        forget_project(project_id)
+    p = await store.get_project(state.db, project_id)
+    return {"allowed_origins": p["allowed_origins"] or []}
 
 
 @router.delete("/v1/projects/{project_id}", status_code=204)

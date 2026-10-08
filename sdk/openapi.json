@@ -1,0 +1,1693 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "zerch",
+  "description": "AI search as a service. Search keys are browser-safe; admin keys are not.",
+  "version": "0.1.0"
+ },
+ "paths": {
+  "/v1/projects": {
+   "post": {
+    "summary": "Create Project",
+    "operationId": "create_project_v1_projects_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "anyOf": [
+         {
+          "$ref": "#/components/schemas/CreateProject"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Body"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Create Project V1 Projects Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v1/projects/{project_id}": {
+   "get": {
+    "summary": "Get Project",
+    "operationId": "get_project_v1_projects__project_id__get",
+    "parameters": [
+     {
+      "name": "project_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Project Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Get Project V1 Projects  Project Id  Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "summary": "Delete Project",
+    "operationId": "delete_project_v1_projects__project_id__delete",
+    "parameters": [
+     {
+      "name": "project_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Project Id"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v1/projects/{project_id}/settings": {
+   "put": {
+    "summary": "Put Settings",
+    "description": "Project settings. `allowed_origins`: browser origins that may use the search key\n(exact like \"https://shop.example.com\", or \"https://*.example.com\"; localhost always works in dev).",
+    "operationId": "put_settings_v1_projects__project_id__settings_put",
+    "parameters": [
+     {
+      "name": "project_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Project Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProjectSettings"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Put Settings V1 Projects  Project Id  Settings Put"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v1/projects/{project_id}/documents": {
+   "post": {
+    "summary": "Upsert Documents",
+    "operationId": "upsert_documents_v1_projects__project_id__documents_post",
+    "parameters": [
+     {
+      "name": "project_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Project Id"
+      }
+     }
+    ],
+    "responses": {
+     "202": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Upsert Documents V1 Projects  Project Id  Documents Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v1/projects/{project_id}/import": {
+   "post": {
+    "summary": "Import File",
+    "operationId": "import_file_v1_projects__project_id__import_post",
+    "parameters": [
+     {
+      "name": "project_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Project Id"
+      }
+     },
+     {
+      "name": "format",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "csv | jsonl | json",
+       "title": "Format"
+      },
+      "description": "csv | jsonl | json"
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_import_file_v1_projects__project_id__import_post"
+       }
+      }
+     }
+    },
+    "responses": {
+     "202": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Import File V1 Projects  Project Id  Import Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v1/projects/{project_id}/documents/{doc_id}": {
+   "delete": {
+    "summary": "Delete Document",
+    "operationId": "delete_document_v1_projects__project_id__documents__doc_id__delete",
+    "parameters": [
+     {
+      "name": "project_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Project Id"
+      }
+     },
+     {
+      "name": "doc_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Doc Id"
+      }
+     }
+    ],
+    "responses": {
+     "202": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Delete Document V1 Projects  Project Id  Documents  Doc Id  Delete"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "summary": "Get Document",
+    "operationId": "get_document_v1_projects__project_id__documents__doc_id__get",
+    "parameters": [
+     {
+      "name": "project_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Project Id"
+      }
+     },
+     {
+      "name": "doc_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Doc Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Get Document V1 Projects  Project Id  Documents  Doc Id  Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v1/projects/{project_id}/documents/delete": {
+   "post": {
+    "summary": "Delete Documents",
+    "operationId": "delete_documents_v1_projects__project_id__documents_delete_post",
+    "parameters": [
+     {
+      "name": "project_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Project Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DeleteIds"
+       }
+      }
+     }
+    },
+    "responses": {
+     "202": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Delete Documents V1 Projects  Project Id  Documents Delete Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v1/projects/{project_id}/jobs/{job_id}": {
+   "get": {
+    "summary": "Get Job",
+    "operationId": "get_job_v1_projects__project_id__jobs__job_id__get",
+    "parameters": [
+     {
+      "name": "project_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Project Id"
+      }
+     },
+     {
+      "name": "job_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Job Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Get Job V1 Projects  Project Id  Jobs  Job Id  Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v1/projects/{project_id}/jobs": {
+   "get": {
+    "summary": "List Jobs",
+    "operationId": "list_jobs_v1_projects__project_id__jobs_get",
+    "parameters": [
+     {
+      "name": "project_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Project Id"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 100,
+       "minimum": 1,
+       "default": 20,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response List Jobs V1 Projects  Project Id  Jobs Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v1/projects/{project_id}/schema": {
+   "get": {
+    "summary": "Get Schema",
+    "operationId": "get_schema_v1_projects__project_id__schema_get",
+    "parameters": [
+     {
+      "name": "project_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Project Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Get Schema V1 Projects  Project Id  Schema Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "summary": "Put Schema",
+    "operationId": "put_schema_v1_projects__project_id__schema_put",
+    "parameters": [
+     {
+      "name": "project_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Project Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Put Schema V1 Projects  Project Id  Schema Put"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v1/search": {
+   "post": {
+    "summary": "Search",
+    "operationId": "search_v1_search_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SearchRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SearchResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v1/chat": {
+   "post": {
+    "summary": "Chat",
+    "description": "Conversational search over Server-Sent Events: session, plan, results, clarify?, text*, done.",
+    "operationId": "chat_v1_chat_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ChatRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Server-Sent Events, in order: session, plan, results, clarify (optional), text (repeated), done. Each `data:` line is JSON matching the event's schema.",
+      "content": {
+       "text/event-stream": {
+        "schema": {
+         "type": "string"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "x-sse-events": {
+     "session": {
+      "$ref": "#/components/schemas/SessionEvent"
+     },
+     "plan": {
+      "$ref": "#/components/schemas/PlanEvent"
+     },
+     "results": {
+      "$ref": "#/components/schemas/ResultsEvent"
+     },
+     "clarify": {
+      "$ref": "#/components/schemas/ClarifyEvent"
+     },
+     "text": {
+      "$ref": "#/components/schemas/TextEvent"
+     },
+     "done": {
+      "$ref": "#/components/schemas/DoneEvent"
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "Body_import_file_v1_projects__project_id__import_post": {
+    "properties": {
+     "file": {
+      "type": "string",
+      "contentMediaType": "application/octet-stream",
+      "title": "File"
+     }
+    },
+    "type": "object",
+    "required": [
+     "file"
+    ],
+    "title": "Body_import_file_v1_projects__project_id__import_post"
+   },
+   "ChatRequest": {
+    "properties": {
+     "session_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 64
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Session Id"
+     },
+     "message": {
+      "type": "string",
+      "maxLength": 500,
+      "title": "Message",
+      "default": ""
+     },
+     "apply": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Apply"
+     },
+     "patch": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/PatchOp"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Patch"
+     },
+     "size": {
+      "type": "integer",
+      "maximum": 50.0,
+      "minimum": 1.0,
+      "title": "Size",
+      "default": 10
+     }
+    },
+    "type": "object",
+    "title": "ChatRequest"
+   },
+   "Chip": {
+    "properties": {
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "filter",
+       "boost",
+       "sort"
+      ],
+      "title": "Kind"
+     },
+     "field": {
+      "type": "string",
+      "title": "Field"
+     },
+     "op": {
+      "type": "string",
+      "title": "Op"
+     },
+     "value": {
+      "title": "Value"
+     },
+     "source": {
+      "type": "string",
+      "title": "Source"
+     },
+     "confidence": {
+      "type": "number",
+      "title": "Confidence"
+     },
+     "remove": {
+      "items": {
+       "$ref": "#/components/schemas/PatchOp"
+      },
+      "type": "array",
+      "title": "Remove"
+     }
+    },
+    "type": "object",
+    "required": [
+     "label",
+     "kind",
+     "field",
+     "op",
+     "source",
+     "confidence"
+    ],
+    "title": "Chip",
+    "description": "One thing the engine understood, ready to show (and let the user remove) in a search UI."
+   },
+   "CreateProject": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 200,
+      "title": "Name",
+      "default": "default"
+     }
+    },
+    "type": "object",
+    "title": "CreateProject"
+   },
+   "DeleteIds": {
+    "properties": {
+     "ids": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "maxItems": 100000,
+      "minItems": 1,
+      "title": "Ids"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ids"
+    ],
+    "title": "DeleteIds"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "Hit": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "score": {
+      "type": "number",
+      "title": "Score"
+     },
+     "document": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Document"
+     },
+     "highlights": {
+      "anyOf": [
+       {
+        "additionalProperties": {
+         "type": "string"
+        },
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Highlights"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "score",
+     "document"
+    ],
+    "title": "Hit"
+   },
+   "PatchOp": {
+    "properties": {
+     "op": {
+      "type": "string",
+      "enum": [
+       "add_filter",
+       "remove_filter",
+       "exclude",
+       "set_price_range",
+       "set_sort"
+      ],
+      "title": "Op"
+     },
+     "field": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Field"
+     },
+     "value": {
+      "title": "Value"
+     },
+     "gte": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Gte"
+     },
+     "lte": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Lte"
+     },
+     "order": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "asc",
+         "desc"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Order"
+     }
+    },
+    "type": "object",
+    "required": [
+     "op"
+    ],
+    "title": "PatchOp",
+    "description": "One edit. Examples:\n{\"op\": \"add_filter\", \"field\": \"color\", \"value\": \"Black\"}\n{\"op\": \"remove_filter\", \"field\": \"color\"}            (or with \"value\" to remove one value)\n{\"op\": \"exclude\", \"field\": \"material\", \"value\": \"Plastic\"}\n{\"op\": \"set_price_range\", \"lte\": 1500}               (no bounds = remove the price range)\n{\"op\": \"set_sort\", \"field\": \"price\", \"order\": \"asc\"} (no field = back to relevance)"
+   },
+   "Pill": {
+    "properties": {
+     "field": {
+      "type": "string",
+      "title": "Field"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "values": {
+      "items": {
+       "$ref": "#/components/schemas/PillValue"
+      },
+      "type": "array",
+      "title": "Values"
+     }
+    },
+    "type": "object",
+    "required": [
+     "field",
+     "label",
+     "values"
+    ],
+    "title": "Pill",
+    "description": "Passive refinement choices for one attribute of the current results (a UI renders them as pills)."
+   },
+   "PillValue": {
+    "properties": {
+     "value": {
+      "title": "Value"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "count": {
+      "type": "integer",
+      "title": "Count"
+     },
+     "patch": {
+      "items": {
+       "$ref": "#/components/schemas/PatchOp"
+      },
+      "type": "array",
+      "title": "Patch"
+     }
+    },
+    "type": "object",
+    "required": [
+     "value",
+     "label",
+     "count",
+     "patch"
+    ],
+    "title": "PillValue"
+   },
+   "ProjectSettings": {
+    "properties": {
+     "allowed_origins": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array",
+        "maxItems": 100
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Allowed Origins"
+     }
+    },
+    "type": "object",
+    "title": "ProjectSettings"
+   },
+   "RelaxedFilter": {
+    "properties": {
+     "field": {
+      "type": "string",
+      "title": "Field"
+     },
+     "value": {
+      "title": "Value"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "reason": {
+      "type": "string",
+      "title": "Reason"
+     }
+    },
+    "type": "object",
+    "required": [
+     "field",
+     "value",
+     "label",
+     "reason"
+    ],
+    "title": "RelaxedFilter"
+   },
+   "SearchRequest": {
+    "properties": {
+     "query": {
+      "type": "string",
+      "maxLength": 512,
+      "title": "Query",
+      "default": ""
+     },
+     "filters": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Filters"
+     },
+     "sort": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/SortItem"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sort"
+     },
+     "page": {
+      "type": "integer",
+      "minimum": 1.0,
+      "title": "Page",
+      "default": 1
+     },
+     "size": {
+      "type": "integer",
+      "maximum": 100.0,
+      "minimum": 1.0,
+      "title": "Size",
+      "default": 20
+     },
+     "facets": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Facets"
+     },
+     "facet_size": {
+      "type": "integer",
+      "maximum": 200.0,
+      "minimum": 1.0,
+      "title": "Facet Size",
+      "default": 20
+     },
+     "highlight": {
+      "type": "boolean",
+      "title": "Highlight",
+      "default": true
+     },
+     "understand": {
+      "type": "boolean",
+      "title": "Understand",
+      "default": true
+     },
+     "patch": {
+      "items": {
+       "$ref": "#/components/schemas/PatchOp"
+      },
+      "type": "array",
+      "title": "Patch"
+     },
+     "debug": {
+      "type": "boolean",
+      "title": "Debug",
+      "default": false
+     }
+    },
+    "type": "object",
+    "title": "SearchRequest",
+    "description": "POST /v1/search. M2 will add query understanding that compiles into these same filters/sort."
+   },
+   "SearchResponse": {
+    "properties": {
+     "query": {
+      "type": "string",
+      "title": "Query"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "size": {
+      "type": "integer",
+      "title": "Size"
+     },
+     "hits": {
+      "items": {
+       "$ref": "#/components/schemas/Hit"
+      },
+      "type": "array",
+      "title": "Hits"
+     },
+     "facets": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Facets"
+     },
+     "took_ms": {
+      "type": "number",
+      "title": "Took Ms"
+     },
+     "understood": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Understood"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "pills": {
+      "items": {
+       "$ref": "#/components/schemas/Pill"
+      },
+      "type": "array",
+      "title": "Pills"
+     },
+     "debug": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Debug"
+     },
+     "cached": {
+      "type": "boolean",
+      "title": "Cached",
+      "default": false
+     }
+    },
+    "type": "object",
+    "required": [
+     "query",
+     "total",
+     "page",
+     "size",
+     "hits",
+     "facets",
+     "took_ms"
+    ],
+    "title": "SearchResponse"
+   },
+   "SortItem": {
+    "properties": {
+     "field": {
+      "type": "string",
+      "title": "Field"
+     },
+     "order": {
+      "type": "string",
+      "enum": [
+       "asc",
+       "desc"
+      ],
+      "title": "Order",
+      "default": "asc"
+     }
+    },
+    "type": "object",
+    "required": [
+     "field"
+    ],
+    "title": "SortItem"
+   },
+   "Understood": {
+    "properties": {
+     "query": {
+      "type": "string",
+      "title": "Query"
+     },
+     "semantic_text": {
+      "type": "string",
+      "title": "Semantic Text"
+     },
+     "chips": {
+      "items": {
+       "$ref": "#/components/schemas/Chip"
+      },
+      "type": "array",
+      "title": "Chips"
+     },
+     "relaxations": {
+      "items": {
+       "$ref": "#/components/schemas/RelaxedFilter"
+      },
+      "type": "array",
+      "title": "Relaxations"
+     },
+     "match_quality": {
+      "type": "string",
+      "enum": [
+       "good",
+       "weak",
+       "none"
+      ],
+      "title": "Match Quality",
+      "default": "good"
+     },
+     "source": {
+      "type": "string",
+      "enum": [
+       "rules",
+       "llm",
+       "cache",
+       "off"
+      ],
+      "title": "Source",
+      "default": "off"
+     },
+     "close_matches": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Close Matches"
+     }
+    },
+    "type": "object",
+    "required": [
+     "query",
+     "semantic_text"
+    ],
+    "title": "Understood"
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "ctx": {
+      "type": "object",
+      "title": "Context"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   },
+   "ClarifyChipView": {
+    "properties": {
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "count": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Count"
+     },
+     "patch": {
+      "items": {
+       "$ref": "#/components/schemas/PatchOp"
+      },
+      "title": "Patch",
+      "type": "array"
+     },
+     "plan_patch": {
+      "additionalProperties": true,
+      "title": "Plan Patch",
+      "type": "object"
+     }
+    },
+    "required": [
+     "label",
+     "patch",
+     "plan_patch"
+    ],
+    "title": "ClarifyChipView",
+    "type": "object"
+   },
+   "ClarifyEvent": {
+    "properties": {
+     "question": {
+      "title": "Question",
+      "type": "string"
+     },
+     "reason": {
+      "enum": [
+       "budget",
+       "weak_match",
+       "entropy"
+      ],
+      "title": "Reason",
+      "type": "string"
+     },
+     "field": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Field"
+     },
+     "chips": {
+      "items": {
+       "$ref": "#/components/schemas/ClarifyChipView"
+      },
+      "title": "Chips",
+      "type": "array"
+     }
+    },
+    "required": [
+     "question",
+     "reason",
+     "chips"
+    ],
+    "title": "ClarifyEvent",
+    "type": "object"
+   },
+   "DoneEvent": {
+    "properties": {
+     "timings": {
+      "additionalProperties": {
+       "type": "number"
+      },
+      "title": "Timings",
+      "type": "object"
+     },
+     "turn_type": {
+      "enum": [
+       "new",
+       "refine",
+       "question",
+       "chitchat"
+      ],
+      "title": "Turn Type",
+      "type": "string"
+     },
+     "reason": {
+      "default": "",
+      "title": "Reason",
+      "type": "string"
+     },
+     "answer_source": {
+      "default": "template",
+      "enum": [
+       "model",
+       "fallback",
+       "error",
+       "template"
+      ],
+      "title": "Answer Source",
+      "type": "string"
+     }
+    },
+    "required": [
+     "timings",
+     "turn_type"
+    ],
+    "title": "DoneEvent",
+    "type": "object"
+   },
+   "PlanDeltaView": {
+    "properties": {
+     "turn_type": {
+      "enum": [
+       "new",
+       "refine",
+       "question",
+       "chitchat"
+      ],
+      "title": "Turn Type",
+      "type": "string"
+     },
+     "added": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Added",
+      "type": "array"
+     },
+     "removed": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Removed",
+      "type": "array"
+     },
+     "semantic_text": {
+      "anyOf": [
+       {
+        "additionalProperties": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ]
+        },
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Semantic Text"
+     }
+    },
+    "required": [
+     "turn_type"
+    ],
+    "title": "PlanDeltaView",
+    "type": "object"
+   },
+   "PlanEvent": {
+    "properties": {
+     "understood": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Understood"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "delta": {
+      "$ref": "#/components/schemas/PlanDeltaView"
+     }
+    },
+    "required": [
+     "understood",
+     "delta"
+    ],
+    "title": "PlanEvent",
+    "type": "object"
+   },
+   "ResultsEvent": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/Hit"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "total": {
+      "title": "Total",
+      "type": "integer"
+     },
+     "facets": {
+      "additionalProperties": true,
+      "title": "Facets",
+      "type": "object"
+     },
+     "pills": {
+      "items": {
+       "$ref": "#/components/schemas/Pill"
+      },
+      "title": "Pills",
+      "type": "array"
+     },
+     "match_quality": {
+      "anyOf": [
+       {
+        "enum": [
+         "good",
+         "weak",
+         "none"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Match Quality"
+     },
+     "close_matches": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Close Matches",
+      "type": "array"
+     },
+     "unchanged": {
+      "default": false,
+      "title": "Unchanged",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "items",
+     "total",
+     "match_quality"
+    ],
+    "title": "ResultsEvent",
+    "type": "object"
+   },
+   "SessionEvent": {
+    "properties": {
+     "session_id": {
+      "title": "Session Id",
+      "type": "string"
+     },
+     "turn": {
+      "title": "Turn",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "session_id",
+     "turn"
+    ],
+    "title": "SessionEvent",
+    "type": "object"
+   },
+   "TextEvent": {
+    "properties": {
+     "delta": {
+      "title": "Delta",
+      "type": "string"
+     }
+    },
+    "required": [
+     "delta"
+    ],
+    "title": "TextEvent",
+    "type": "object"
+   }
+  }
+ }
+}

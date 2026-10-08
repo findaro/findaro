@@ -32,6 +32,8 @@ projects = Table(
     Column("index_version", Integer, nullable=False, server_default="0"),
     # Bumped whenever searchable data changes; part of the search cache key.
     Column("data_version", Integer, nullable=False, server_default="0"),
+    # Browser origins allowed to use the search key, e.g. ["https://shop.example.com", "https://*.example.com"].
+    Column("allowed_origins", J, nullable=False, server_default="[]"),
 )
 
 api_keys = Table(
@@ -93,3 +95,6 @@ async def init_db(engine: AsyncEngine) -> None:
         # Serialise concurrent create_all calls from multiple uvicorn workers.
         await conn.exec_driver_sql("SELECT pg_advisory_xact_lock(4242)")
         await conn.run_sync(metadata.create_all)
+        # Columns added after a table first existed (create_all doesn't alter tables).
+        await conn.exec_driver_sql(
+            "ALTER TABLE projects ADD COLUMN IF NOT EXISTS allowed_origins JSONB NOT NULL DEFAULT '[]'::jsonb")

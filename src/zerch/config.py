@@ -73,7 +73,9 @@ class Settings(BaseSettings):
     # Rate limit (per key, fixed 1s window); 0 disables
     rate_limit_per_second: int = 50
 
-    cors_origins: str = "*"
+    cors_origins: str = "*"  # CORS preflight; per-project allowed_origins are enforced at auth
+    # With no allowed_origins set, browser requests from localhost/127.0.0.1 still work (local development).
+    allow_localhost_origins: bool = True
 
 
 @lru_cache

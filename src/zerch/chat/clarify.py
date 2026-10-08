@@ -20,7 +20,8 @@ MIN_COVERAGE = 0.7
 class ClarifyChip(BaseModel):
     label: str
     count: int | None = None
-    plan_patch: dict[str, Any]
+    plan_patch: dict[str, Any]  # M3 shape (PlanDelta), kept for compatibility
+    patch: list[dict[str, Any]] = Field(default_factory=list)  # M4 patch ops; send as `patch`
 
 
 class Clarify(BaseModel):
@@ -54,16 +55,13 @@ def _label(field: str) -> str:
     return field.replace("_", " ")
 
 
-MIN_RESULTS_ATTRIBUTE = 30
-
-
 def decide(plan: QueryPlan, resp: SearchResponse, schema: Schema, *, hinglish: bool, just_show: bool,
            answered_clarifier: bool, symbol: str, new_search: bool = True) -> Clarify | None:
-    """Ask at most one question, and only when it helps:
+    """Ask at most one question, and only for:
     - budget: a hard price cap leaves fewer than 3 exact matches (any turn)
     - weak/no match on a new search: offer the categories the results fall in, or dropping a constraint
-    - a new search whose results span several product categories: ask which one
-    - a bare, unconstrained new search with many results spread over one attribute: ask about it
+    - category ambiguity: a new search whose results span several product categories
+    Attribute choices (colour, size...) are not questions; they're passive facet pills on the results.
     """
     if just_show or answered_clarifier:
         return None
@@ -85,8 +83,9 @@ def decide(plan: QueryPlan, resp: SearchResponse, schema: Schema, *, hinglish: b
              else f"Only {n} match{'es' if n != 1 else ''} under {symbol}{int(cap):,}. "
                   "Want to see options slightly over budget?")
         return Clarify(question=q, reason="budget", field=price_field, chips=[
-            ClarifyChip(label="Show slightly over budget", plan_patch={"price": {"lte": new_cap}}),
-            ClarifyChip(label=f"Keep under {symbol}{int(cap):,}", plan_patch={})])
+            ClarifyChip(label="Show slightly over budget", plan_patch={"price": {"lte": new_cap}},
+                        patch=[{"op": "set_price_range", "lte": new_cap}]),
+            ClarifyChip(label=f"Keep under {symbol}{int(cap):,}", plan_patch={}, patch=[])])
 
     cat = next((f for f in schema.by_role(Role.category)), None)
     cat_facet = resp.facets.get(cat.name) if cat else None
@@ -101,13 +100,15 @@ def decide(plan: QueryPlan, resp: SearchResponse, schema: Schema, *, hinglish: b
             _, kids = _category_children(cat_facet.get("values", []), resp.total)
             for v in sorted(kids, key=lambda v: -v["count"])[:4]:
                 chips.append(ClarifyChip(label=v["value"].split(" > ")[-1], count=v["count"], plan_patch={
-                    "add_filters": [{"field": cat.name, "op": "eq", "value": v["value"]}]}))
+                    "add_filters": [{"field": cat.name, "op": "eq", "value": v["value"]}]},
+                    patch=[{"op": "add_filter", "field": cat.name, "value": v["value"]}]))
         if not chips:
             for f in plan.filters[:3]:
                 if f.op == "not":
                     continue
                 chips.append(ClarifyChip(label=f"Without {f.text or _label(f.field)}",
-                                         plan_patch={"remove_fields": [f.field]}))
+                                         plan_patch={"remove_fields": [f.field]},
+                                         patch=[{"op": "remove_filter", "field": f.field}]))
         if not chips:
             return None
         q = ("Exact match nahi mila. Inme se kuch chahiye?" if hinglish
@@ -117,7 +118,6 @@ def decide(plan: QueryPlan, resp: SearchResponse, schema: Schema, *, hinglish: b
     # 3. results spread over several values of a discriminating attribute the query didn't pick
     if resp.total < MIN_RESULTS:
         return None
-    constrained = {f.field for f in plan.filters} | {b.field for b in plan.boosts if b.origin != "category"}
     candidates: list[tuple[float, str, list[dict[str, Any]]]] = []
     named = [p for b in plan.boosts if cat is not None and b.field == cat.name and b.origin in ("category", "llm")
              for p in (b.value if isinstance(b.value, list) else [b.value])]
@@ -134,31 +134,14 @@ def decide(plan: QueryPlan, resp: SearchResponse, schema: Schema, *, hinglish: b
             e = _entropy(counts)
             if e >= MIN_ENTROPY:
                 candidates.append((e + 0.1, cat.name, kids))
-    bare_query = not plan.filters and len(plan.semantic_text.split()) <= 2 and resp.total >= MIN_RESULTS_ATTRIBUTE
-    for spec in schema.fields:
-        if candidates or not bare_query:
-            break  # a category question beats an attribute one; attributes only for bare, broad queries
-        if spec.role != Role.facet or spec.multi or spec.name in constrained:
-            continue
-        fv = resp.facets.get(spec.name)
-        if not fv or fv.get("type") != "terms":
-            continue
-        vals = [v for v in fv.get("values", []) if v["count"] > 0]
-        counts = [v["count"] for v in vals]
-        if not (3 <= len(vals) <= 10) or sum(counts) < MIN_COVERAGE * resp.total:
-            continue
-        if max(counts) > MAX_TOP_SHARE * sum(counts):
-            continue
-        e = _entropy(counts)
-        if e >= MIN_ENTROPY:
-            candidates.append((e * min(1.0, sum(counts) / resp.total), spec.name, vals))
     if not candidates:
         return None
     _, field, vals = max(candidates, key=lambda c: c[0])
     top = sorted(vals, key=lambda v: -v["count"])[:5]
     is_cat = cat is not None and field == cat.name
     chips = [ClarifyChip(label=(v["value"].split(" > ")[-1] if is_cat else str(v["value"])), count=v["count"],
-                         plan_patch={"add_filters": [{"field": field, "op": "eq", "value": v["value"]}]})
+                         plan_patch={"add_filters": [{"field": field, "op": "eq", "value": v["value"]}]},
+                         patch=[{"op": "add_filter", "field": field, "value": v["value"]}])
              for v in top]
     if is_cat:
         q = "Kaunsa type chahiye?" if hinglish else "Which kind are you looking for?"

@@ -301,3 +301,41 @@ async def test_chat_validation(loaded):
     assert r.status_code == 400
     r = await loaded.client.post("/v1/chat", json={"message": "x"})
     assert r.status_code == 401
+
+
+# --- negation scope (M4 fix: "slim fit, black nahi" must not negate slim fit) -------------------------
+
+@pytest.mark.parametrize("msg", ["copper, black nahi", "copper but not black", "copper aur black ke alawa",
+                                 "copper bina black", "not black, copper", "black ke siwa copper"])
+def test_negation_applies_to_nearest_value_only(msg):
+    plan = plan_for("water bottle")
+    d = refine(msg, plan, parse(msg), SCHEMA, LEX, DICT, BOTTLES)
+    new = apply_delta(plan, d, SCHEMA, DICT)
+    excluded = {(f.field, f.value) for f in new.filters if f.op == "not"}
+    assert excluded == {("color", "Black")}, msg
+    assert any(f.field == "material" and f.value == "Copper" and f.op in ("eq", "in") for f in new.filters), msg
+
+
+@pytest.mark.parametrize("msg", ["not black", "black nahi", "black ke alawa", "bina black", "without black",
+                                 "black nahin chahiye"])
+def test_negation_forms(msg):
+    plan = plan_for("water bottle")
+    d = refine(msg, plan, parse(msg), SCHEMA, LEX, DICT, BOTTLES)
+    assert [(f.field, f.value) for f in d.exclude] == [("color", "Black")], msg
+    assert not d.add_filters, msg
+
+
+async def test_chat_patch_turn_and_pills(loaded, chat_llm):
+    ev = await chat(loaded, "water bottle")
+    sid = first(ev, "session")["session_id"]
+    res = first(ev, "results")
+    assert res["pills"], "attribute choices are passive pills"
+    assert not any(e == "clarify" and d["field"] not in ("category", "price") for e, d in ev)
+    pill = res["pills"][0]["values"][0]
+    r = await loaded.client.post("/v1/chat", json={"session_id": sid, "patch": pill["patch"]},
+                                 headers=loaded.searcher)
+    assert r.status_code == 200
+    ev2 = [(b.split("\n")[0][7:], json.loads(b.split("\n")[1][6:])) for b in r.text.strip().split("\n\n")]
+    assert first(ev2, "done")["turn_type"] == "refine" and first(ev2, "done")["reason"] == "patch"
+    field = res["pills"][0]["field"]
+    assert all(i["document"][field] == pill["value"] for i in first(ev2, "results")["items"])

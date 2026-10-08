@@ -36,8 +36,14 @@ REFINE_START = {"only", "sirf", "just", "bas", "and", "aur", "but", "in", "with"
                 "below", "above", "over", "less", "more", "cheaper", "costlier", "koi", "kuch", "same", "also",
                 "ab", "phir", "chahiye", "wala", "wali", "wale", "me", "mein", "for", "ke", "liye", "bigger",
                 "smaller", "larger", "bada", "badi", "chhota", "chota", "chhoti", "choti", "thoda"}
-NEG_BEFORE = {"not", "no", "without", "except", "excluding", "bina", "na"}
-NEG_AFTER = {"nahi", "nahin", "nai", "mat", "nahi chahiye", "na"}
+NEG_BEFORE = {"not", "no", "without", "except", "excluding", "bina", "na", "non"}
+NEG_AFTER = {"nahi", "nahin", "nai", "mat", "nahi chahiye", "na", "alawa", "alava", "siwa", "siva"}
+# negators: before the value they negate ("not black", "bina leather") or after it ("black nahi",
+# "black ke alawa", "leather ke bina")
+NEG_PRE_PHRASES = [("not",), ("no",), ("without",), ("except",), ("excluding",), ("bina",), ("non",)]
+NEG_POST_PHRASES = [("ke", "alawa"), ("ke", "alava"), ("ke", "siwa"), ("ke", "siva"), ("ke", "bina"),
+                    ("chhod", "ke"), ("chhodkar",), ("nahi",), ("nahin",), ("nai",), ("mat",)]
+CLAUSE_SPLIT = re.compile(r"[,;]|\b(?:and|aur|but|par|lekin|magar|also)\b", re.I)
 ONLY = {"only", "sirf", "just", "bas", "keval", "sirph"}
 CHEAPER = [("aur", "sasta"), ("aur", "sasti"), ("aur", "saste"), ("thoda", "sasta"), ("kam", "price"),
            ("kam", "daam"), ("lower", "price"), ("less", "expensive"), ("cheaper",), ("cheap",), ("sasta",),
@@ -192,23 +198,54 @@ def _leftover_words(parsed: QueryPlan, d: Compiled | None) -> list[str]:
 
 # --- refinement ---------------------------------------------------------------------------------------
 
-def _negated_spans(toks: list[str]) -> list[list[str]]:
+def _value_spans(toks: list[str], lex: Lexicon, d: Compiled) -> list[tuple[int, int]]:
+    """Token spans that name a catalog value or category (longest match first)."""
+    from zerch.understand.dictionary import value_key
+
     spans, i = [], 0
     while i < len(toks):
-        if toks[i] in NEG_BEFORE and i + 1 < len(toks):
-            j = i + 1
-            while j < len(toks) and j - i <= 3 and toks[j] not in NEG_AFTER and toks[j] not in NEG_BEFORE:
-                j += 1
-            spans.append(toks[i + 1:j])
-            i = j
-            continue
-        if toks[i] in NEG_AFTER and i > 0:
-            k = i - 1
-            while k > 0 and i - k < 3 and toks[k - 1] not in NEG_BEFORE | NEG_AFTER | {"aur", "and", "but", "par"}:
-                k -= 1
-            spans.append(toks[k:i])
-        i += 1
-    return [s for s in spans if s]
+        for n in range(min(4, len(toks) - i), 0, -1):
+            key = value_key(" ".join(toks[i:i + n]), lex)
+            if key and (key in d.values or key in d.segments):
+                spans.append((i, i + n))
+                i += n
+                break
+        else:
+            i += 1
+    return spans
+
+
+def split_negations(message: str, lex: Lexicon, d: Compiled | None) -> tuple[list[str], str]:
+    """Returns (negated value phrases, the message without them or their negators).
+
+    A negator applies only to the nearest value in its own clause: "slim fit, black nahi" negates black only."""
+    if d is None:
+        return [], message
+    negated: list[str] = []
+    kept: list[str] = []
+    for clause in CLAUSE_SPLIT.split(message):
+        toks = tokenize(clause)
+        spans = _value_spans(toks, lex, d)
+        drop: set[int] = set()
+        for i in range(len(toks)):
+            for phrases, pre in ((NEG_POST_PHRASES, False), (NEG_PRE_PHRASES, True)):
+                n = next((len(p) for p in phrases if tuple(toks[i:i + len(p)]) == p), 0)
+                if not n or i in drop:
+                    continue
+                if pre:
+                    cands = [sp for sp in spans if sp[0] >= i + n]
+                    target = min(cands, default=None)
+                else:
+                    cands = [sp for sp in spans if sp[1] <= i]
+                    target = max(cands, key=lambda sp: sp[1], default=None)
+                if target is None:
+                    continue
+                drop.update(range(i, i + n))
+                drop.update(range(*target))
+                negated.append(" ".join(toks[target[0]:target[1]]))
+                break
+        kept.append(" ".join(t for j, t in enumerate(toks) if j not in drop))
+    return negated, " ".join(k for k in kept if k)
 
 
 def quantity_of(value: str, lex: Lexicon) -> tuple[float, str] | None:
@@ -225,20 +262,23 @@ def refine(message: str, plan: QueryPlan, parsed: QueryPlan, schema: Schema, lex
     delta = PlanDelta()
     price_field = primary_price_field(schema)
 
-    # negations: "not black", "black nahi", "bina leather"
+    # negations: "not black", "black nahi", "black ke alawa", "bina leather" (scoped to the nearest value)
+    negated_phrases, positive = split_negations(message, lex, d)
     negated_words: set[str] = set()
-    for span in _negated_spans(toks):
-        sub = RulesParser(schema, lex, d).parse(" ".join(span))
-        sub = validate_plan(sub, schema, d)
+    for phrase in negated_phrases:
+        sub = validate_plan(RulesParser(schema, lex, d).parse(phrase), schema, d)
         for f in sub.filters:
             if f.op in ("eq", "in"):
                 delta.exclude.append(PlanFilter(field=f.field, op="not", value=f.value, origin="chat",
                                                 text=f.text, confidence=0.95))
         for b in sub.boosts:
-            if b.origin in ("facet", "category", "fuzzy"):
+            if b.origin in ("facet", "category", "fuzzy") and not isinstance(b.value, list):
                 delta.exclude.append(PlanFilter(field=b.field, op="not", value=b.value, origin="chat",
                                                 text=b.text, confidence=0.9))
-        negated_words.update(span)
+        negated_words.update(phrase.split())
+    if negated_phrases:
+        parsed = validate_plan(RulesParser(schema, lex, d).parse(positive), schema, d) if positive.strip() \
+            else QueryPlan(query="", semantic_text="")
 
     # explicit values in the message: "only black", "cotton wala", "men ke liye" -> strict filters
     for f in parsed.filters:

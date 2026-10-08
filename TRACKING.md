@@ -7,6 +7,7 @@ Notion MCP was not authorised in the session, so tracking lives here.
 | AI search SaaS: M1 | Claude Code: ai-search M1 | Done (eval queries reviewed 2026-10-07) |
 | AI search SaaS: M2 | Claude Code: ai-search M2 | Done (holdout: nDCG@10 0.818, written by gpt-5.5) |
 | AI search SaaS: M3 | Claude Code: ai-search M3 | Waiting on Rohit (review eval/conversations.jsonl) |
+| AI search SaaS: M4 | Claude Code: ai-search M4 | In progress — chat re-measure blocked on OpenAI credits |
 
 ## M1 status (2026-10-08)
 

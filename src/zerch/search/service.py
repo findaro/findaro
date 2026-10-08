@@ -20,7 +20,16 @@ from zerch.errors import ApiError
 from zerch.index.ops import alias_name
 from zerch.schema.model import Role, Schema
 from zerch.search import query as Q
-from zerch.search.models import Chip, Hit, RelaxedFilter, SearchRequest, SearchResponse, Understood
+from zerch.search.models import (
+    Chip,
+    Hit,
+    Pill,
+    PillValue,
+    RelaxedFilter,
+    SearchRequest,
+    SearchResponse,
+    Understood,
+)
 from zerch.state import State
 from zerch.understand.plan import PlanFilter, QueryPlan, Relaxation
 from zerch.understand.rules import describe_price
@@ -213,22 +222,27 @@ def build_understood(query: str, plan: QueryPlan | None, schema: Schema, symbol:
                      relaxations: list[Relaxation], semantic: str) -> Understood:
     if plan is None:
         return Understood(query=query, semantic_text=semantic, match_quality=quality, source="off")
+    from zerch.understand.patch import remove_ops
+
     chips: list[Chip] = []
     for f in plan.filters:
         chips.append(Chip(label=_filter_label(f, schema, symbol), kind="filter", field=f.field, op=f.op,
-                          value=f.value, source=f.text or "", confidence=round(f.confidence, 2)))
+                          value=f.value, source=f.text or "", confidence=round(f.confidence, 2),
+                          remove=remove_ops("filter", f.field, f.op, f.value, schema)))
     seen = set()
     for b in plan.boosts:
         label = _value_label(b.value)
         if (b.field, label) in seen or b.origin == "fuzzy":
             continue
         seen.add((b.field, label))
-        chips.append(Chip(label=label, kind="boost", field=b.field, op="in" if isinstance(b.value, list) else "eq",
-                          value=b.value, source=b.text or "", confidence=0.6))
+        op = "in" if isinstance(b.value, list) else "eq"
+        chips.append(Chip(label=label, kind="boost", field=b.field, op=op, value=b.value, source=b.text or "",
+                          confidence=0.6, remove=remove_ops("boost", b.field, op, b.value, schema)))
     if plan.sort is not None:
         chips.append(Chip(label="Lower prices first" if plan.sort.order == "asc" else "Higher prices first",
                           kind="sort", field=plan.sort.field, op=plan.sort.order, value=None,
-                          source=plan.sort.text or "", confidence=0.8))
+                          source=plan.sort.text or "", confidence=0.8,
+                          remove=remove_ops("sort", plan.sort.field, plan.sort.order, None, schema)))
     relaxed = [RelaxedFilter(field=r.field, value=r.value, reason=r.reason,
                              label=_filter_label(PlanFilter(field=r.field, op="range" if isinstance(r.value, dict)
                                                             else "eq", value=r.value), schema, symbol))
@@ -295,6 +309,17 @@ async def search(state: State, pid: str, project: dict[str, Any], schema: Schema
             kept = [w for w in plan.semantic_text.split() if w not in drop]
             plan.semantic_text = " ".join(kept)
             plan.keywords = kept
+    if req.patch:
+        from zerch.understand.patch import apply_patch
+        from zerch.understand.service import get_dictionary
+
+        if plan is None:
+            plan = QueryPlan(query=q, semantic_text=q, keywords=q.split())
+        plan = apply_patch(plan, req.patch, schema, await get_dictionary(state, pid, project, schema))
+    if hard_sort is None and plan is not None and plan.sort is not None and plan.sort.mode == "hard":
+        from zerch.search.models import SortItem
+
+        hard_sort = Q.sort_clause(schema, [SortItem(field=plan.sort.field, order=plan.sort.order)])
     understand_ms = round((time.perf_counter() - t_u) * 1000, 2)
 
     relaxations: list[Relaxation] = []
@@ -339,12 +364,45 @@ async def search(state: State, pid: str, project: dict[str, Any], schema: Schema
             "vector_top_score": result.vector_top,
             "focus_category": result.focus,
         }
+    facets = Q.read_facets(schema, req.facets, result.aggs)
     resp = SearchResponse(query=req.query, total=result.total, page=req.page, size=req.size, hits=result.hits,
-                          facets=Q.read_facets(schema, req.facets, result.aggs), understood=understood, debug=debug,
+                          facets=facets, understood=understood, debug=debug,
+                          pills=facet_pills(schema, plan, facets, result.total),
                           took_ms=round((time.perf_counter() - t0) * 1000, 2))
     if ckey:
         await state.redis.set(ckey, resp.model_dump_json(), ex=ttl)
     return resp
+
+
+def facet_pills(schema: Schema, plan: QueryPlan | None, facets: dict[str, Any], total: int,
+                max_fields: int = 3, max_values: int = 5) -> list[Pill]:
+    """Attribute choices that split the current results usefully (spread out, covering most results)."""
+    import math
+
+    from zerch.understand.patch import PatchOp
+
+    taken = {f.field for f in plan.filters} if plan is not None else set()
+    scored = []
+    for spec in schema.fields:
+        if spec.role != Role.facet or spec.multi or spec.name in taken:
+            continue
+        fv = facets.get(spec.name)
+        if not fv or fv.get("type") != "terms":
+            continue
+        vals = [v for v in fv.get("values", []) if v["count"] > 0]
+        counts = [v["count"] for v in vals]
+        if len(vals) < 2 or not total or sum(counts) < 0.5 * total:
+            continue
+        n = sum(counts)
+        h = -sum(c / n * math.log(c / n) for c in counts) / math.log(len(counts))
+        scored.append((h * min(1.0, n / total), spec, vals))
+    pills = []
+    for _, spec, vals in sorted(scored, key=lambda x: -x[0])[:max_fields]:
+        pills.append(Pill(field=spec.name, label=spec.name.replace("_", " ").capitalize(), values=[
+            PillValue(value=v["value"], label=str(v["value"]), count=v["count"],
+                      patch=[PatchOp(op="add_filter", field=spec.name, value=v["value"])])
+            for v in sorted(vals, key=lambda v: -v["count"])[:max_values]]))
+    return pills
 
 
 def _category_path(schema: Schema) -> tuple[Any, str] | tuple[None, None]:

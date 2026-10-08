@@ -65,6 +65,24 @@ def sse_events(client: httpx.Client, body: dict) -> tuple[list[tuple[str, dict, 
     return out, (time.perf_counter() - t0) * 1000
 
 
+def numeric_errors(text: str, docs: dict[str, dict]) -> list[str]:
+    """Numbers in the answer that don't appear in any shown product's fields (ids excluded)."""
+    body = re.sub(r"\[[^\]]*\]", " ", text)
+    known: set[str] = set()
+    for d in docs.values():
+        for v in d.values():
+            for x in v if isinstance(v, list) else [v]:
+                for n in re.findall(r"\d+(?:\.\d+)?", str(x).replace(",", "")):
+                    known.add(n.rstrip("0").rstrip(".") if "." in n else n)
+    bad = []
+    for n in re.findall(r"\d[\d,]*(?:\.\d+)?", body):
+        k = n.replace(",", "")
+        k = k.rstrip("0").rstrip(".") if "." in k else k
+        if k not in known:
+            bad.append(n)
+    return bad
+
+
 def chip_matches(chip: dict, want: dict) -> bool:
     if chip.get("field") != want["field"]:
         return False
@@ -168,10 +186,17 @@ def main() -> None:
                 "results_ms": results_ms, "first_ms": first_ms, "total_ms": total_ms,
                 "server": done.get("timings", {}), "reason": done.get("reason"),
                 "quality": (ev.get("results") or {}).get("match_quality"),
+                "numeric_errors": numeric_errors(text, shown) if done.get("turn_type") != "chitchat" else [],
+                "dropped": (done.get("timings") or {}).get("dropped_sentences", 0),
+                "answer_source": done.get("answer_source"),
             })
             print(f"{conv['id']}.{i + 1} {turn['user'][:40]:40} {done.get('turn_type'):9} "
                   f"plan={'ok' if ok_req and ok_forbid else 'FAIL'} ndcg={'' if nd is None else f'{nd:.2f}'} "
                   f"clar={clar is not None} res={results_ms:.0f}ms first={first_ms or 0:.0f}ms", file=sys.stderr)
+
+    errors = [r for r in rows if r["answer_source"] == "error"]
+    if errors:
+        sys.exit(f"{len(errors)} turns failed to get a model answer (LLM error, e.g. quota); not scoring this run")
 
     # groundedness
     judged = []
@@ -225,6 +250,11 @@ def write_section(rows, judged, neg, args) -> None:
     precision = tp / asked_labeled if asked_labeled else float("nan")
     recall = tp / should if should else float("nan")
     asked_any = sum(1 for r in rows if r["clarify_got"])
+    num_err = [(r, n) for r in rows for n in r["numeric_errors"]]
+    ids_re = re.compile(r"\b[A-Z]{2}-\d{5}\b")
+    judge_num = [r for r in judged if any(re.search(r"\d", ids_re.sub("", str(c.get("claim", ""))))
+                                          for c in r["judge"]["unsupported"])]
+    model_first = [r["server"].get("first_model_token") for r in rows if r["server"].get("first_model_token")]
     grounded = [r for r in judged if not r["judge"]["unsupported"]]
     rules_rows = [r for r in rows if r["type_got"] in ("new", "refine") and r["reason"] != "llm"]
     res_p95 = pct([r["results_ms"] for r in rules_rows if r["results_ms"] is not None], .95)
@@ -245,6 +275,8 @@ def write_section(rows, judged, neg, args) -> None:
          f"(n={len(rules_rows)}) | {v(res_p95 <= TARGET_RESULTS_P95)} |",
          f"| first text token p95 ≤ {TARGET_FIRST_TOKEN_P95:.0f} ms | {first_p95:.0f} ms (p50 {pct(first, .5):.0f}, "
          f"n={len(first)}) | {v(first_p95 <= TARGET_FIRST_TOKEN_P95)} |",
+         f"| first *model* token p95, server-side (before sentence checking) | "
+         f"{pct(model_first, .95) or 0:.0f} ms (p50 {pct(model_first, .5) or 0:.0f}) | |",
          f"| turn type accuracy | {type_ok:.0%} ({sum(r['type_ok'] for r in rows)}/{len(rows)}) | |",
          f"| plan-assertion pass rate | {plan_ok:.0%} ({sum(r['plan_ok'] for r in plan_rows)}/{len(plan_rows)}) | |",
          f"| per-turn nDCG@10 | {statistics.mean(nds):.3f} (n={len(nds)}; turn 1 "
@@ -252,8 +284,16 @@ def write_section(rows, judged, neg, args) -> None:
          f" turn 3+ {statistics.mean(by_turn.get(3, [math.nan])):.3f}) | |",
          f"| clarifier precision / recall (labelled turns) | {precision:.0%} / {recall:.0%} "
          f"(asked on {asked_any}/{len(rows)} turns; {fp_all} where the label says don't ask) | |",
-         f"| groundedness (judge: every claim supported) | {len(grounded) / len(judged):.0%} "
-         f"({len(grounded)}/{len(judged)} answers) | |" if judged else "| groundedness | not judged | |",
+         f"| groundedness ≥ 97% (judge: every claim supported) | {len(grounded) / len(judged):.0%} "
+         f"({len(grounded)}/{len(judged)} answers) | {v(len(grounded) / len(judged) >= 0.97)} |"
+         if judged else "| groundedness | not judged | |",
+         f"| numeric errors = 0 (numbers not in any shown product's fields) | {len(num_err)} "
+         f"(judge-flagged numeric claims: {len(judge_num)}; sentences dropped by the slot checker: "
+         f"{sum(r['dropped'] for r in rows)}) | {v(not num_err and not judge_num)} |",
+         f"| answers written by the model (rest: fallback when every sentence was dropped, or templates) | "
+         f"{sum(r['answer_source'] == 'model' for r in rows)}/{len(rows)} (fallback "
+         f"{sum(r['answer_source'] == 'fallback' for r in rows)}) | |",
+         f"| clarifier rate | {asked_any}/{len(rows)} turns ({asked_any / len(rows):.0%}) | |",
          "| out-of-catalog chats: match_quality | " + ", ".join(f"{k} {c}" for k, c in sorted(neg_q.items(),
                                                                                          key=lambda kv: str(kv[0])))
          + f" (none/weak {neg_q.get('none', 0) + neg_q.get('weak', 0)}/{len(neg)}; target ≥ 15) | "

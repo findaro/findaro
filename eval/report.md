@@ -206,6 +206,12 @@ Cold-embedding and 10k-document numbers: `eval/latency_10k.md` (`scripts/bench.p
 
 ## M3 — chat search
 
+> **M4 Part A re-measurement pending.** The M3 numbers below predate the M4 fixes (server-filled number
+> slots, negation scope, question-only-for-category/budget/weak clarifiers). The re-run on 2026-10-08 was
+> aborted: OpenAI returned `insufficient_quota` ("no credits remaining") on 67 of 71 turns. One partial
+> run before the quota ran out showed c24 fixed (nDCG 0.33 → 1.00) and clarifiers on 8/71 turns (was 19), but
+> its groundedness figures are not reported because most answers were fallbacks.
+
 - Date: 2026-10-08 08:08 UTC · 25 conversations, 71 turns (`eval/conversations.jsonl`, marked needs_review)
 - Chat model: openai:gpt-4.1-mini (default; gpt-5.4-mini grounds better but misses first-token p95) · judge: openai:gpt-5.5 (OpenAI in place of claude-haiku-4-5, approved by Rohit 2026-10-08)
 

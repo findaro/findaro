@@ -230,8 +230,8 @@ async def search(body: SearchRequest, request: Request, p: Principal = Depends(p
 async def chat(body: ChatRequest, p: Principal = Depends(principal),
                state: State = Depends(get_state)) -> StreamingResponse:
     """Conversational search over Server-Sent Events: session, plan, results, clarify?, text*, done."""
-    if not body.message.strip() and body.apply is None:
-        raise ApiError(400, "empty_message", "send a message (or a clarifier chip's plan_patch as `apply`)")
+    if not body.message.strip() and body.apply is None and not body.patch:
+        raise ApiError(400, "empty_message", "send a message, or a `patch` (e.g. from a chip)")
     project = await cached_project(state, p.project_id)
     if project is None:
         raise ApiError(404, "not_found", "project not found")

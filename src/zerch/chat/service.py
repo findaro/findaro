@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from zerch.chat import answer, clarify
 from zerch.chat import session as sess_mod
+from zerch.chat.slots import SlotFiller
 from zerch.chat.turns import (
     PlanDelta,
     apply_delta,
@@ -32,6 +33,7 @@ from zerch.schema.model import Role, Schema
 from zerch.search.models import SearchRequest, SearchResponse
 from zerch.search.service import CURRENCY_SYMBOLS, search
 from zerch.understand.llm_planner import schema_summary
+from zerch.understand.patch import PatchOp, apply_patch
 from zerch.understand.plan import QueryPlan, validate_plan
 from zerch.understand.rules import RulesParser
 from zerch.understand.service import get_dictionary, lexicon, understand
@@ -42,7 +44,8 @@ log = logging.getLogger("zerch.chat")
 class ChatRequest(BaseModel):
     session_id: str | None = Field(None, max_length=64)
     message: str = Field("", max_length=500)
-    apply: dict[str, Any] | None = None  # a clarifier chip's plan_patch, applied as a refinement
+    apply: dict[str, Any] | None = None  # M3: a clarifier chip's plan_patch (PlanDelta shape)
+    patch: list[PatchOp] | None = None  # M4: structured edits (remove a chip, set price range...), no message needed
     size: int = Field(10, ge=1, le=50)
 
 
@@ -162,19 +165,24 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
     delta: PlanDelta | None = None
     turn: str | None = None
 
-    # a clarifier chip, sent as a patch or typed as its label
+    # structured patch (chip removal, pill, clarifier chip): no classification needed
+    if req.patch is not None and old_plan is not None:
+        turn, reason = "refine", "patch"
+
+    # a clarifier chip, sent as an M3 plan_patch or typed as its label
     patch = req.apply
-    if patch is None and msg and sess.clarify_chips:
+    if turn is None and patch is None and msg and sess.clarify_chips:
         hit = next((c for c in sess.clarify_chips if chip_label(c["label"]) == chip_label(msg)), None)
         patch = hit["plan_patch"] if hit else None
-    if patch is not None:
+    if turn is None and patch is not None:
         try:
             delta = PlanDelta.model_validate(patch)
             turn, reason = "refine", "clarifier chip"
         except ValidationError:
             delta = None
 
-    parsed = validate_plan(RulesParser(schema, lex, d).parse(msg), schema, d) if msg else None
+    parsed = validate_plan(RulesParser(schema, lex, d).parse(msg), schema, d) if msg else \
+        QueryPlan(query="", semantic_text="")
     llm_out = None
     if turn is None:
         # products on screen only anchor a refinement if they were a good match for what was asked
@@ -192,7 +200,9 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
 
     resp: SearchResponse | None = None
     plan = old_plan
-    if turn == "refine" and old_plan is not None:
+    if reason == "patch":
+        plan = apply_patch(old_plan, req.patch, schema, d)
+    elif turn == "refine" and old_plan is not None:
         if delta is None:
             delta = _delta_from_llm(llm_out, schema) if llm_out else refine(
                 msg, old_plan, parsed, schema, lex, d, sess.last_docs)
@@ -217,7 +227,7 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
         yield sse("plan", {"understood": resp.understood.model_dump(mode="json") if resp.understood else None,
                            "delta": _delta_view(old_resp_chips, new_chips, old_text, plan.semantic_text, turn)})
         yield sse("results", {"items": [h.model_dump(mode="json") for h in resp.hits], "total": resp.total,
-                              "facets": resp.facets,
+                              "facets": resp.facets, "pills": [p.model_dump(mode="json") for p in resp.pills],
                               "match_quality": resp.understood.match_quality if resp.understood else "good",
                               "close_matches": resp.understood.close_matches if resp.understood else []})
         mark("results")
@@ -251,6 +261,7 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
     title_field = next((f.name for f in schema.by_role(Role.title)), None)
     text_parts: list[str] = []
     first = None
+    answer_source = "template"  # model | fallback (model output all dropped) | error (LLM call failed) | template
     try:
         if turn == "chitchat":
             text = answer.chitchat_reply(msg, hinglish)
@@ -271,23 +282,55 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
             if turn == "question":
                 docs_q = [(i, answer.doc_view(doc, schema, detailed=True)) for i, doc in
                           zip(sess.last_ids, sess.last_docs, strict=False)]
-                prompt, system = answer.question_prompt(msg, docs_q, hinglish), answer.SYSTEM_QUESTION
+                fact_lines, fact_ids = answer.computed_facts(docs_q, schema)
+                prompt = answer.question_prompt(msg, docs_q, hinglish, fact_lines, schema)
+                system = answer.SYSTEM_QUESTION
+                by_id = dict(zip(sess.last_ids, sess.last_docs, strict=False))
             else:
                 close = set(resp.understood.close_matches) if resp and resp.understood else set()
                 focus = {c.field for c in (resp.understood.chips if resp.understood else [])}
                 docs = [(h.id, answer.compact_view(h.document, schema, focus), h.id in close) for h in resp.hits]
                 suggestions = [c.label for c in clar.chips] if clar else []
                 quality = resp.understood.match_quality if resp.understood else "good"
+                fact_lines, fact_ids = answer.computed_facts(
+                    [(h.id, answer.doc_view(h.document, schema)) for h in resp.hits], schema)
                 prompt = answer.search_prompt(msg, _chips(resp), quality, resp.total, docs, suggestions, hinglish,
-                                              answer.computed_facts(docs, schema))
+                                              fact_lines, schema)
                 system = answer.SYSTEM_SEARCH
-            async for chunk in _stream_text(state.chat_llm, prompt, system):
+                by_id = {h.id: h.document for h in resp.hits}
+            # numbers and field values come from the documents, never from the model (zerch.chat.slots)
+            filler = SlotFiller(by_id, schema, symbol, fact_ids)
+
+            async def model_stream():
+                async for c in _stream_text(state.chat_llm, prompt, system):
+                    if "first_model_token" not in timings:
+                        mark("first_model_token")
+                    yield c
+
+            async for chunk in filler.stream(model_stream()):
                 if first is None:
                     first = time.perf_counter()
                 text_parts.append(chunk)
                 yield sse("text", {"delta": chunk})
+            timings["dropped_sentences"] = len(filler.dropped)
+            answer_source = "model"
+            if filler.dropped:
+                log.info("dropped %d sentence(s): %s", len(filler.dropped), filler.dropped[:3])
+            if not "".join(text_parts).strip():
+                answer_source = "fallback"
+                docs = [(h.id, answer.doc_view(h.document, schema), False) for h in (resp.hits if resp else [])[:5]]
+                text = (answer.fallback_search_text(resp.total if resp else 0,
+                                                    resp.understood.match_quality if resp and resp.understood
+                                                    else "good", docs, hinglish, title_field)
+                        if turn != "question" else ("Iska jawab dikhaye gaye products ki details mein nahi hai."
+                                                    if hinglish else
+                                                    "The details shown for these products don't answer that."))
+                yield sse("text", {"delta": text})
+                text_parts.append(text)
+                first = first or time.perf_counter()
     except (LLMError, OSError) as e:
         log.warning("chat answer failed: %s", e)
+        answer_source = "error"
         if not text_parts:
             text = "Results upar dikh rahe hain." if hinglish else "Here are the results."
             yield sse("text", {"delta": text})
@@ -299,7 +342,7 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
     sess.remember("user", msg, turn)
     sess.remember("assistant", "".join(text_parts), turn)
     await sess_mod.save(state.redis, pid, sess)
-    yield sse("done", {"timings": timings, "turn_type": turn, "reason": reason})
+    yield sse("done", {"timings": timings, "turn_type": turn, "reason": reason, "answer_source": answer_source})
 
 
 __all__ = ["ChatRequest", "chat_turn", "sse"]

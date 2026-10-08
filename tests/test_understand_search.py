@@ -197,3 +197,47 @@ async def test_dictionary_rebuilt_after_ingest(loaded, catalog):
     res = await loaded.search(query="saffron kurta")
     assert any(c["label"] == "Saffron" for c in res["understood"]["chips"])
     assert res["hits"][0]["id"] == "NEW1"
+
+
+# --- M4: patches and pills ---------------------------------------------------------------------------------
+
+async def test_chip_remove_patch(loaded, catalog):
+    color = next(d["color"] for d in catalog if "Water Bottle" in d["title"] and d["material"] == "Copper")
+    q = f"{color.lower()} copper bottle"
+    res = await loaded.search(query=q, size=50)
+    chips = {c["label"]: c for c in res["understood"]["chips"]}
+    assert {color, "Copper"} <= set(chips)
+    assert chips[color]["remove"] == [{"op": "remove_filter", "field": "color", "value": color}]
+    res2 = await loaded.search(query=q, size=50, patch=chips[color]["remove"])
+    labels = [c["label"] for c in res2["understood"]["chips"]]
+    assert color not in labels and "Copper" in labels
+    assert color.lower() not in res2["understood"]["semantic_text"]
+    colors = {h["document"]["color"] for h in res2["hits"] if h["document"]["material"] == "Copper"}
+    assert len(colors) > 1
+
+
+async def test_patch_price_sort_add_exclude(loaded):
+    res = await loaded.search(query="water bottle", size=50, patch=[
+        {"op": "set_price_range", "lte": 999}, {"op": "set_sort", "field": "price", "order": "asc"},
+        {"op": "exclude", "field": "material", "value": "Plastic"}])
+    prices = [h["document"]["price"] for h in res["hits"]]
+    assert prices and prices == sorted(prices) and max(prices) <= 999
+    assert all(h["document"]["material"] != "Plastic" for h in res["hits"])
+    labels = [c["label"] for c in res["understood"]["chips"]]
+    assert "Under ₹999" in labels and "Not Plastic" in labels
+    res = await loaded.search(query="water bottle under 900", size=50, patch=[{"op": "set_price_range"}])
+    assert not any(c["field"] == "price" for c in res["understood"]["chips"])
+    res = await loaded.search(query="kurta", size=50, patch=[{"op": "add_filter", "field": "color", "value": "Red"}])
+    assert res["hits"] and all(h["document"]["color"] == "Red" for h in res["hits"])
+
+
+async def test_pills(loaded):
+    res = await loaded.search(query="water bottle", size=20)
+    fields = [p["field"] for p in res["pills"]]
+    assert fields and "color" in fields
+    pill = next(p for p in res["pills"] if p["field"] == "color")
+    v = pill["values"][0]
+    assert v["patch"] == [{"op": "add_filter", "field": "color", "value": v["value"]}]
+    res2 = await loaded.search(query="water bottle", size=20, patch=v["patch"])
+    assert all(h["document"]["color"] == v["value"] for h in res2["hits"])
+    assert "color" not in [p["field"] for p in res2["pills"]]  # a chosen attribute is no longer a pill

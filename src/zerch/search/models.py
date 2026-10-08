@@ -4,6 +4,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from zerch.understand.patch import PatchOp
+
 
 class SortItem(BaseModel):
     field: str
@@ -22,6 +24,8 @@ class SearchRequest(BaseModel):
     facet_size: int = Field(20, ge=1, le=200)
     highlight: bool = True
     understand: bool = True  # parse the query into filters/sort/boosts (M2); false = plain M1 retrieval
+    # structured edits applied to the understood plan (remove a chip, set price range, sort, add a filter)
+    patch: list[PatchOp] = Field(default_factory=list)
     debug: bool = False  # include the full plan, per-stage timings and retrieval signals
 
     @field_validator("sort", mode="before")
@@ -64,6 +68,22 @@ class Chip(BaseModel):
     value: Any = None
     source: str  # words in the query it came from, when known
     confidence: float
+    remove: list[PatchOp] = Field(default_factory=list)  # send as `patch` to drop this chip
+
+
+class PillValue(BaseModel):
+    value: Any
+    label: str
+    count: int
+    patch: list[PatchOp]  # send as `patch` to apply this value
+
+
+class Pill(BaseModel):
+    """Passive refinement choices for one attribute of the current results (a UI renders them as pills)."""
+
+    field: str
+    label: str
+    values: list[PillValue]
 
 
 class RelaxedFilter(BaseModel):
@@ -94,5 +114,6 @@ class SearchResponse(BaseModel):
     facets: dict[str, Any]
     took_ms: float
     understood: Understood | None = None
+    pills: list[Pill] = Field(default_factory=list)
     debug: dict[str, Any] | None = None
     cached: bool = False

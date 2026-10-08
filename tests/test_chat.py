@@ -347,3 +347,11 @@ def test_value_in_two_fields_filters_one():
     d = refine("only copper", plan, parse("only copper"), SCHEMA, LEX, DICT, BOTTLES)
     fields = [f.field for f in d.add_filters if str(f.value) == "Copper"]
     assert len(fields) == 1
+
+
+async def test_patch_after_session_expired(loaded):
+    r = await loaded.client.post("/v1/chat", json={"session_id": "chs_gone", "patch": [{"op": "set_sort"}]},
+                                 headers=loaded.searcher)
+    ev = [(b.split("\n")[0][7:], json.loads(b.split("\n")[1][6:])) for b in r.text.strip().split("\n\n")]
+    assert [e for e, _ in ev] == ["session", "plan", "results", "done"]
+    assert ev[-1][1]["reason"] == "session_expired"

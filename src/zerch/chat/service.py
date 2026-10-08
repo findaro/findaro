@@ -45,7 +45,8 @@ class ChatRequest(BaseModel):
     session_id: str | None = Field(None, max_length=64)
     message: str = Field("", max_length=500)
     apply: dict[str, Any] | None = None  # M3: a clarifier chip's plan_patch (PlanDelta shape)
-    patch: list[PatchOp] | None = None  # M4: structured edits (remove a chip, set price range...), no message needed
+    # M4: structured edits (remove a chip, set price range...), no message needed
+    patch: list[PatchOp] | None = Field(None, max_length=20)
     size: int = Field(10, ge=1, le=50)
 
 
@@ -153,6 +154,15 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
         yield sse("results", {"items": [], "total": 0, "facets": {}, "match_quality": "none", "close_matches": []})
         yield sse("text", {"delta": "This catalog has no products yet."})
         yield sse("done", {"timings": timings, "turn_type": "new"})
+        return
+
+    if (req.patch or req.apply) and sess.plan is None:
+        # a chip/pill clicked after the 30-minute session expired: tell the client to ask again
+        yield sse("plan", {"understood": None, "delta": {"turn_type": "chitchat", "added": [], "removed": []}})
+        yield sse("results", {"items": [], "total": 0, "facets": {}, "match_quality": None, "close_matches": [],
+                              "unchanged": True})
+        yield sse("done", {"timings": timings, "turn_type": "chitchat", "reason": "session_expired",
+                           "answer_source": "template"})
         return
 
     d = await get_dictionary(state, pid, project, schema)

@@ -14,7 +14,7 @@ Notion MCP was not authorised in the session, so tracking lives here.
 Done: stack, API, ingest, schema inference, hybrid search, demo catalog (3,000), eval baseline
 (`eval/report.md`, nDCG@10 0.818), 10k latency (server p95 10 ms warm / 65 ms cold embedding), 58 tests.
 
-Waiting on Rohit: review the 21 `needs_review` queries in `eval/queries.jsonl` (Hinglish + NL predicates).
+~~Waiting on Rohit: review the 21 `needs_review` queries~~ — done 2026-10-07 (`eval/reviews.json`).
 
 ## M2 status (2026-10-08)
 
@@ -22,7 +22,7 @@ Done: query understanding (rules + locale packs + per-project value dictionary +
 `understood`/`debug` API, backfill, relaxation, match_quality. eval/report.md: nDCG@10 0.808 → 0.959; price 0.90,
 hinglish 0.91, no segment regressed; rules p95 ~11 ms warm (66 ms with a cold query embedding).
 
-Waiting on Rohit:
+~~Waiting on Rohit:~~ (resolved — holdout written by gpt-5.5, see eval/README.md)
 - ~20 holdout queries in `eval/holdout.jsonl` (format in `eval/README.md`). Hinglish score is an upper bound
   until then (lexicon was written with the eval visible).
 - Optional: `ZERCH_ANTHROPIC_API_KEY` to measure the planner on Claude Haiku (local llama3.2:3b times out).
@@ -33,7 +33,7 @@ Gate not passed: `ZERCH_ANTHROPIC_API_KEY` is not set (only `OPENAI_API_KEY` is 
 work stopped before starting. Holdout step from the gate is done: M2 on `eval/holdout.jsonl` = nDCG@10 0.818
 (M1 0.540), recorded in eval/report.md.
 
-Waiting on Rohit: an Anthropic key, or approval to run M3 on an OpenAI model instead of claude-haiku-4-5.
+~~Waiting on Rohit: an Anthropic key, or approval to run M3 on an OpenAI model instead of claude-haiku-4-5.~~ — resolved: approved OpenAI, later moved to local Ollama.
 Update: Rohit approved running M3 on an OpenAI model instead of claude-haiku-4-5. M3 in progress.
 
 ## M3 done (2026-10-08)
@@ -51,10 +51,16 @@ Done: Part A fixes (number slots, scoped negation, clarifier policy), allowed or
 chat events, @zerch/sdk (1.5 KB gz), <zerch-search> widget (7.6 KB gz incl. SDK), plain-html + React examples,
 Playwright e2e (17 passing), bundle budgets, npm publish --dry-run for both packages, CI workflow.
 
-Waiting on Rohit: OpenAI returned insufficient_quota mid-eval, so groundedness / numeric-error / clarifier
-numbers after the Part A fixes aren't measured yet. Add credits, then: uv run python eval/run_chat.py --search-key …
+~~Waiting on Rohit: OpenAI credits~~ — superseded: re-measured on local Ollama with no paid calls (see "M4 done").
 
 ## M4 done (2026-10-08)
 
 Re-measured on local Ollama (no paid calls): groundedness 66/68 = 97.1%, numeric errors 0, clarifiers 8/71 turns.
 First-token target missed on the local 8B model (6.7 s). Demo UI simplified. Paid LLM providers are opt-in only.
+
+## Pre-demo audit (2026-10-08)
+
+Docs brought in line with the code. Fixes: planner call caps (shared in-flight calls, max 2 concurrent, no LLM
+while typing, admin-only cache bypass), SKU-like codes never sent to the LLM, widget link sanitising, session
+expiry handling in chat, request size bounds, Linux `host.docker.internal`, sturdier `demo_setup.py`.
+Still open: review `eval/conversations.jsonl` and `eval/holdout.jsonl` (both `needs_review`).

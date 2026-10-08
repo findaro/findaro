@@ -242,10 +242,13 @@ async def search(body: SearchRequest, request: Request, p: Principal = Depends(p
         raise ApiError(404, "not_found", "project not found")
     schema = store.load_schema(project["schema"])
     no_cache = "no-cache" in request.headers.get("cache-control", "")
-    # Eval/benchmark hook: force the query planner to run instead of reusing a cached LLM plan.
-    bypass_plans = request.headers.get("x-zerch-plan-cache", "").lower() == "bypass"
-    return await run_search(state, p.project_id, project, schema, body, use_cache=not no_cache,
+    # Eval/benchmark hook (admin key only): force the query planner to run instead of reusing a cached plan.
+    bypass_plans = p.kind == "admin" and request.headers.get("x-zerch-plan-cache", "").lower() == "bypass"
+    resp = await run_search(state, p.project_id, project, schema, body, use_cache=not no_cache,
                             use_plan_cache=not bypass_plans)
+    if resp.debug and p.kind != "admin":  # browser-visible: no raw provider error text
+        (resp.debug.get("llm") or {}).pop("llm_error", None)
+    return resp
 
 
 # --- chat -----------------------------------------------------------------------------------------

@@ -6,7 +6,7 @@ Read this first. It is the source of truth for scope and rules across sessions.
 
 Developers connect their catalog, call one API (or drop in a JS widget), and get AI search:
 natural-language queries, Indian-English/Hinglish understanding, filters inferred from the query,
-and later a chat-style refinement mode. Open source (Apache-2.0) from day one; hosted service later.
+a chat-style refinement mode, a headless SDK and a drop-in widget. Open source (Apache-2.0); hosted service later.
 
 ## Milestones
 
@@ -15,20 +15,25 @@ and later a chat-style refinement mode. Open source (Apache-2.0) from day one; h
 | M1 | Core: projects/keys, ingestion, schema inference, hybrid search, demo catalog, eval baseline | done |
 | M2 | AI query understanding (filters/price/attributes inferred from the query, Hinglish normalisation) | done |
 | M3 | Chat search (conversational refinement over the M2 query representation) | done (conversations need review) |
-| **M4** | JS SDK / drop-in widget (uses the browser-safe `search_key`) | done |
+| M4 | JS SDK / drop-in widget (uses the browser-safe `search_key`) | done |
 
-Do not build M2–M4 early, but do not make choices that block them:
-- Search request/response shapes are versioned (`/v1`) and additive. M2 will add a parsed-query
-  representation that compiles to the same `filters`/`sort` structure M1 accepts.
-- M2's `understood` response block (chips, relaxations, match_quality, close_matches) is the contract M3 (chat
-  refinement) and M4 (widget chips) build on. Change it additively only.
+## Contracts (change additively only)
+
+- Search request/response shapes are versioned (`/v1`). The query plan compiles to the same `filters`/`sort`
+  structure explicit requests use.
+- The `understood` block (chips with `remove` patches, relaxations, match_quality, close_matches), `pills` and
+  `display` are what the widget and SDK build on.
 - The LLM is used in search only by the M2 planner, only when the rules plan can't account for some words, and
   behind a timeout with the rules plan as fallback. Never put an LLM call on the path unconditionally.
-- `search_key` is browser-safe (read-only, search only, CORS allowed) so M4 can ship without changes.
-- `/v1/chat` SSE event sequence (session, plan, results, clarify?, text*, done) and chip `plan_patch` shape are
-  the contract M4's widget builds on. Change additively.
-- Chat answers must stay grounded: the model only sees products on screen; comparisons are computed in code.
-- `eval/` is the gate: M2 must beat `eval/report.md` (the M1 baseline).
+- The LLM planner is capped: identical in-flight queries share a call, at most 2 run at once, and requests with
+  `llm: false` (search-as-you-type) never call it.
+- `search_key` is browser-safe (read-only, search only); browser origins are checked against the project's
+  `allowed_origins`; admin keys are refused from browsers.
+- `/v1/chat` SSE event sequence (session, plan, results, clarify?, text*, done) and the `PatchOp` list
+  (`patch`) used by chips, pills and clarifier chips. `plan_patch`/`apply` is the older form, kept working.
+- Chat answers must stay grounded: the model only sees products on screen, numbers come from server-filled
+  slots, comparisons are computed in code, and every sentence is checked (`zerch.chat.slots`) before it streams.
+- `eval/` is the gate: changes must not regress `eval/report.md` against `eval/baselines/m1.json`.
 
 ## Stack
 
@@ -63,21 +68,19 @@ Do not build M2–M4 early, but do not make choices that block them:
   `chat/`)
 - `packs/locales/` — language packs for query understanding (en, hi-en)
 - `src/zerch/worker.py` — ingest job worker (separate compose service)
-- `scripts/` — demo catalog generator, benchmark
+- `scripts/` — demo setup (`demo_setup.py`), chat CLI, OpenAPI export, demo catalog generator, benchmark
 - `data/` — generated demo catalog (committed)
-- `eval/` — queries, runner, report (baseline)
+- `eval/` — queries, conversations, runners, report (see `eval/README.md`)
 - `tests/` — pytest; needs compose services up (`docker compose up -d postgres opensearch redis`)
 - `packages/sdk` (`@zerch/sdk`, headless TS client, types generated from `packages/sdk/openapi.json`),
   `packages/widget` (`<zerch-search>`), `examples/plain-html`, `examples/react`, `e2e/` (Playwright)
 - JS budgets (enforced by `npm run size`): SDK ≤ 10 KB gz, widget incl. SDK ≤ 40 KB gz. Zero runtime deps.
 
-## Out of scope (M1)
+## Not built yet
 
-Query understanding/LLM in search path, chat, JS SDK, autocomplete, recommendations, personalization,
-analytics, dashboard/UI, user accounts, billing, rate limiting beyond a simple per-key limit,
-DB/Shopify connectors, image/voice search, deployment/cloud infra, multi-region.
+Autocomplete, recommendations, personalization, analytics/click tracking, admin dashboard, end-user accounts,
+billing, DB/Shopify connectors, image/voice search, cloud deployment, multi-region, npm/CDN publishing.
 
 ## Tracking
 
-Notion Global Todo row "AI search SaaS: M1" (session "Claude Code: ai-search M1") if the Notion MCP is
-authorised; otherwise `TRACKING.md` in this repo.
+Notion Global Todo (one row per milestone) if the Notion MCP is authorised; otherwise `TRACKING.md` in this repo.

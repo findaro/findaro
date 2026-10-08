@@ -46,9 +46,11 @@ def make_planner(settings: Settings) -> Any:
         return None
     from zerch.llm import LLMError, get_llm
 
+    if (settings.planner_provider or settings.llm_provider) == "none":
+        return None
     try:
         provider = settings.planner_provider or settings.llm_provider
-        model = settings.planner_model or ("claude-haiku-4-5" if provider == "anthropic" else None)
+        model = settings.planner_model or {"anthropic": "claude-haiku-4-5", "ollama": "llama3.2:3b"}.get(provider)
         return get_llm(provider, model)
     except LLMError as e:
         logging.getLogger("zerch").warning("query planner LLM disabled: %s", e)

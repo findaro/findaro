@@ -4,15 +4,50 @@ Open-source AI search as a service. Push your catalog as JSON or CSV and call on
 You get hybrid retrieval (BM25 + multilingual vectors), typo tolerance, Hinglish-friendly matching, filters,
 facets and highlighting. You don't need to define a schema: zerch infers field roles from your data.
 
-Status: **M4**: a drop-in widget (`<zerch-search>`) and a headless TypeScript SDK (`@zerch/sdk`) on top of
-M1 (core), M2 (query understanding) and M3 (chat search). See `CLAUDE.md`.
+It also understands queries ("kaale joote 1000 ke andar" becomes black shoes under ₹1,000), has a
+conversational chat mode with grounded answers, and comes with a drop-in widget (`<zerch-search>`) and a headless
+TypeScript SDK (`@zerch/sdk`). Everything runs locally: the AI parts use [Ollama](https://ollama.com) by default,
+and paid LLM APIs are only used if you configure them.
+
 License: Apache-2.0.
+
+## Run the demo
+
+**Prerequisites:**
+- Docker, with about 4 GB of memory for containers;
+- [uv](https://docs.astral.sh/uv/) (Python 3.12) and Node.js 20 or newer;
+- [Ollama](https://ollama.com), with the two local models:
+
+  ```bash
+  ollama pull llama3.1:8b    # chat answers
+  ollama pull llama3.2:3b    # query planner, for words the rules can't read
+  ```
+
+  Without Ollama, search still works fully and chat answers fall back to plain one-line templates.
+
+**Start it:**
+
+```bash
+git clone https://github.com/rohitsaini1196/zerch && cd zerch
+docker compose up -d --build                    # API :8000, worker, OpenSearch, Postgres, Redis, demo page :8080
+npm install && npm run build                    # builds the SDK and the widget
+uv run python scripts/demo_setup.py             # waits for the API, imports the demo catalog, warms the models
+```
+
+Open http://localhost:8080/demo.html. Things to try:
+- Search: `kaale joote 1000 ke andar`, then remove the "Black" chip;
+- Search: `presure coker` (typo), `sarson ka tel` (Hinglish), or `guitar strings` (nothing matches, said honestly);
+- Ask AI: `saree under 1000`, then tap "Show slightly over budget";
+- Ask AI: `running shoes for men`, then `only black`, then `is the second one lace-up?`.
+
+The first build takes a few minutes. Chat answers take a few seconds on the local 8B model.
 
 ## Integrate in 5 minutes (script tag)
 
 1. Create a project and import your catalog (see the API quickstart below), and keep the **search key**. It's
    browser-safe: read-only, search and chat only.
-2. Allow your site's origin. localhost always works during development.
+2. Allow your site's origin. localhost always works (`ZERCH_ALLOW_LOCALHOST_ORIGINS=false` turns that off for
+   production).
 
    ```bash
    curl -X PUT localhost:8000/v1/projects/$PID/settings -H "authorization: Bearer $ADMIN" \
@@ -25,17 +60,16 @@ License: Apache-2.0.
    <zerch-search></zerch-search>
    ```
 
-Build the widget with `npm install && npm run build`; the file is `packages/widget/dist/zerch-widget.js`, 7.6 KB
+Build the widget with `npm install && npm run build`; the file is `packages/widget/dist/zerch-widget.js`, 7.9 KB
 gzipped with the SDK included. It gives you:
 - one search box with a **Search / Ask AI** toggle;
 - understood chips ("Under ₹1,000", "Black") that can be removed;
-- facet pills for refining;
+- facet pills for refining, behind a "Filters" button;
 - a product grid (image, title, price, rating);
 - an AI panel with a streamed answer, inline product cards for the products it cites, clarifier chips (such as
   "Show slightly over budget"), and a clear no-match state.
 
-**Try it locally:** with the stack running, `npm run build && uv run python scripts/demo_setup.py`, then open
-http://localhost:8080/demo.html. That page is `examples/plain-html/index.html` with the demo project's keys filled in.
+The demo page above is `examples/plain-html/index.html` with the demo project's keys filled in.
 
 **Customise:**
 
@@ -47,8 +81,12 @@ http://localhost:8080/demo.html. That page is `examples/plain-html/index.html` w
 <script>
   const el = document.querySelector("zerch-search");
   el.onProductClick = (hit) => location.assign(`/p/${hit.id}`);               // replaces opening the product URL
-  el.renderProduct = (hit, { display, formatPrice }) =>                       // your own card (element or HTML)
-    `<div class="my-card">${hit.document[display.title]} · ${formatPrice(hit.document[display.price])}</div>`;
+  el.renderProduct = (hit, { display, formatPrice }) => {                     // your own card: return an element
+    const card = document.createElement("div");                              // (textContent keeps catalog data safe;
+    card.className = "my-card";                                               // if you return an HTML string,
+    card.textContent = `${hit.document[display.title]} · ${formatPrice(hit.document[display.price])}`;
+    return card;                                                              // escape document fields yourself)
+  };
   el.strings = { placeholder: "Search 10,000 products…" };                    // any UI text; locale="hi-en" for Hinglish
   el.addEventListener("zerch:results", (e) => console.log(e.detail.total));  // also zerch:product-click, zerch:error
 </script>
@@ -58,6 +96,8 @@ http://localhost:8080/demo.html. That page is `examples/plain-html/index.html` w
   (`en` | `hi-en`), `placeholder`, `size`, `theme` (`light` | `dark`; default follows `prefers-color-scheme`).
 - **Behaviour:** the widget is mobile-first and keyboard accessible: the mode toggle is a radio group, Enter
   searches and Escape clears, and the conversation is an ARIA live log.
+- **Safety:** product links from catalog data are only followed if they are `http(s)`. Search-as-you-type never
+  calls the LLM planner; only a submitted search can.
 
 ## Headless (npm)
 
@@ -90,15 +130,17 @@ const searchAsYouType = debounce((q: string) => zerch.search(q), 250);
 
 ## 5-minute quickstart (API)
 
-Requirements: Docker with about 4 GB of memory for containers, plus `curl` and `jq`.
+Requirements: Docker with about 4 GB of memory for containers, plus `curl` and `jq`. Ollama is optional here (see
+[Run the demo](#run-the-demo)).
 
 ```bash
-git clone <this repo> zerch && cd zerch
+git clone https://github.com/rohitsaini1196/zerch && cd zerch
 docker compose up -d --build        # API on :8000, plus worker, OpenSearch, Postgres, Redis
 curl -s localhost:8000/healthz      # {"status":"ok"} once the API is up (the first build takes a few minutes)
 ```
 
-**1. Create a project.** The response contains two keys. The `admin_key` manages data, so keep it on the server.
+**1. Create a project.** Set `ZERCH_BOOTSTRAP_TOKEN` on any API others can reach; otherwise anyone can create
+projects (the API logs a warning). The response contains two keys. The `admin_key` manages data, so keep it on the server.
 The `search_key` can only search, so it is safe to use in browsers.
 
 ```bash
@@ -243,8 +285,8 @@ What it understood comes back in `understood`. This field is meant for search UI
   - `boost`: ranks matching documents higher.
   - `sort`: re-ranks toward lower or higher prices while keeping relevance.
 
-  To let a user remove a chip, send the request again with `understand: false`, plus explicit `filters` for
-  the chips they kept. An explicit filter always overrides the inferred one on the same field.
+  To let a user remove a chip, send the same query again with the chip's `remove` list as `patch`. An explicit
+  filter always overrides the inferred one on the same field.
 - **`relaxations`**: inferred filters the engine dropped because the query returned nothing with them.
 - **`match_quality`**:
   - `good`: some results match the query's words.
@@ -257,15 +299,19 @@ What it understood comes back in `understood`. This field is meant for search UI
   - `llm` / `cache`: the rules found words they couldn't account for, so the LLM planner rewrote the query.
   - `off`: understanding was off for this request (`understand: false`).
 
-The planner runs on Ollama, or on Claude Haiku with `ZERCH_PLANNER_PROVIDER=anthropic` and
-`ZERCH_ANTHROPIC_API_KEY`. It waits at most `ZERCH_PLANNER_TIMEOUT_MS` (default 800) and then falls back to the
-rules plan. A late answer is still cached for the next identical query. The planner's output is validated
-against the schema, and it can only rewrite the text and boost results, never add filters, except a price
-the query states.
+The planner runs on local Ollama `llama3.2:3b` by default (`ZERCH_PLANNER_MODEL`), or on Claude Haiku with
+`ZERCH_PLANNER_PROVIDER=anthropic` and `ZERCH_ANTHROPIC_API_KEY` (paid; never enabled by a key alone). Its limits:
+- **Time:** it waits at most `ZERCH_PLANNER_TIMEOUT_MS` (default 800) and then falls back to the rules plan. A
+  late answer is still cached for the next identical query.
+- **Calls:** identical queries in flight share one call, and at most 2 calls run at once, so it can't be flooded.
+  Requests with `"llm": false`, which the widget sends while you type, use only the rules and cached plans.
+  Codes such as SKUs and model numbers never trigger it.
+- **Output:** it's validated against the schema, and it can only rewrite the text and boost results. It never adds
+  filters, except a price the query states.
 
 `"debug": true` adds the full plan, timings per stage (`understand`, `embed`, `retrieve`, `fetch`, `total`), the
-planner outcome (`not_needed`, `called`, `timeout`, `cache`, `error`), and the retrieval signals behind
-`match_quality`.
+planner outcome (`not_needed`, `skipped`, `busy`, `called`, `timeout`, `cache`, `error`), and the retrieval signals
+behind `match_quality`. Provider error text is only included for admin keys.
 
 ### Chat (`POST /v1/chat`)
 
@@ -286,34 +332,39 @@ event: plan
 data: {"understood": {...same shape as /v1/search...}, "delta": {"turn_type": "new", "added": ["Under ₹1,000", "Sarees"], "removed": []}}
 
 event: results
-data: {"items": [{"id": "AP-00437", "score": 0.057, "document": {...}}, ...], "total": 10, "facets": {...}, "match_quality": "good", "close_matches": [...]}
+data: {"items": [{"id": "AP-00437", "score": 0.057, "document": {...}}, ...], "total": 10, "facets": {...},
+       "pills": [...], "display": {"title": "title", "price": "price", ...}, "match_quality": "good", "close_matches": [...]}
 
 event: clarify
 data: {"question": "Only 1 match under ₹1,000. Want to see options slightly over budget?", "reason": "budget", "field": "price",
-       "chips": [{"label": "Show slightly over budget", "count": null, "plan_patch": {"price": {"lte": 1300.0}}}, ...]}
+       "chips": [{"label": "Show slightly over budget", "count": null, "patch": [{"op": "set_price_range", "lte": 1300.0}],
+                  "plan_patch": {"price": {"lte": 1300.0}}}, ...]}
 
 event: text
 data: {"delta": "Only one saree is under ₹1,000: "}
 ...
 event: done
-data: {"timings": {"plan": 2.1, "search": 21.4, "results": 21.9, "first_token": 730.0, "total": 1150.2}, "turn_type": "new"}
+data: {"timings": {"plan": 2.1, "search": 21.4, "results": 21.9, "first_token": 2730.0, "total": 3150.2},
+       "turn_type": "new", "reason": "names a product category", "answer_source": "model"}
 ```
 
 To continue the conversation, send the `session_id` back with the next message: `{"session_id": "chs_...",
-"message": "sasta wala"}`. To pick a chip, send its `plan_patch` as `apply`, along with its label as the
+"message": "sasta wala"}`. To pick a clarifier chip, send its `patch` as `patch`, with its label as the
 message: `{"session_id": "...", "message": "Show slightly over budget", "patch": [{"op": "set_price_range", "lte": 1300}]}`.
-Removing a chip works the same way, with no message needed: `{"session_id": "...", "patch": <chip.remove>}`. The
-M3 `apply` field, which takes a `plan_patch`, still works.
-Sessions live in Redis for 30 minutes.
+Removing an understood chip works the same way, with no message needed: `{"session_id": "...", "patch": <chip.remove>}`.
+The older `apply` field, which takes a `plan_patch`, still works.
+
+Sessions live in Redis for 30 minutes. If a patch arrives after its session expired, `done.reason` is
+`session_expired`; ask again (the widget does this for you).
 
 | Event | When | Payload |
 |---|---|---|
 | `session` | first | `session_id`, `turn` |
 | `plan` | always | `understood` (chips, relaxations, match quality); `delta`: turn type plus chips added or removed versus the previous turn |
-| `results` | as soon as the search returns, before any text | `items`, `total`, `facets`, `match_quality`, `close_matches` (`unchanged: true` for questions and chit-chat) |
-| `clarify` | optional, at most one per turn | `question`; `chips` built from the result set's own facet counts; `plan_patch` for each chip |
+| `results` | as soon as the search returns, before any text | `items`, `total`, `facets`, `pills`, `display`, `match_quality`, `close_matches` (`unchanged: true` for questions and chit-chat) |
+| `clarify` | optional, at most one per turn | `question`; `chips` built from the result set's own facet counts, each with a `patch` |
 | `text` | streamed | answer deltas: 1–3 sentences, product ids cited as `[ID]`, same language as the user (Hinglish in, Hinglish out) |
-| `done` | last | `timings` (ms since the request), `turn_type` |
+| `done` | last | `timings` (ms since the request), `turn_type`, `reason`, `answer_source` (`model`, `fallback`, `error` or `template`) |
 
 **How turns are handled.** Rules classify most turns; the LLM is only used when the rules can't tell.
 - **New search:** runs the M2 planner on the message.
@@ -335,15 +386,22 @@ Attribute choices such as colour or size are passive facet pills (`results.pills
 They are never asked right after the user answered one, or when the user says "just show" / "bas dikha do".
 
 **Answers** are grounded: the model sees only the products on screen, with every number masked. It writes slots
-such as `{price:ID}`, which the server fills from that product's fields. A sentence is dropped whole if it:
-- contains a number the model wrote itself;
+such as `{price:ID}`, which the server fills from that product's fields. Each sentence is checked in code before
+it streams, and is dropped whole if it:
+- contains a number the model wrote itself (including spelled-out counts);
 - puts a value on a product the sentence doesn't cite;
-- makes a comparison (cheapest, highest rated, largest…) other than the one computed in code. Without a chat LLM configured, answers fall back to plain
-templates.
+- names an attribute, product type or brand that doesn't fit the cited product;
+- makes an uncited claim, or an "all / sabhi / both" claim that isn't true for every product it covers;
+- makes a stock claim that the data doesn't support;
+- makes a comparison (cheapest, highest rated, largest, sabse sasta…) other than the one computed in code.
 
-**Model:** `ZERCH_CHAT_PROVIDER` / `ZERCH_CHAT_MODEL` choose it. The default is OpenAI `gpt-4.1-mini` when
-`OPENAI_API_KEY` is set, otherwise Claude Haiku 4.5 when `ZERCH_ANTHROPIC_API_KEY` is set. `scripts/chat_cli.py`
-is a terminal client for trying conversations.
+If every sentence is dropped, or no chat LLM is configured, the answer is a plain template such as
+"Top result: [ID]".
+
+**Model:** local Ollama `llama3.1:8b` by default (`ZERCH_CHAT_MODEL`). For a hosted model, set
+`ZERCH_CHAT_PROVIDER=openai` (with `OPENAI_API_KEY`, e.g. `gpt-4.1-mini`) or `anthropic` (with
+`ZERCH_ANTHROPIC_API_KEY`). These are paid, and a key in `.env` alone never turns them on. `none` disables the
+chat LLM. `scripts/chat_cli.py` is a terminal client for trying conversations.
 
 ### Schema roles
 
@@ -404,7 +462,7 @@ uv run uvicorn zerch.main:app --reload        # API on the host (ZERCH_* env var
 uv run python -m zerch.worker                 # ingest worker
 ```
 
-Run a single worker in M1. Jobs for a project run in order.
+Run a single worker. Jobs for a project run in order.
 
 ### Demo data and evaluation
 
@@ -415,10 +473,14 @@ Run a single worker in M1. Jobs for a project run in order.
 - `eval/build_queries.py` builds `eval/queries.jsonl`. Each query's relevant ids come from a predicate over the
   catalog's attributes.
 - `uv run python eval/run.py --setup` imports the catalog into a new project, then writes `eval/report.md` with
-  nDCG@10, recall@20, the zero-result rate and latency. That report is the **M1 baseline** that M2 must beat.
+  nDCG@10, recall@20, the zero-result rate and latency per segment, compared with the M1 baseline
+  (`eval/baselines/m1.json`; the original M1 report is `eval/report_m1.md`).
 - `uv run python scripts/bench.py` runs the 10k-document latency benchmark and writes `eval/latency_10k.md`.
-- `uv run python eval/run_chat.py --search-key ...` runs the M3 chat eval: 25 scripted conversations, with an
-  LLM judge for groundedness. It writes the M3 section of `eval/report.md`.
-- `eval/report.md` compares M2 with the M1 baseline per segment and lists the target checks. It also covers
-  planner call and cache rates, latency per path, out-of-catalog queries and the human holdout
-  (`eval/holdout.jsonl`, never tuned on; format in `eval/README.md`).
+- `uv run python eval/run_chat.py --search-key ...` runs the chat eval: 25 scripted conversations, scored on turn
+  type, plan assertions, per-turn nDCG, clarifiers, numeric errors and latency. It writes the chat section of
+  `eval/report.md` and saves every answer to `eval/results/` for review. `--judge` adds an LLM groundedness judge
+  (local Ollama by default); the reported groundedness was reviewed by hand (`eval/chat_review_m4.md`).
+- `eval/report.md` also covers planner call and cache rates, latency per path, out-of-catalog queries and the
+  holdout (`eval/holdout.jsonl`: 20 Hinglish queries written by a different LLM, never tuned on, pending human
+  review; format in `eval/README.md`).
+- No eval script calls a paid API unless you pass a paid `--provider`/`--judge-provider` yourself.

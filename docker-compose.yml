@@ -19,6 +19,7 @@ x-app-env: &app-env
 
 services:
   api:
+    extra_hosts: ["host.docker.internal:host-gateway"]  # reach Ollama on the host (needed on Linux)
     build: .
     image: zerch:dev
     environment: *app-env
@@ -34,6 +35,7 @@ services:
       retries: 30
 
   worker:
+    extra_hosts: ["host.docker.internal:host-gateway"]  # reach Ollama on the host (needed on Linux)
     image: zerch:dev
     command: ["python", "-m", "zerch.worker"]
     environment: *app-env

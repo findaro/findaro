@@ -7,6 +7,7 @@ from dataclasses import replace
 import httpx
 import pytest
 
+from zerch.llm.base import LLMError
 from zerch.main import create_app
 from zerch.understand import service as understand_service
 
@@ -241,3 +242,46 @@ async def test_pills(loaded):
     res2 = await loaded.search(query="water bottle", size=20, patch=v["patch"])
     assert all(h["document"]["color"] == v["value"] for h in res2["hits"])
     assert "color" not in [p["field"] for p in res2["pills"]]  # a chosen attribute is no longer a pill
+
+
+# --- planner call limits (audit) ---------------------------------------------------------------------------
+
+async def test_as_you_type_skips_llm(state, loaded, with_planner):
+    fake = with_planner(FakePlanner({"semantic_text": "x", "category": None, "filters": []}))
+    res = await loaded.search(query="tambe ki vorblenix", llm=False, debug=True)
+    assert fake.calls == 0 and res["debug"]["llm"]["llm"] == "skipped"
+
+
+async def test_identical_inflight_queries_share_one_call(state, loaded, with_planner):
+    fake = with_planner(FakePlanner({"semantic_text": "copper bottle", "category": None, "filters": []}, delay=0.3))
+    body = {"query": "glorpka bottle", "debug": True}
+    await asyncio.gather(*(search_with(state, loaded, body, planner_timeout_ms=50, search_cache_ttl=0)
+                           for _ in range(3)))
+    await asyncio.sleep(0.4)
+    assert fake.calls == 1
+
+
+async def test_planner_concurrency_cap(state, loaded, with_planner):
+    with_planner(FakePlanner({"semantic_text": "x", "category": None, "filters": []}, delay=0.5))
+    outs = await asyncio.gather(*(search_with(state, loaded, {"query": f"zorbquix{"abcd"[i]}a bottle", "debug": True},
+                                              planner_timeout_ms=50, search_cache_ttl=0) for i in range(4)))
+    assert sum(o["debug"]["llm"]["llm"] == "busy" for o in outs) >= 2
+    await asyncio.sleep(0.6)
+
+
+async def test_plan_cache_bypass_is_admin_only_and_errors_hidden(state, loaded, with_planner):
+    class Failing(FakePlanner):
+        async def complete(self, prompt, **kw):
+            self.calls += 1
+            raise LLMError("provider said: secret detail")
+
+    with_planner(Failing({}))
+    r = await loaded.client.post("/v1/search", json={"query": "plorkish bottle", "debug": True},
+                                 headers={**loaded.searcher, "x-zerch-plan-cache": "bypass"})
+    assert "llm_error" not in (r.json()["debug"]["llm"])
+
+
+async def test_request_bounds(loaded):
+    r = await loaded.client.post("/v1/search", json={"query": "x", "patch": [{"op": "set_sort"}] * 21},
+                                 headers=loaded.searcher)
+    assert r.status_code == 422

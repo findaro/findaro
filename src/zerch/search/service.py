@@ -300,7 +300,7 @@ async def search(state: State, pid: str, project: dict[str, Any], schema: Schema
     if plan_override is not None:
         plan, info = plan_override.model_copy(deep=True), {"llm": "not_needed"}
     elif req.understand and q:
-        plan, info = await understand(state, pid, project, schema, q, use_plan_cache)
+        plan, info = await understand(state, pid, project, schema, q, use_plan_cache, allow_llm=req.llm)
         # Explicit filters win; the words behind an overridden inferred filter leave the search text too
         # ("black kurta" + filters={color: White} searches for "kurta").
         overridden = [f for f in plan.filters if f.field in req.filters]

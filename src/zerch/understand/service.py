@@ -25,7 +25,8 @@ _RECHECK_S = 5.0
 # pid -> (checked_at, schema_version, Compiled)
 _dicts: dict[str, tuple[float, int, Compiled]] = {}
 _locks: dict[str, asyncio.Lock] = {}
-_inflight: set[asyncio.Task] = set()
+_inflight: dict[str, asyncio.Task] = {}  # plan cache key -> running planner call (shared by identical queries)
+MAX_CONCURRENT_PLANNER_CALLS = 2
 
 
 def lexicon(state: Any):
@@ -69,7 +70,7 @@ def _plan_key(pid: str, project: dict[str, Any], query: str) -> str:
 
 
 async def understand(state: Any, pid: str, project: dict[str, Any], schema: Schema, query: str,
-                     use_plan_cache: bool = True) -> tuple[QueryPlan, dict[str, Any]]:
+                     use_plan_cache: bool = True, allow_llm: bool = True) -> tuple[QueryPlan, dict[str, Any]]:
     s = state.settings
     t0 = time.perf_counter()
     d = await get_dictionary(state, pid, project, schema)
@@ -80,6 +81,8 @@ async def understand(state: Any, pid: str, project: dict[str, Any], schema: Sche
     need = bool(plan.unparsed_tokens) or plan.confidence < s.planner_confidence_threshold
     if not need or not s.understand_llm:
         return plan, info
+    if not allow_llm:  # e.g. search-as-you-type: rules only, but still use a plan the LLM made earlier
+        info["llm"] = "skipped"
 
     key = _plan_key(pid, project, query)
     if use_plan_cache:
@@ -88,22 +91,29 @@ async def understand(state: Any, pid: str, project: dict[str, Any], schema: Sche
             info["llm"] = "cache"
             return validate_plan(merge(plan, orjson.loads(raw), schema, d, "cache"), schema, d), info
 
+    if not allow_llm:
+        return plan, info
     llm = getattr(state, "planner", None)
     if llm is None:
         info["llm"] = "unavailable"
         return plan, info
 
     rules_plan = plan
+    task = _inflight.get(key)
+    if task is None:
+        if len(_inflight) >= MAX_CONCURRENT_PLANNER_CALLS:
+            info["llm"] = "busy"  # don't queue more model calls behind slow ones; the rules plan is used
+            return plan, info
 
-    async def run() -> dict[str, Any]:
-        out = await call_llm(llm, query, schema, d, rules_plan)
-        await state.redis.set(key, orjson.dumps(out), ex=s.plan_cache_ttl)
-        return out
+        async def run() -> dict[str, Any]:
+            out = await call_llm(llm, query, schema, d, rules_plan)
+            await state.redis.set(key, orjson.dumps(out), ex=s.plan_cache_ttl)
+            return out
 
-    task = asyncio.create_task(run())
-    _inflight.add(task)  # keep a reference: a timed-out call keeps running and fills the cache
-    task.add_done_callback(_inflight.discard)
-    task.add_done_callback(_log_failure)
+        task = asyncio.create_task(run())
+        _inflight[key] = task  # a timed-out call keeps running and fills the cache for the next request
+        task.add_done_callback(lambda _t, k=key: _inflight.pop(k, None))
+        task.add_done_callback(_log_failure)
     t_llm = time.perf_counter()
     try:
         out = await asyncio.wait_for(asyncio.shield(task), timeout=s.planner_timeout_ms / 1000)

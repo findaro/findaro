@@ -31,6 +31,7 @@ class OllamaLLM:
             "model": self.model,
             "messages": messages,
             "stream": False,
+            "keep_alive": "30m",  # keep the model loaded between requests (a cold load costs seconds)
             "options": {"temperature": temperature, "num_predict": max_tokens},
         }
         if json_mode:

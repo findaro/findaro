@@ -23,6 +23,9 @@ def create_app(settings: Settings | None = None, embedder: Embedder | None = Non
         logging.basicConfig(level=logging.INFO)
         logging.getLogger("opensearch").setLevel(logging.WARNING)
         app.state.zerch = await create_state(settings, embedder)
+        if not settings.bootstrap_token:
+            logging.getLogger("zerch").warning(
+                "ZERCH_BOOTSTRAP_TOKEN is not set: anyone who can reach this API can create projects")
         yield
         await app.state.zerch.close()
 

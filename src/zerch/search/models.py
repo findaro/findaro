@@ -13,19 +13,21 @@ class SortItem(BaseModel):
 
 
 class SearchRequest(BaseModel):
-    """POST /v1/search. M2 will add query understanding that compiles into these same filters/sort."""
+    """POST /v1/search."""
 
     query: str = Field("", max_length=512)
-    filters: dict[str, Any] = Field(default_factory=dict)
+    filters: dict[str, Any] = Field(default_factory=dict, max_length=50)
     sort: list[SortItem] | None = None
     page: int = Field(1, ge=1)
     size: int = Field(20, ge=1, le=100)
-    facets: list[str] | None = None  # None = every facet-enabled field
+    facets: list[str] | None = Field(None, max_length=50)  # None = every facet-enabled field
     facet_size: int = Field(20, ge=1, le=200)
     highlight: bool = True
     understand: bool = True  # parse the query into filters/sort/boosts (M2); false = plain M1 retrieval
     # structured edits applied to the understood plan (remove a chip, set price range, sort, add a filter)
-    patch: list[PatchOp] = Field(default_factory=list)
+    patch: list[PatchOp] = Field(default_factory=list, max_length=20)
+    # allow the LLM planner for this request (false for search-as-you-type keystrokes: rules + cached plans only)
+    llm: bool = True
     debug: bool = False  # include the full plan, per-stage timings and retrieval signals
 
     @field_validator("sort", mode="before")

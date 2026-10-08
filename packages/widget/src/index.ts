@@ -73,10 +73,21 @@ function h<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, 
 
 const EMPTY_DISPLAY: Display = {};
 
+/** Only http(s) links from catalog data (no javascript:, data: …). */
+function safeUrl(value: unknown): string | null {
+  if (typeof value !== "string" || !value) return null;
+  try {
+    const u = new URL(value, location.href);
+    return u.protocol === "http:" || u.protocol === "https:" ? u.href : null;
+  } catch {
+    return null;
+  }
+}
+
 export class ZerchSearch extends HTMLElement {
   static observedAttributes = ["mode", "locale", "placeholder", "project", "key", "base-url"];
 
-  /** Custom product card. Return an element or an HTML string. */
+  /** Custom product card. Return an element, or an HTML string (escape document fields yourself: they are data). */
   renderProduct: RenderProduct | null = null;
   /** Called on product click; navigation to the product URL is skipped when set. */
   onProductClick: ProductClick | null = null;
@@ -183,11 +194,14 @@ export class ZerchSearch extends HTMLElement {
     if (focus) this.#input.focus();
   }
 
+  #typing = false; // search-as-you-type: rules only, no LLM planner call per keystroke
+
   #onInput() {
     if (this.#mode !== "search") return;
     const q = this.#input.value.trim();
     if (q !== this.#query) this.#patches = [];
     this.#query = q;
+    this.#typing = true;
     if (q.length >= 2) this.#debounced();
   }
 
@@ -211,6 +225,7 @@ export class ZerchSearch extends HTMLElement {
       this.#debounced.cancel();
       if (q !== this.#query) this.#patches = [];
       this.#query = q;
+      this.#typing = false;
       this.#runSearch();
     }
   }
@@ -223,7 +238,7 @@ export class ZerchSearch extends HTMLElement {
     this.#error = "";
     this.#renderStatus();
     try {
-      const res = await this.#client().search({ query: this.#query, patch: this.#patches,
+      const res = await this.#client().search({ query: this.#query, patch: this.#patches, llm: !this.#typing,
                                                 size: Number(this.#attr("size")) || 20 });
       this.#setView(res);
     } catch (e) {
@@ -262,7 +277,11 @@ export class ZerchSearch extends HTMLElement {
 
   // --- chat ---------------------------------------------------------------------------------------------
 
-  async #ask(message: string, patch?: PatchOp[]) {
+  #lastAsked = "";
+
+  async #ask(message: string, patch?: PatchOp[], retried = false): Promise<void> {
+    if (!patch) this.#lastAsked = message;
+    let expired = false;
     const user: Msg = { role: "user", text: message };
     const bot: Msg = { role: "assistant", text: "", pending: true, clarify: null };
     this.#msgs.push(user, bot);
@@ -288,7 +307,10 @@ export class ZerchSearch extends HTMLElement {
                          chips: ev.data.understood.chips ?? [], semantic: message };
         } else if (ev.type === "clarify") bot.clarify = ev.data;
         else if (ev.type === "text") bot.text += ev.data.delta;
-        else if (ev.type === "done") bot.pending = false;
+        else if (ev.type === "done") {
+          bot.pending = false;
+          expired = ev.data.reason === "session_expired";
+        }
         this.#renderChips();
         this.#renderPanel();
       }
@@ -301,6 +323,13 @@ export class ZerchSearch extends HTMLElement {
     } finally {
       bot.pending = false;
       this.#render();
+    }
+    if (expired && patch && !retried && this.#lastAsked) {
+      // the chat session timed out: drop the empty turn, ask the last question again, then apply the click
+      this.#msgs.splice(-2, 2);
+      this.#session = null;
+      await this.#ask(this.#lastAsked);
+      await this.#ask(message, patch, true);
     }
   }
 
@@ -414,7 +443,7 @@ export class ZerchSearch extends HTMLElement {
     for (const ch of alt) hue = (hue * 31 + ch.charCodeAt(0)) % 360;
     const fallback = () => h("div", { class: "img ph", "aria-hidden": "true", style: `--h:${hue}` },
       (alt.trim()[0] || "?").toUpperCase());
-    if (typeof src !== "string" || !src) return fallback();
+    if (typeof src !== "string" || !src || !/^(https?:)?\/\//i.test(src) && !src.startsWith("/")) return fallback();
     const img = h("img", { class: "img", src, alt: "", loading: "lazy", decoding: "async" });
     img.addEventListener("error", () => img.replaceWith(fallback()), { once: true });
     return img;
@@ -442,7 +471,7 @@ export class ZerchSearch extends HTMLElement {
     }
     const s = this.#s;
     const title = String((d.title && doc[d.title]) ?? hit.id);
-    const url = d.url && typeof doc[d.url] === "string" ? String(doc[d.url]) : null;
+    const url = safeUrl(d.url ? doc[d.url] : null);
     const price = d.price ? doc[d.price] : undefined;
     const mrp = d.compare_at_price ? doc[d.compare_at_price] : undefined;
     const rating = d.rating ? doc[d.rating] : undefined;

@@ -173,3 +173,8 @@ def test_describe_price():
     assert describe_price(f({"lte": 500}), "₹") == "Under ₹500"
     assert describe_price(f({"gte": 500, "lte": 1000}), "₹") == "₹500 – ₹1,000"
     assert describe_price(f({"gte": 2000}), "$") == "Over $2,000"
+
+
+def test_codes_are_not_unparsed_words():
+    assert P.parse("p017").unparsed_tokens == []
+    assert P.parse("x200 charger").unparsed_tokens == []

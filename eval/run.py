@@ -96,7 +96,7 @@ def setup(base: str, bootstrap: str | None) -> str:
         if st["status"] != "succeeded":
             sys.exit(f"import failed: {st}")
         print(f"imported {st['succeeded']} docs in {time.time() - t0:.0f}s", file=sys.stderr)
-    return p["search_key"]
+    return p["admin_key"]  # admin can search too, and may bypass the plan cache for uncached LLM timings
 
 
 class Client:
@@ -193,7 +193,8 @@ def seg_table(rows: list[dict], base: dict[str, dict] | None) -> tuple[list[str]
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--base-url", default=os.environ.get("ZERCH_URL", "http://localhost:8000"))
-    ap.add_argument("--search-key")
+    ap.add_argument("--search-key", help="search key, or the admin key to also measure uncached LLM planner calls "
+                                         "(the plan-cache bypass header is admin-only)")
     ap.add_argument("--setup", action="store_true")
     ap.add_argument("--bootstrap-token", default=os.environ.get("ZERCH_BOOTSTRAP_TOKEN"))
     ap.add_argument("--repeats", type=int, default=5)

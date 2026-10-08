@@ -770,7 +770,8 @@
         "items": {
          "$ref": "#/components/schemas/PatchOp"
         },
-        "type": "array"
+        "type": "array",
+        "maxItems": 20
        },
        {
         "type": "null"
@@ -1229,6 +1230,7 @@
      "filters": {
       "additionalProperties": true,
       "type": "object",
+      "maxProperties": 50,
       "title": "Filters"
      },
      "sort": {
@@ -1264,7 +1266,8 @@
         "items": {
          "type": "string"
         },
-        "type": "array"
+        "type": "array",
+        "maxItems": 50
        },
        {
         "type": "null"
@@ -1294,7 +1297,13 @@
        "$ref": "#/components/schemas/PatchOp"
       },
       "type": "array",
+      "maxItems": 20,
       "title": "Patch"
+     },
+     "llm": {
+      "type": "boolean",
+      "title": "Llm",
+      "default": true
      },
      "debug": {
       "type": "boolean",
@@ -1304,7 +1313,7 @@
     },
     "type": "object",
     "title": "SearchRequest",
-    "description": "POST /v1/search. M2 will add query understanding that compiles into these same filters/sort."
+    "description": "POST /v1/search."
    },
    "SearchResponse": {
     "properties": {

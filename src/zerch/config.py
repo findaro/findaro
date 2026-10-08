@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     embedding_cache_dir: str | None = None
     embedding_batch_size: int = 64
 
-    # LLM (scripts only in M1)
+    # LLM: local Ollama by default; paid providers only when chosen explicitly
     llm_provider: str = "ollama"
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.1:8b"
@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     locale_packs: str = "en,hi-en"  # packs/locales/<name>.yaml, comma-separated
     understand_llm: bool = True  # allow the LLM planner when the rules plan is unsure
     planner_provider: str | None = None  # defaults to llm_provider
-    planner_model: str | None = None  # default: claude-haiku-4-5 on anthropic, ollama_model on ollama
+    planner_model: str | None = None  # default: llama3.2:3b on ollama (fits the timeout), claude-haiku-4-5 on anthropic
     planner_timeout_ms: int = 800  # past this the rules plan is used; the LLM answer is still cached
     planner_confidence_threshold: float = 0.6
     plan_cache_ttl: int = 7 * 86_400

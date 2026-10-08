@@ -399,7 +399,7 @@ export interface components {
         };
         /**
          * SearchRequest
-         * @description POST /v1/search. M2 will add query understanding that compiles into these same filters/sort.
+         * @description POST /v1/search.
          */
         SearchRequest: {
             /**
@@ -442,6 +442,11 @@ export interface components {
             understand: boolean;
             /** Patch */
             patch?: components["schemas"]["PatchOp"][];
+            /**
+             * Llm
+             * @default true
+             */
+            llm: boolean;
             /**
              * Debug
              * @default false

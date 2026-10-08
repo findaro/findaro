@@ -346,6 +346,8 @@ class RulesParser:
             t = toks[idx]
             if j in matched_terms or t.translated is not None or t.quantity is not None or _is_num(w):
                 continue
+            if any(c.isdigit() for c in w) and any(c.isalpha() for c in w):
+                continue  # codes (SKUs, model numbers like "p017", "x200") are lexical lookups, not unknown words
             if lex.known(w) or (d is not None and d.in_vocab(w)):
                 continue
             if d is not None and len(w) >= 5 and self._fuzzy_vocab(w):

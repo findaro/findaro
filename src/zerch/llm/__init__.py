@@ -1,7 +1,8 @@
 """LLM provider interface.
 
-M1 uses this only from scripts (demo catalog generation). It is deliberately not imported by the
-search hot path; M2 query understanding will build on it.
+Used by the query planner (only for queries the rules can't read, behind a timeout), chat answers, and scripts.
+Providers: Ollama (default, local), OpenAI and Anthropic (paid, opt-in via ZERCH_CHAT_PROVIDER /
+ZERCH_PLANNER_PROVIDER).
 """
 
 from zerch.llm.base import LLM, LLMError, get_llm

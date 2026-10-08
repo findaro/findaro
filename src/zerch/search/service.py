@@ -22,6 +22,7 @@ from zerch.schema.model import Role, Schema
 from zerch.search import query as Q
 from zerch.search.models import (
     Chip,
+    Display,
     Hit,
     Pill,
     PillValue,
@@ -368,10 +369,28 @@ async def search(state: State, pid: str, project: dict[str, Any], schema: Schema
     resp = SearchResponse(query=req.query, total=result.total, page=req.page, size=req.size, hits=result.hits,
                           facets=facets, understood=understood, debug=debug,
                           pills=facet_pills(schema, plan, facets, result.total),
+                          display=display_fields(schema, getattr(cached_dictionary(pid), "currency", None)),
                           took_ms=round((time.perf_counter() - t0) * 1000, 2))
     if ckey:
         await state.redis.set(ckey, resp.model_dump_json(), ex=ttl)
     return resp
+
+
+def display_fields(schema: Schema, currency: str | None) -> Display:
+    from zerch.understand.plan import primary_price_field
+
+    def first(role: Role) -> str | None:
+        return next((f.name for f in schema.by_role(role)), None)
+
+    price = primary_price_field(schema)
+    other = next((f.name for f in schema.by_role(Role.price) if f.name != price), None)
+    nums = [f.name for f in schema.by_role(Role.numeric)]
+    rating = next((n for n in nums if "rating" in n.lower() and "count" not in n.lower()), None)
+    count = next((n for n in nums if "rating" in n.lower() and "count" in n.lower()), None)
+    stock = next((f.name for f in schema.by_role(Role.boolean) if "stock" in f.name.lower()), None)
+    return Display(id=schema.id_field.name, title=first(Role.title), price=price, compare_at_price=other,
+                   currency=currency, image=first(Role.image_url), url=first(Role.url), rating=rating,
+                   rating_count=count, in_stock=stock)
 
 
 def facet_pills(schema: Schema, plan: QueryPlan | None, facets: dict[str, Any], total: int,

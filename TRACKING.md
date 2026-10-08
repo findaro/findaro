@@ -7,7 +7,7 @@ Notion MCP was not authorised in the session, so tracking lives here.
 | AI search SaaS: M1 | Claude Code: ai-search M1 | Done (eval queries reviewed 2026-10-07) |
 | AI search SaaS: M2 | Claude Code: ai-search M2 | Done (holdout: nDCG@10 0.818, written by gpt-5.5) |
 | AI search SaaS: M3 | Claude Code: ai-search M3 | Waiting on Rohit (review eval/conversations.jsonl) |
-| AI search SaaS: M4 | Claude Code: ai-search M4 | In progress — chat re-measure blocked on OpenAI credits |
+| AI search SaaS: M4 | Claude Code: ai-search M4 | Waiting on Rohit (OpenAI credits to re-measure chat groundedness) |
 
 ## M1 status (2026-10-08)
 
@@ -44,3 +44,12 @@ per-turn nDCG@10 0.935, clarifier P/R 100%/75%, groundedness 90% (gpt-5.5 judge)
 
 Waiting on Rohit: review the 25 conversations (`eval/conversations.jsonl`, needs_review) and whether
 attribute clarifiers on bare queries ("Any preference for color?") are wanted.
+
+## M4 (2026-10-08)
+
+Done: Part A fixes (number slots, scoped negation, clarifier policy), allowed origins, plan patches, OpenAPI with
+chat events, @zerch/sdk (1.5 KB gz), <zerch-search> widget (7.6 KB gz incl. SDK), plain-html + React examples,
+Playwright e2e (17 passing), bundle budgets, npm publish --dry-run for both packages, CI workflow.
+
+Waiting on Rohit: OpenAI returned insufficient_quota mid-eval, so groundedness / numeric-error / clarifier
+numbers after the Part A fixes aren't measured yet. Add credits, then: uv run python eval/run_chat.py --search-key …

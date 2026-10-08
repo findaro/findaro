@@ -82,6 +82,13 @@ services:
       timeout: 3s
       retries: 30
 
+  # Static demo page for the widget (examples/plain-html), on http://localhost:8080
+  demo:
+    image: nginx:1.27-alpine
+    ports: ["8080:80"]
+    volumes:
+      - ./examples/plain-html:/usr/share/nginx/html:ro
+
 volumes:
   pgdata:
   osdata:

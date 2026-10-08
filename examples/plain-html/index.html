@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>zerch demo store</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; background: #fafafa; }
+    header { padding: 12px 16px; background: #fff; border-bottom: 1px solid #eee; font-weight: 700; }
+    main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+    @media (prefers-color-scheme: dark) { body { background: #111; color: #eee; } header { background: #161618; border-color: #333; } }
+  </style>
+  <!-- The whole integration: one script tag + one element. Replace the two placeholders with your project's
+       id and *search* key (python scripts/demo_setup.py writes demo.html with real values). -->
+  <script src="./zerch-widget.js" data-project="YOUR_PROJECT_ID" data-key="YOUR_SEARCH_KEY"
+          data-base-url="http://localhost:8000" defer></script>
+</head>
+<body>
+  <header>Demo store</header>
+  <main>
+    <zerch-search></zerch-search>
+  </main>
+</body>
+</html>

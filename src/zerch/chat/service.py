@@ -229,7 +229,8 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
         yield sse("results", {"items": [h.model_dump(mode="json") for h in resp.hits], "total": resp.total,
                               "facets": resp.facets, "pills": [p.model_dump(mode="json") for p in resp.pills],
                               "match_quality": resp.understood.match_quality if resp.understood else "good",
-                              "close_matches": resp.understood.close_matches if resp.understood else []})
+                              "close_matches": resp.understood.close_matches if resp.understood else [],
+                              "display": resp.display.model_dump() if resp.display else None})
         mark("results")
         sess.plan = plan
         sess.last_ids = [h.id for h in resp.hits][: sess_mod.MAX_DOCS]

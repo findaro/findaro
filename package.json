@@ -1,0 +1,24 @@
+{
+  "name": "zerch-js",
+  "private": true,
+  "license": "Apache-2.0",
+  "workspaces": [
+    "packages/sdk",
+    "packages/widget",
+    "examples/react"
+  ],
+  "scripts": {
+    "gen:types": "openapi-typescript packages/sdk/openapi.json -o packages/sdk/src/api.gen.ts",
+    "build": "npm run build -w @zerch/sdk && npm run build -w @zerch/widget",
+    "typecheck": "tsc -p packages/sdk && tsc -p packages/widget --noEmit",
+    "size": "node js-scripts/check-size.mjs",
+    "e2e": "playwright test",
+    "check": "npm run gen:types && npm run typecheck && npm run build && npm run size"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "esbuild": "^0.28.2",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5.9.3"
+  }
+}

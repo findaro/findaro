@@ -86,6 +86,21 @@ class Pill(BaseModel):
     values: list[PillValue]
 
 
+class Display(BaseModel):
+    """Which document fields a UI should use for a product card (from the schema's inferred roles)."""
+
+    id: str | None = None
+    title: str | None = None
+    price: str | None = None
+    compare_at_price: str | None = None  # e.g. MRP, when the catalog has a second price field
+    currency: str | None = None  # ISO code, e.g. INR
+    image: str | None = None
+    url: str | None = None
+    rating: str | None = None
+    rating_count: str | None = None
+    in_stock: str | None = None
+
+
 class RelaxedFilter(BaseModel):
     field: str
     value: Any
@@ -115,5 +130,6 @@ class SearchResponse(BaseModel):
     took_ms: float
     understood: Understood | None = None
     pills: list[Pill] = Field(default_factory=list)
+    display: Display | None = None
     debug: dict[str, Any] | None = None
     cached: bool = False

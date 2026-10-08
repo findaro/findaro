@@ -10,3 +10,12 @@ dist/
 eval/results/
 data/.gen_cache/
 .DS_Store
+node_modules/
+packages/*/dist/
+examples/react/dist/
+examples/plain-html/demo.html
+examples/plain-html/zerch-widget.js
+test-results/
+playwright-report/
+.demo-project.json
+examples/react/.env.local

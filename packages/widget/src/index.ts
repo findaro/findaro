@@ -1,0 +1,504 @@
+/**
+ * <zerch-search>: drop-in AI search widget (Web Component, Shadow DOM, no framework).
+ *
+ *   <script src="zerch-widget.js" data-project="prj_…" data-key="zk_search_…" data-base-url="…" defer></script>
+ *   <zerch-search></zerch-search>
+ *
+ * Attributes (override the script tag): project, key, base-url, mode ("search" | "ai"), locale ("en" | "hi-en"),
+ * placeholder, size, theme ("light" | "dark"). Properties: renderProduct, onProductClick, strings, client.
+ * Events: "zerch:product-click" (cancelable), "zerch:results", "zerch:error".
+ */
+import {
+  createClient,
+  debounce,
+  type ChatEvent,
+  type Chip,
+  type ClarifyEvent,
+  type Display,
+  type Hit,
+  type PatchOp,
+  type Pill,
+  type SearchResponse,
+  type ZerchClient,
+} from "@zerch/sdk";
+
+import { STRINGS, fmt, type Strings } from "./strings";
+import { CSS } from "./styles";
+
+export type RenderProduct = (hit: Hit, ctx: { display: Display; formatPrice: (v: unknown) => string }) =>
+  HTMLElement | string;
+export type ProductClick = (hit: Hit, event: Event) => void;
+
+interface View {
+  total: number;
+  hits: Hit[];
+  chips: Chip[];
+  pills: Pill[];
+  quality: string | null;
+  close: Set<string>;
+  display: Display;
+  semantic: string;
+}
+interface Msg {
+  role: "user" | "assistant";
+  text: string;
+  clarify?: ClarifyEvent | null;
+  pending?: boolean;
+  error?: boolean;
+}
+
+const SCRIPT_DEFAULTS: Record<string, string> = {};
+{
+  const s = (typeof document !== "undefined" ? document.currentScript : null) as HTMLScriptElement | null;
+  if (s?.dataset) {
+    for (const [k, v] of Object.entries({ project: s.dataset.project, key: s.dataset.key,
+      "base-url": s.dataset.baseUrl, locale: s.dataset.locale, mode: s.dataset.mode })) {
+      if (v) SCRIPT_DEFAULTS[k] = v;
+    }
+  }
+}
+
+function h<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, unknown> = {},
+                                                   ...kids: (Node | string | null | undefined | false)[]) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k.startsWith("on") && typeof v === "function") el.addEventListener(k.slice(2), v as EventListener);
+    else if (k === "class") el.className = String(v);
+    else el.setAttribute(k, v === true ? "" : String(v));
+  }
+  for (const kid of kids) if (kid != null && kid !== false) el.append(kid);
+  return el;
+}
+
+const EMPTY_DISPLAY: Display = {};
+
+export class ZerchSearch extends HTMLElement {
+  static observedAttributes = ["mode", "locale", "placeholder", "project", "key", "base-url"];
+
+  /** Custom product card. Return an element or an HTML string. */
+  renderProduct: RenderProduct | null = null;
+  /** Called on product click; navigation to the product URL is skipped when set. */
+  onProductClick: ProductClick | null = null;
+  /** Partial string overrides, merged over the locale's defaults. */
+  strings: Partial<Strings> = {};
+  /** Inject a preconfigured client (e.g. with a custom fetch). */
+  client: ZerchClient | null = null;
+
+  #root: ShadowRoot;
+  #mode: "search" | "ai" = "search";
+  #query = "";
+  #patches: PatchOp[] = [];
+  #view: View | null = null;
+  #loading = false;
+  #error = "";
+  #session: string | null = null;
+  #msgs: Msg[] = [];
+  #docs = new Map<string, Hit>();
+  #input!: HTMLInputElement;
+  #debounced = debounce(() => this.#runSearch(), 250);
+
+  constructor() {
+    super();
+    this.#root = this.attachShadow({ mode: "open" });
+  }
+
+  connectedCallback() {
+    this.#mode = (this.#attr("mode") === "ai" ? "ai" : "search");
+    this.#build();
+    this.#render();
+  }
+
+  attributeChangedCallback(name: string) {
+    if (!this.isConnected || !this.#input) return;
+    if (name === "mode") this.#setMode(this.#attr("mode") === "ai" ? "ai" : "search");
+    else if (["project", "key", "base-url"].includes(name)) this.client = null;
+    this.#render();
+  }
+
+  /** Run a search (or ask the AI in "ai" mode) programmatically. */
+  search(query: string) {
+    this.#input.value = query;
+    this.#submit();
+  }
+
+  get #s(): Strings {
+    const base = STRINGS[this.#attr("locale") || "en"] || STRINGS.en;
+    return { ...base, ...this.strings };
+  }
+
+  #attr(name: string): string | null {
+    return this.getAttribute(name) ?? SCRIPT_DEFAULTS[name] ?? null;
+  }
+
+  #client(): ZerchClient {
+    if (!this.client) {
+      const key = this.#attr("key");
+      if (!key) throw new Error("zerch-search: missing search key (data-key on the script tag, or key=…)");
+      this.client = createClient({ projectId: this.#attr("project") || "", searchKey: key,
+                                   baseUrl: this.#attr("base-url") || undefined });
+    }
+    return this.client;
+  }
+
+  // --- layout -------------------------------------------------------------------------------------------
+
+  #els: Record<string, HTMLElement> = {};
+
+  #build() {
+    const s = this.#s;
+    this.#root.innerHTML = "";
+    this.#root.append(h("style", {}, CSS));
+    this.#input = h("input", {
+      type: "search", "aria-label": s.placeholder, autocomplete: "off", enterkeyhint: "search",
+      oninput: () => this.#onInput(), onkeydown: (e: KeyboardEvent) => this.#onKey(e),
+    });
+    const modeBtn = (m: "search" | "ai", label: string) =>
+      h("button", { type: "button", role: "radio", "data-mode": m, onclick: () => this.#setMode(m, true) }, label);
+    this.#els.modes = h("div", { class: "modes", role: "radiogroup", "aria-label": s.modeLabel },
+      modeBtn("search", s.search), modeBtn("ai", s.ask));
+    this.#els.go = h("button", { class: "go", type: "submit" }, s.search);
+    const form = h("form", { class: "box", role: "search", onsubmit: (e: Event) => {
+      e.preventDefault();
+      this.#submit();
+    } }, this.#input, this.#els.go);
+    this.#els.chips = h("div", { class: "row", role: "group" });
+    this.#els.pills = h("div", { class: "pills" });
+    this.#els.status = h("div", { class: "status", role: "status", "aria-live": "polite" });
+    this.#els.results = h("div", {});
+    this.#els.panel = h("div", { class: "panel", role: "log", "aria-live": "polite" });
+    this.#els.layout = h("div", { class: "layout" }, this.#els.panel,
+      h("section", { "aria-label": s.products }, this.#els.status, this.#els.results));
+    this.#root.append(h("div", { class: "root", part: "root" },
+      h("div", { class: "bar" }, this.#els.modes, form), this.#els.chips, this.#els.pills, this.#els.layout));
+  }
+
+  #setMode(m: "search" | "ai", focus = false) {
+    if (m === this.#mode && this.#els.layout) {
+      if (focus) this.#input.focus();
+      return;
+    }
+    this.#mode = m;
+    this.#render();
+    if (focus) this.#input.focus();
+  }
+
+  #onInput() {
+    if (this.#mode !== "search") return;
+    const q = this.#input.value.trim();
+    if (q !== this.#query) this.#patches = [];
+    this.#query = q;
+    if (q.length >= 2) this.#debounced();
+  }
+
+  #onKey(e: KeyboardEvent) {
+    if (e.key === "Escape") {
+      this.#input.value = "";
+      this.#query = "";
+      this.#patches = [];
+      this.#view = null;
+      this.#render();
+    }
+  }
+
+  #submit() {
+    const q = this.#input.value.trim();
+    if (!q) return;
+    if (this.#mode === "ai") {
+      this.#input.value = "";
+      this.#ask(q);
+    } else {
+      this.#debounced.cancel();
+      if (q !== this.#query) this.#patches = [];
+      this.#query = q;
+      this.#runSearch();
+    }
+  }
+
+  // --- search -------------------------------------------------------------------------------------------
+
+  async #runSearch() {
+    if (!this.#query) return;
+    this.#loading = true;
+    this.#error = "";
+    this.#renderStatus();
+    try {
+      const res = await this.#client().search({ query: this.#query, patch: this.#patches,
+                                                size: Number(this.#attr("size")) || 20 });
+      this.#setView(res);
+    } catch (e) {
+      if ((e as Error).name === "AbortError") return;
+      this.#fail(e);
+    } finally {
+      this.#loading = false;
+      this.#render();
+    }
+  }
+
+  #setView(res: SearchResponse) {
+    const und = res.understood;
+    this.#view = {
+      total: res.total, hits: res.hits, chips: und?.chips ?? [], pills: res.pills ?? [],
+      quality: und?.match_quality ?? null, close: new Set(und?.close_matches ?? []),
+      display: res.display ?? EMPTY_DISPLAY, semantic: und?.semantic_text ?? res.query,
+    };
+    for (const hit of res.hits) this.#docs.set(hit.id, hit);
+    this.dispatchEvent(new CustomEvent("zerch:results", { detail: res, bubbles: true, composed: true }));
+  }
+
+  #applyPatch(ops: PatchOp[], label: string) {
+    if (this.#mode === "ai" && this.#session) {
+      this.#ask(label, ops);
+      return;
+    }
+    this.#patches = [...this.#patches, ...ops];
+    this.#runSearch();
+  }
+
+  #fail(e: unknown) {
+    this.#error = this.#s.error;
+    this.dispatchEvent(new CustomEvent("zerch:error", { detail: e, bubbles: true, composed: true }));
+  }
+
+  // --- chat ---------------------------------------------------------------------------------------------
+
+  async #ask(message: string, patch?: PatchOp[]) {
+    const user: Msg = { role: "user", text: message };
+    const bot: Msg = { role: "assistant", text: "", pending: true, clarify: null };
+    this.#msgs.push(user, bot);
+    this.#renderPanel();
+    try {
+      const stream = this.#client().chat(patch ? "" : message, { sessionId: this.#session, patch });
+      for await (const ev of stream as AsyncIterable<ChatEvent>) {
+        if (ev.type === "session") this.#session = ev.data.session_id;
+        else if (ev.type === "plan" && ev.data.understood && this.#view) {
+          this.#view.chips = ev.data.understood.chips ?? [];
+        } else if (ev.type === "results" && !ev.data.unchanged) {
+          const prev = this.#view;
+          this.#view = {
+            total: ev.data.total, hits: ev.data.items, pills: ev.data.pills ?? [],
+            chips: prev?.chips ?? [], quality: ev.data.match_quality ?? null,
+            close: new Set(ev.data.close_matches ?? []), display: ev.data.display ?? prev?.display ?? EMPTY_DISPLAY,
+            semantic: message,
+          };
+          for (const hit of ev.data.items) this.#docs.set(hit.id, hit);
+          this.#renderResults();
+        } else if (ev.type === "plan" && ev.data.understood) {
+          this.#view = { total: 0, hits: [], pills: [], quality: null, close: new Set(), display: EMPTY_DISPLAY,
+                         chips: ev.data.understood.chips ?? [], semantic: message };
+        } else if (ev.type === "clarify") bot.clarify = ev.data;
+        else if (ev.type === "text") bot.text += ev.data.delta;
+        else if (ev.type === "done") bot.pending = false;
+        this.#renderChips();
+        this.#renderPanel();
+      }
+    } catch (e) {
+      if ((e as Error).name !== "AbortError") {
+        bot.error = true;
+        bot.text = this.#s.error;
+        this.#fail(e);
+      }
+    } finally {
+      bot.pending = false;
+      this.#render();
+    }
+  }
+
+  // --- rendering ----------------------------------------------------------------------------------------
+
+  #render() {
+    const s = this.#s;
+    const ai = this.#mode === "ai";
+    for (const b of this.#els.modes.querySelectorAll("button")) {
+      b.setAttribute("aria-checked", String(b.dataset.mode === this.#mode));
+    }
+    this.#input.placeholder = ai ? s.askPlaceholder : (this.#attr("placeholder") || s.placeholder);
+    this.#input.setAttribute("aria-label", this.#input.placeholder);
+    this.#els.go.textContent = ai ? s.send : s.search;
+    this.#els.layout.classList.toggle("ai", ai);
+    this.#els.panel.hidden = !ai;
+    this.#els.panel.setAttribute("aria-label", s.conversation);
+    this.#renderChips();
+    this.#renderStatus();
+    this.#renderResults();
+    this.#renderPanel();
+  }
+
+  #renderChips() {
+    const s = this.#s;
+    const v = this.#view;
+    const chips = v?.chips ?? [];
+    this.#els.chips.replaceChildren();
+    this.#els.chips.hidden = !chips.length;
+    if (chips.length) {
+      this.#els.chips.setAttribute("aria-label", s.understood);
+      this.#els.chips.append(h("span", { class: "row-label", "aria-hidden": "true" }, s.understood));
+      for (const c of chips) {
+        this.#els.chips.append(h("span", { class: `chip ${c.kind}`, title: c.source || undefined }, c.label,
+          h("button", { type: "button", "aria-label": fmt(s.removeFilter, { label: c.label }),
+                        onclick: () => this.#applyPatch(c.remove ?? [], `− ${c.label}`) }, "×")));
+      }
+    }
+    this.#els.pills.replaceChildren();
+    const pills = v?.pills ?? [];
+    this.#els.pills.hidden = !pills.length || !v?.hits.length;
+    for (const p of pills) {
+      const row = h("div", { class: "row", role: "group", "aria-label": `${s.refine}: ${p.label}` },
+        h("span", { class: "row-label", "aria-hidden": "true" }, p.label));
+      for (const val of p.values) {
+        row.append(h("button", { type: "button", class: "pill", onclick: () => this.#applyPatch(val.patch, val.label) },
+          val.label, h("small", { "aria-hidden": "true" }, String(val.count))));
+      }
+      this.#els.pills.append(row);
+    }
+  }
+
+  #renderStatus() {
+    const s = this.#s;
+    const v = this.#view;
+    const st = this.#els.status;
+    st.className = "status";
+    if (this.#error) st.textContent = this.#error;
+    else if (this.#loading) st.textContent = s.loading;
+    else if (!v) st.textContent = "";
+    else if (v.quality === "weak") {
+      st.textContent = s.weak;
+      st.classList.add("weak");
+    } else if (v.close.size) {
+      st.textContent = fmt(s.withClose, { n: v.hits.length - v.close.size, c: v.close.size });
+    } else st.textContent = v.hits.length ? fmt(s.results, { n: v.total }) : "";
+  }
+
+  #renderResults() {
+    const s = this.#s;
+    const v = this.#view;
+    const box = this.#els.results;
+    box.replaceChildren();
+    if (!v) return;
+    if (!v.hits.length) {
+      box.append(h("div", { class: "empty", "data-state": "no-match" },
+        h("strong", {}, fmt(s.noMatch, { q: this.#query || v.semantic })), s.noMatchHint));
+      return;
+    }
+    const list = h("ul", { class: "grid", role: "list" });
+    for (const hit of v.hits) list.append(h("li", {}, this.#card(hit, v)));
+    box.append(list);
+  }
+
+  #formatPrice = (value: unknown): string => {
+    const n = typeof value === "number" ? value : Number(value);
+    if (!Number.isFinite(n)) return value == null ? "" : String(value);
+    const cur = this.#view?.display.currency;
+    try {
+      return new Intl.NumberFormat(cur === "INR" ? "en-IN" : undefined, cur
+        ? { style: "currency", currency: cur, maximumFractionDigits: n % 1 ? 2 : 0 }
+        : { maximumFractionDigits: 2 }).format(n);
+    } catch {
+      return String(n);
+    }
+  };
+
+  #image(src: unknown, alt: string): HTMLElement {
+    const fallback = () => h("div", { class: "img", "aria-hidden": "true" }, (alt.trim()[0] || "?").toUpperCase());
+    if (typeof src !== "string" || !src) return fallback();
+    const img = h("img", { class: "img", src, alt: "", loading: "lazy", decoding: "async" });
+    img.addEventListener("error", () => img.replaceWith(fallback()), { once: true });
+    return img;
+  }
+
+  #click(hit: Hit, e: Event) {
+    const ev = new CustomEvent("zerch:product-click", { detail: { hit }, bubbles: true, composed: true,
+                                                        cancelable: true });
+    const allowed = this.dispatchEvent(ev);
+    if (this.onProductClick) {
+      e.preventDefault();
+      this.onProductClick(hit, e);
+    } else if (!allowed) e.preventDefault();
+  }
+
+  #card(hit: Hit, v: View): HTMLElement {
+    const d = v.display;
+    const doc = hit.document as Record<string, unknown>;
+    if (this.renderProduct) {
+      const out = this.renderProduct(hit, { display: d, formatPrice: this.#formatPrice });
+      if (typeof out !== "string") return out;
+      const wrap = h("div", {});
+      wrap.innerHTML = out;
+      return wrap;
+    }
+    const s = this.#s;
+    const title = String((d.title && doc[d.title]) ?? hit.id);
+    const url = d.url && typeof doc[d.url] === "string" ? String(doc[d.url]) : null;
+    const price = d.price ? doc[d.price] : undefined;
+    const mrp = d.compare_at_price ? doc[d.compare_at_price] : undefined;
+    const rating = d.rating ? doc[d.rating] : undefined;
+    const count = d.rating_count ? doc[d.rating_count] : undefined;
+    const stock = d.in_stock ? doc[d.in_stock] : undefined;
+    const body = h("div", { class: "body" },
+      v.close.has(hit.id) ? h("span", { class: "badge" }, s.close) : null,
+      h("span", { class: "title" }, title),
+      price != null ? h("span", { class: "price" }, this.#formatPrice(price),
+        mrp != null && Number(mrp) > Number(price) ? h("span", { class: "mrp" }, this.#formatPrice(mrp)) : null) : null,
+      h("span", { class: "meta" },
+        rating != null ? h("span", {}, `★ ${rating}${count != null ? ` (${count})` : ""}`) : null,
+        stock === false ? h("span", {}, s.outOfStock) : null));
+    const attrs = { class: "card", "data-id": hit.id, onclick: (e: Event) => this.#click(hit, e) };
+    return url
+      ? h("a", { ...attrs, href: url, target: "_blank", rel: "noopener" }, this.#image(d.image ? doc[d.image] : null, title), body)
+      : h("button", { ...attrs, type: "button" }, this.#image(d.image ? doc[d.image] : null, title), body);
+  }
+
+  #mini(id: string): HTMLElement | string {
+    const hit = this.#docs.get(id);
+    if (!hit) return `[${id}]`;
+    const d = this.#view?.display ?? EMPTY_DISPLAY;
+    const doc = hit.document as Record<string, unknown>;
+    const title = String((d.title && doc[d.title]) ?? id);
+    const price = d.price ? doc[d.price] : undefined;
+    return h("button", { type: "button", class: "mini", "data-id": id, onclick: (e: Event) => this.#click(hit, e) },
+      this.#image(d.image ? doc[d.image] : null, title),
+      h("span", {}, title + (price != null ? ` · ${this.#formatPrice(price)}` : "")));
+  }
+
+  #renderPanel() {
+    if (this.#mode !== "ai") return;
+    const s = this.#s;
+    const panel = this.#els.panel;
+    panel.replaceChildren();
+    for (const [i, m] of this.#msgs.entries()) {
+      const text = h("div", { class: `text${m.pending ? " typing" : ""}` });
+      if (m.role === "assistant") {
+        // [ID] citations become inline product cards
+        for (const part of m.text.split(/(\[[^\]\s]+\])/)) {
+          const id = /^\[([^\]\s]+)\]$/.exec(part)?.[1];
+          text.append(id ? this.#mini(id) : part);
+        }
+        if (m.pending && !m.text) text.append(s.thinking);
+      } else text.textContent = m.text;
+      const msg = h("div", { class: `msg ${m.role}` }, h("span", { class: "who" }, m.role === "user" ? s.you : s.assistant),
+        text);
+      const c = m.clarify;
+      if (c && i === this.#msgs.length - 1) {
+        const chips = h("div", { class: "row", role: "group", "aria-label": c.question });
+        for (const chip of c.chips) {
+          chips.append(h("button", { type: "button", class: "pill", "data-clarify": "",
+                                     onclick: () => this.#ask(chip.label, chip.patch) },
+            chip.label, chip.count != null ? h("small", { "aria-hidden": "true" }, String(chip.count)) : null));
+        }
+        msg.append(h("div", { class: "clarify" }, h("p", {}, c.question), chips));
+      }
+      panel.append(msg);
+    }
+    panel.scrollTop = panel.scrollHeight;
+  }
+}
+
+if (typeof customElements !== "undefined" && !customElements.get("zerch-search")) {
+  customElements.define("zerch-search", ZerchSearch);
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "zerch-search": ZerchSearch;
+  }
+}

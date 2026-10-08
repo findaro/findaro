@@ -873,6 +873,123 @@
     ],
     "title": "DeleteIds"
    },
+   "Display": {
+    "properties": {
+     "id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "title": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Title"
+     },
+     "price": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price"
+     },
+     "compare_at_price": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Compare At Price"
+     },
+     "currency": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Currency"
+     },
+     "image": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Image"
+     },
+     "url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Url"
+     },
+     "rating": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rating"
+     },
+     "rating_count": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rating Count"
+     },
+     "in_stock": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "In Stock"
+     }
+    },
+    "type": "object",
+    "title": "Display",
+    "description": "Which document fields a UI should use for a product card (from the schema's inferred roles)."
+   },
    "HTTPValidationError": {
     "properties": {
      "detail": {
@@ -1239,6 +1356,16 @@
       },
       "type": "array",
       "title": "Pills"
+     },
+     "display": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Display"
+       },
+       {
+        "type": "null"
+       }
+      ]
      },
      "debug": {
       "anyOf": [
@@ -1647,6 +1774,17 @@
       "default": false,
       "title": "Unchanged",
       "type": "boolean"
+     },
+     "display": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Display"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
      }
     },
     "required": [

@@ -1,0 +1,29 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - name: Start services and API
+        run: docker compose up -d --build --wait
+      - name: Python lint + tests
+        run: |
+          uv sync
+          uv run ruff check .
+          uv run pytest -q
+      - name: JS types, build, bundle-size budgets
+        run: |
+          npm ci
+          uv run python scripts/export_openapi.py
+          npm run check
+          git diff --exit-code packages/sdk/openapi.json packages/sdk/src/api.gen.ts  # spec/types up to date
+      - name: e2e (plain-html widget + React example)
+        run: |
+          npx playwright install --with-deps chromium
+          npm run e2e

@@ -295,8 +295,15 @@ def refine(message: str, plan: QueryPlan, parsed: QueryPlan, schema: Schema, lex
             if b.origin == "category" and isinstance(b.value, list):
                 continue
             same = [x for x in by_text.get(b.text or "", []) if x.origin == "facet"]
-            if len(same) > 1 and shown_fields and b.field not in shown_fields:
-                continue  # "5 L" is both capacity and volume: keep the field the shown products have
+            if len(same) > 1 and b.origin == "facet":
+                # "copper" is both a colour and a material, "5 L" both capacity and volume: keep the one field
+                # where the value is most common among the products on screen
+                def hits(x) -> int:
+                    vals = {str(v).lower() for v in (x.value if isinstance(x.value, list) else [x.value])}
+                    return sum(1 for doc in last_docs if str(doc.get(x.field, "")).lower() in vals)
+                best = max(same, key=lambda x: (hits(x), x.field in shown_fields, -same.index(x)))
+                if b is not best:
+                    continue
             delta.add_filters.append(PlanFilter(field=b.field, op="in" if isinstance(b.value, list) else "eq",
                                                 value=b.value, strict=True, origin="chat", text=b.text,
                                                 confidence=0.9))

@@ -1,0 +1,26 @@
+{
+  "name": "@zerch/widget",
+  "version": "0.1.0",
+  "description": "Drop-in <zerch-search> Web Component: AI search box, chips, facet pills, results grid and AI chat panel.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/zerch-widget.js",
+  "module": "./dist/zerch-widget.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/zerch-widget.mjs",
+      "default": "./dist/zerch-widget.js"
+    }
+  },
+  "unpkg": "./dist/zerch-widget.js",
+  "files": ["dist", "README.md"],
+  "sideEffects": true,
+  "scripts": {
+    "build": "node build.mjs && tsc -p . --emitDeclarationOnly"
+  },
+  "dependencies": {
+    "@zerch/sdk": "0.1.0"
+  }
+}

@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-from zerch.search.models import Hit, Pill, Understood
+from zerch.search.models import Display, Hit, Pill, Understood
 from zerch.understand.patch import PatchOp
 
 
@@ -35,6 +35,7 @@ class ResultsEvent(BaseModel):
     match_quality: Literal["good", "weak", "none"] | None
     close_matches: list[str] = Field(default_factory=list)
     unchanged: bool = False  # question / chit-chat turns: the results on screen didn't change
+    display: Display | None = None
 
 
 class ClarifyChipView(BaseModel):

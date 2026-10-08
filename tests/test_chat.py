@@ -339,3 +339,11 @@ async def test_chat_patch_turn_and_pills(loaded, chat_llm):
     assert first(ev2, "done")["turn_type"] == "refine" and first(ev2, "done")["reason"] == "patch"
     field = res["pills"][0]["field"]
     assert all(i["document"][field] == pill["value"] for i in first(ev2, "results")["items"])
+
+
+def test_value_in_two_fields_filters_one():
+    # "copper" is a colour and a material in the demo-like fixture: keep the field the shown products use
+    plan = plan_for("water bottle")
+    d = refine("only copper", plan, parse("only copper"), SCHEMA, LEX, DICT, BOTTLES)
+    fields = [f.field for f in d.add_filters if str(f.value) == "Copper"]
+    assert len(fields) == 1

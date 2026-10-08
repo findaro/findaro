@@ -14,8 +14,8 @@ and later a chat-style refinement mode. Open source (Apache-2.0) from day one; h
 |---|---|---|
 | M1 | Core: projects/keys, ingestion, schema inference, hybrid search, demo catalog, eval baseline | done |
 | M2 | AI query understanding (filters/price/attributes inferred from the query, Hinglish normalisation) | done |
-| **M3** | Chat search (conversational refinement over the M2 query representation) | done (conversations need review) |
-| M4 | JS SDK / drop-in widget (uses the browser-safe `search_key`) | not started |
+| M3 | Chat search (conversational refinement over the M2 query representation) | done (conversations need review) |
+| **M4** | JS SDK / drop-in widget (uses the browser-safe `search_key`) | done (chat groundedness re-measure pending OpenAI credits) |
 
 Do not build M2–M4 early, but do not make choices that block them:
 - Search request/response shapes are versioned (`/v1`) and additive. M2 will add a parsed-query
@@ -66,6 +66,9 @@ Do not build M2–M4 early, but do not make choices that block them:
 - `data/` — generated demo catalog (committed)
 - `eval/` — queries, runner, report (baseline)
 - `tests/` — pytest; needs compose services up (`docker compose up -d postgres opensearch redis`)
+- `packages/sdk` (`@zerch/sdk`, headless TS client, types generated from `packages/sdk/openapi.json`),
+  `packages/widget` (`<zerch-search>`), `examples/plain-html`, `examples/react`, `e2e/` (Playwright)
+- JS budgets (enforced by `npm run size`): SDK ≤ 10 KB gz, widget incl. SDK ≤ 40 KB gz. Zero runtime deps.
 
 ## Out of scope (M1)
 

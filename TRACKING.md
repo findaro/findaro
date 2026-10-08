@@ -7,7 +7,7 @@ Notion MCP was not authorised in the session, so tracking lives here.
 | AI search SaaS: M1 | Claude Code: ai-search M1 | Done (eval queries reviewed 2026-10-07) |
 | AI search SaaS: M2 | Claude Code: ai-search M2 | Done (holdout: nDCG@10 0.818, written by gpt-5.5) |
 | AI search SaaS: M3 | Claude Code: ai-search M3 | Waiting on Rohit (review eval/conversations.jsonl) |
-| AI search SaaS: M4 | Claude Code: ai-search M4 | Waiting on Rohit (OpenAI credits to re-measure chat groundedness) |
+| AI search SaaS: M4 | Claude Code: ai-search M4 | Done (groundedness 97.1% on local Ollama, reviewed by hand) |
 
 ## M1 status (2026-10-08)
 
@@ -53,3 +53,8 @@ Playwright e2e (17 passing), bundle budgets, npm publish --dry-run for both pack
 
 Waiting on Rohit: OpenAI returned insufficient_quota mid-eval, so groundedness / numeric-error / clarifier
 numbers after the Part A fixes aren't measured yet. Add credits, then: uv run python eval/run_chat.py --search-key …
+
+## M4 done (2026-10-08)
+
+Re-measured on local Ollama (no paid calls): groundedness 66/68 = 97.1%, numeric errors 0, clarifiers 8/71 turns.
+First-token target missed on the local 8B model (6.7 s). Demo UI simplified. Paid LLM providers are opt-in only.

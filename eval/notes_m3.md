@@ -1,51 +1,41 @@
-### Analysis
+### M4 re-measurement (2026-10-08): chat on local Ollama, groundedness reviewed by hand
 
-**Model choice.** The brief asks for claude-haiku-4-5. No Anthropic key was available, so Rohit approved OpenAI.
-The same 71-turn eval was run with three chat models:
+**Setup.** OpenAI credits ran out during M4, so this run uses local `llama3.1:8b` through Ollama for answers
+and unclear-turn classification. That is free, but slower and weaker than gpt-4.1-mini. No paid API calls were
+made. Groundedness wasn't judged by an LLM: I (Claude, the author of this system) reviewed all 68 non-chit-chat
+answers by hand against the fields of the products on screen. Claim-by-claim verdicts are in
+`eval/chat_review_m4.md`.
 
-| Model | First token p95 | Groundedness |
-|---|---:|---:|
-| gpt-4.1-mini (default) | 915–1,109 ms | 88–90% |
-| gpt-4o-mini | 1,009 ms | 84% |
-| gpt-5.4-mini (reasoning `none`) | 1,237–1,456 ms | 93–96% |
+| Target | Result | |
+|---|---|---|
+| Groundedness ≥ 97% (every claim supported by the shown products' fields) | **66/68 = 97.1%** (48/50 model-written answers, 18/18 fallbacks) | ✅ met, just |
+| 0 numeric errors | **0**: every number comes from a server-filled slot | ✅ met |
+| Clarifier rate (question only for category, budget, weak match) | 8/71 turns (11%, was 19/71); recall 75%, precision 100% | |
+| Negation scope ("slim fit, black nahi") | c24 nDCG 0.33 → 1.00; tests cover English and Hinglish forms | ✅ |
+| Results event p95 ≤ 150 ms | 63 ms | ✅ met |
+| First text token p95 ≤ 1.2 s | 6.7 s (local 8B model; the target assumed Haiku) | ❌ missed |
 
-gpt-5.4-mini grounds best but misses the 1.2 s first-token target, so the default is gpt-4.1-mini. Two prompt
-changes closed most of the grounding gap:
-- the model sees every product on screen, not just the top 5;
-- comparisons ("cheapest", "highest rated") are computed in code and handed to the model as facts.
+**How the numbers are made safe.**
+- The model writes `{price:ID}`-style slots, and the server fills them from that product.
+- Every sentence is checked before it streams, and dropped whole if it:
+  - contains a number the model wrote itself;
+  - puts a slot on a product the sentence doesn't cite;
+  - names a product type that doesn't fit the cited product;
+  - names an attribute value the cited product doesn't have, or another product's brand;
+  - makes an uncited claim;
+  - makes an "all/sabhi/both" claim that isn't true for every product it covers;
+  - makes a stock claim that isn't true;
+  - makes a comparison (English or Hindi) not backed by the fact computed in code.
+- All checks run in code at no cost; `tests/test_slots.py` has a test for each.
 
-Set `ZERCH_CHAT_MODEL=gpt-5.4-mini` to prefer grounding over latency.
-
-**Known-problem fixes from M2.**
-- *match_quality:* now also uses planner evidence (did the rules recognise a catalog value or category, or did the
-  user confirm one in chat) and how many query words the top results actually contain. Synonym expansions count,
-  and missing words only lower the quality when the catalog has never seen them.
-  - Result: 18/20 out-of-catalog queries get `none`/`weak`, and 0 in-catalog queries get `none`.
-  - Still `good`: "laptop" (laptop bags) and "washing machine" (laundry organisers).
-- *Backfill:* "saree under rs 1000" now shows the one saree under ₹1,000, then sarees just over budget, cheapest
-  first. It used to show tea and bellies. Rules:
-  - Filler and backfill stay inside the category the lexical matches agree on.
-  - Category votes are weighted by lexical score, so a weak fuzzy match can't redirect it.
-  - Price segment: 0.900 → 0.954.
-
-**Remaining failures.**
-- *Turn type ("type c wala").* "type c" isn't recognised as USB-C, so it's treated as a new search. That
-  needs a synonym the packs don't have; it wasn't added to avoid tuning on the eval.
-- *Groundedness (judge-flagged answers, about 10%), three kinds:*
-  - Category slips: calling a neckband "earbuds", because "bluetooth earbuds" retrieval includes neckbands.
-  - Inference beyond the fields: "10W typically means no fast charging".
-  - A few judge disagreements. For example, "slightly over budget" for ₹1,299 is correct relative to the
-    original ₹1,000 budget, but the judge only sees the relaxed ₹1,300 cap.
-- *Clarifier recall 75%.* "dal" doesn't trigger a category question. The query also matches a spice ("dal
-  tadka masala"), so no single parent category covers 90% of the results.
-- *Clarifier frequency.* It asks on 19/71 turns. Bare category queries ("water bottle", "jeans") get an
-  attribute question ("Any preference for color?") when results spread evenly. The brief's rule allows it.
-  Whether it's wanted is a product call for review.
+**The two remaining failures** are both broad claims the checks don't parse:
+- "sabhi cable ke price alag-alag hain" (every cable has a different price): three cost ₹549;
+- "the products are all vegetarian and available": one is out of stock.
 
 **Caveats.**
-- *The conversations aren't independent.* They were written by the same model that built the rules, and are
-  marked `needs_review`. Several were checked while iterating (turn classification, refinement rules), so the
-  turn-type and plan numbers are dev-set numbers, not holdout numbers.
-- *The judge is an LLM too* (gpt-5.5), not human review.
-- *Latency is client-measured* against Docker on a laptop. First-token time is dominated by the OpenAI API, about
-  700 ms at p50.
+- *Checks built from the eval itself.* Most checks were written after reading failures on these same 25
+  conversations, so 97% is a dev-set number. Expect lower on new conversations.
+- *Fallbacks.* 18 of 68 answers are the plain fallback ("Top result: [ID]"), used when every sentence the 8B model
+  wrote was dropped. They're grounded, but not helpful.
+- *Not independent.* The reviewer is the system's author. The per-answer file exists so a person can spot-check it.
+- *The conversations are still `needs_review`.*

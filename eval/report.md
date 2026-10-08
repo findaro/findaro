@@ -206,24 +206,22 @@ Cold-embedding and 10k-document numbers: `eval/latency_10k.md` (`scripts/bench.p
 
 ## M3 — chat search
 
-> **M4 Part A re-measurement pending.** The M3 numbers below predate the M4 fixes (server-filled number
-> slots, negation scope, question-only-for-category/budget/weak clarifiers). The re-run on 2026-10-08 was
-> aborted: OpenAI returned `insufficient_quota` ("no credits remaining") on 67 of 71 turns. One partial
-> run before the quota ran out showed c24 fixed (nDCG 0.33 → 1.00) and clarifiers on 8/71 turns (was 19), but
-> its groundedness figures are not reported because most answers were fallbacks.
-
-- Date: 2026-10-08 08:08 UTC · 25 conversations, 71 turns (`eval/conversations.jsonl`, marked needs_review)
-- Chat model: openai:gpt-4.1-mini (default; gpt-5.4-mini grounds better but misses first-token p95) · judge: openai:gpt-5.5 (OpenAI in place of claude-haiku-4-5, approved by Rohit 2026-10-08)
+- Date: 2026-10-08 15:08 UTC · 25 conversations, 71 turns (`eval/conversations.jsonl`, marked needs_review)
+- Chat model: ollama:llama3.1:8b (local, free) · judge: ollama:llama3.1:8b (OpenAI in place of claude-haiku-4-5, approved by Rohit 2026-10-08)
 
 | Target / metric | Result | |
 |---|---|---|
-| results event p95 ≤ 150 ms (rules path, client-measured) | 24 ms (n=60) | ✅ met |
-| first text token p95 ≤ 1200 ms | 1109 ms (p50 730, n=68) | ✅ met |
+| results event p95 ≤ 150 ms (rules path, client-measured) | 63 ms (n=60) | ✅ met |
+| first text token p95 ≤ 1200 ms | 6671 ms (p50 4460, n=68) | ❌ missed |
+| first *model* token p95, server-side (before sentence checking) | 5465 ms (p50 3548) | |
 | turn type accuracy | 99% (70/71) | |
 | plan-assertion pass rate | 97% (36/37) | |
-| per-turn nDCG@10 | 0.935 (n=57; turn 1 1.000, turn 2 0.891, turn 3+ 0.903) | |
-| clarifier precision / recall (labelled turns) | 100% / 75% (asked on 19/71 turns; 0 where the label says don't ask) | |
-| groundedness (judge: every claim supported) | 90% (61/68 answers) | |
+| per-turn nDCG@10 | 0.955 (n=57; turn 1 1.000, turn 2 0.919, turn 3+ 0.943) | |
+| clarifier precision / recall (labelled turns) | 100% / 75% (asked on 8/71 turns; 0 where the label says don't ask) | |
+| groundedness | not judged | |
+| numeric errors = 0 (numbers not in any shown product's fields) | 0 (judge-flagged numeric claims: 0; sentences dropped by the slot checker: 99) | ✅ met |
+| answers written by the model (rest: fallback when every sentence was dropped, or templates) | 50/71 (fallback 18) | |
+| clarifier rate | 8/71 turns (11%) | |
 | out-of-catalog chats: match_quality | good 2, none 4, weak 14 (none/weak 18/20; target ≥ 15) | ✅ met |
 
 ### Turn-type and plan failures
@@ -233,171 +231,173 @@ Cold-embedding and 10k-document numbers: `eval/latency_10k.md` (`scripts/bench.p
 | c18 | 2 | masala chai wali | refine | refine | Tea |
 | c20 | 2 | type c wala | refine | new |  |
 
-### Ungrounded answers (judge)
-
-| conv | turn | answer | unsupported claim |
-|---|---:|---|---|
-| c04 | 2 | The Sparsh Clothing Wine Women's Georgette Saree is priced at ₹1299, slightly over the budget limit [AP-00277]. The Jalv | AP-00277 is slightly over the budget limit.: The active search constraint is under ₹1,300, and AP-00277 is priced at ₹1299, which is wi |
-| c04 | 2 | The Sparsh Clothing Wine Women's Georgette Saree is priced at ₹1299, slightly over the budget limit [AP-00277]. The Jalv | AP-00437 has the highest rating.: AP-00437 has a higher listed rating than AP-00487, but AP-00277 has no rating field, so th |
-| c07 | 2 | Sabse sasta Bluetooth Earbuds hai Fablez Blue Bluetooth Neckband ₹549 mein [EL-00427]. Agar earbuds chahiye toh Sparkzen | EL-00427 (Fablez Blue Bluetooth Neckband) is the cheapest Bluetooth Earbuds.: EL-00427 is priced at ₹549, but its category is 'Electronics Accessories > Audio > Neckban |
-| c08 | 3 | The first product, Connecta Power Bank 20000mAh [EL-00243], has a wattage of 10W, which typically does not indicate fast | 10W typically does not indicate fast charging.: The product data lists EL-00243 as 10W but does not define what wattage qualifies as fast  |
-| c08 | 3 | The first product, Connecta Power Bank 20000mAh [EL-00243], has a wattage of 10W, which typically does not indicate fast | EL-00243 does not support fast charging.: The product data does not explicitly state that EL-00243 supports or does not support fast |
-| c09 | 1 | Sarson ka tel ke liye aap GauriGourmet Mustard Oil 1 L 549 Rs mein le sakte hain [GR-00226]. Agar aapko highest rating c | The stock status of DishaDhaba Mustard Oil 5 L needs to be checked / is not confirmed.: GR-00182 explicitly has in_stock set to true, so its stock status is known and it is in st |
-| c09 | 2 | 5 L mustard oil me sabse sasta DishaDhaba Mustard Oil hai 199 Rs me, jo cold pressed hai [GR-00182]. Sabse accha rating  | HariyaliHub 5 L mustard oil options are priced from ₹499 to ₹699 [GR-00402, GR-00039].: GR-00402 is ₹699 and GR-00039 is ₹549; the cited products do not include a ₹499 item. A Ha |
-| c17 | 3 | The KritiKraft Wireless Computer Mouse Blue has the highest rating of 5.0 and is priced at 1199 [EL-00128]. The ChargeOn | EL-00228 has a rating of 3.5.: EL-00228 has no rating field listed; 3.5 is the rating for EL-00088, not EL-00228. |
-| c18 | 2 | Masala chai ke liye aapko chai patti mil sakti hai jaise DishaDhaba Chai Patti for Men 250g sirf ₹149 mein [GR-00307], j | DishaDhaba Chai Patti for Men 250g [GR-00307] is a chai patti option for masala chai.: The product is tea/chai patti and its description says it is suitable for daily consumptio |
-
 ### Out-of-catalog queries in chat
 
 | query | match_quality | clarifier | answer |
 |---|---|---|---|
-| refrigerator | weak | I couldn't find an exact match. Is one of these close? | The search results do not include refrigerators but show various kitchen items like pressure cookers and conta |
-| washing machine | good |  | The highest rated product is the Kalyaniware Blue Non-Woven Clothings Storage Organiser Bag priced at 649 with |
-| football | none |  | No products related to "football" were found in the catalog. |
-| lipstick | weak | I couldn't find an exact match. Is one of these close? | The search did not return exact matches for lipstick. The results mainly include car perfumes such as Boltixx  |
-| gold necklace | weak | I couldn't find an exact match. Is one of these close? | The search results do not include gold necklaces but show various women's gold-colored footwear such as Kolhap |
-| baby diapers | weak | I couldn't find an exact match. Is one of these close? | The search results do not include baby diapers but show various kids' T-shirts instead. Prices range from 199  |
-| dog food | none |  | There are no dog food products available in the catalog at this time. |
-| printer ink cartridge | weak | I couldn't find an exact match. Is one of these close? | The search did not return any printer ink cartridges but showed various apparel items instead. The lowest pric |
-| sofa set | weak |  | The search results do not include exact matches for sofa sets; instead, they show various car seat covers. Amo |
-| guitar strings | none |  | No guitar strings are available in the catalog at this time. |
-| badminton racket | weak | I couldn't find an exact match. Is one of these close? | There are no exact matches for badminton rackets in the results. The items shown include stainless steel water |
-| face wash | weak | I couldn't find an exact match. Is one of these close? | The search results do not include face wash products but show various car perfumes and microfiber cleaning clo |
-| umbrella | none |  | There are no umbrellas available in the catalog at this time. |
-| wrist watch | weak | I couldn't find an exact match. Is one of these close? | The search results show neckbands rather than wrist watches. Among these, the Aahvaan Red Wireless Neckband of |
-| school textbooks | weak | I couldn't find an exact match. Is one of these close? | The search results do not include school textbooks but show various kids' school shoes instead. The lowest pri |
-| ceiling fan | weak | I couldn't find an exact match. Is one of these close? | No exact matches for ceiling fans were found. The results show various electric kettles, including a Kalyaniwa |
-| yoga mat | weak | I couldn't find an exact match. Is one of these close? | The search results do not include yoga mats but show various women's leggings suitable for yoga and fitness. T |
-| sunglasses | weak | I couldn't find an exact match. Is one of these close? | The search results do not include sunglasses but show various footwear options like sneakers and sandals. The  |
-| aata chakki machine | weak | Exact match nahi mila. Inme se kuch chahiye? | Yeh results aapke "aata chakki machine" ke liye exact matches nahi hain, yeh sab whole wheat atta (gehun ka aa |
-| laptop | good | Which kind are you looking for? | The DigiCraft Brown Laptop Bag for 15.6 inch laptops is priced at 1899 with a rating of 4.1 [EL-00380]. The Kr |
+| refrigerator | weak | I couldn't find an exact match. Is one of these close? | These search results are not exact matches for "refrigerator". |
+| washing machine | good |  | The washing machine is not found in the search results. However, we have cloth organizers that can be used for |
+| football | none |  | No products matched your search. |
+| lipstick | weak | I couldn't find an exact match. Is one of these close? | The search results for "lipstick" are not exact matches. |
+| gold necklace | weak | I couldn't find an exact match. Is one of these close? |  
+
+The cheapest product is [FW-00229] at ₹349. 
+
+ |
+| baby diapers | weak | I couldn't find an exact match. Is one of these close? | No exact match. Closest: [AP-00330] |
+| dog food | none |  | No products matched your search for "dog food". |
+| printer ink cartridge | weak | I couldn't find an exact match. Is one of these close? | The search results for "printer ink cartridge" are not exact matches, as the products listed are all clothing  |
+| sofa set | weak |  | The search results for "sofa set" are not exact matches, but rather related products. |
+| guitar strings | none |  | No results matched your search for "guitar strings". |
+| badminton racket | weak | I couldn't find an exact match. Is one of these close? | The search results for "badminton racket" do not match any of the products shown. |
+| face wash | weak | I couldn't find an exact match. Is one of these close? |  However, [AU-00084] is a microfiber car cleaning cloth, which could be related to cleaning a car's face. |
+| umbrella | none |  | No products matched your search for "umbrella". |
+| wrist watch | weak | I couldn't find an exact match. Is one of these close? |  
+
+The cheapest option is [EL-00147] at ₹649. |
+| school textbooks | weak | I couldn't find an exact match. Is one of these close? | The search results for "school textbooks" are not exact matches, but rather related products. 
+
+ 
+
+ |
+| ceiling fan | weak | I couldn't find an exact match. Is one of these close? | These search results are not exact matches for "ceiling fan". |
+| yoga mat | weak | I couldn't find an exact match. Is one of these close? |  However, [AP-00309] is the lowest priced item at ₹249. |
+| sunglasses | weak | I couldn't find an exact match. Is one of these close? | The search results for "sunglasses" are not exact matches. The products listed are mostly shoes and sandals. |
+| aata chakki machine | weak | Exact match nahi mila. Inme se kuch chahiye? | No exact match for "aata chakki machine" found. Showing related results: 
+
+
+
+
+
+Lowest price: [GR-00123] at ₹99 |
+| laptop | good | Which kind are you looking for? | The DigiCraft Brown Laptop Bag for Men and Women [EL-00080] is in stock. The lowest priced laptop bag is Fable |
 
 ### All turns
 
 | conv | turn | user | type | understood | nDCG | clarifier | results ms | first token ms | answer |
 |---|---:|---|---|---|---:|---|---:|---:|---|
-| c01 | 1 | running shoes for men | new | Men, Running Shoes | 1.00 |  | 42 | 915 | The lowest priced men's running shoes are Aadivaan White Synthetic Slip-On shoes at 799 [FW-00201],  |
-| c01 | 2 | cheaper ones | refine | Men, Under ₹2,199, Running Shoes, Lower prices first | 1.00 |  | 14 | 1050 | The cheapest men's running shoes are Sohum Blue Synthetic Slip-On priced at ₹549 [FW-00011]. Aadivaa |
-| c01 | 3 | only black | refine | Men, Under ₹2,199, Black, Running Shoes, Lower prices first | 0.71 |  | 21 | 870 | Among the black men's running shoes under ₹2,199, the lowest priced is Shreyas Men's Sports Running  |
-| c01 | 4 | is the second one lace-up? | question |  |  |  | 14 | 1109 | Yes, the second product, Prakriti Men's Black Mesh Running Shoes [FW-00181], has a lace-up closure. |
-| c02 | 1 | ladies ke liye kurti chahiye | new | Women | 1.00 |  | 17 | 703 | Ladies ke liye kuch achhi kurtis available hain jaise Ragamaya Women's Mustard Georgette Kurti sirf  |
-| c02 | 2 | 500 ke andar | refine | Women, Under ₹500 | 0.92 |  | 20 | 782 | 500 ke andar kuch achhe options hain jaise ki Ragamaya Women's Maroon Printed Sleeveless Rayon Kurti |
-| c02 | 3 | pink nahi chahiye | refine | Women, Under ₹500, Not Pink | 0.84 |  | 18 | 750 | Pink nahi chahiye toh aapke liye Maroon cotton kurti [AP-00406] (price 349, rating 4.0) ya Maroon ra |
-| c03 | 1 | pressure cooker | new | Pressure Cookers | 1.00 | Any preference for material? | 21 | 757 | The Dunedar 7.5 L Black Aluminium Pressure Cooker is priced at 1899 with a rating of 3.8 [HK-00281]. |
-| c03 | 2 | a bigger one | refine | 7.5 L or 5 L, Pressure Cookers | 1.00 |  | 17 | 869 | You can consider the Dunedar 7.5 L Black Aluminium Pressure Cooker priced at 1899 [HK-00281] or the  |
-| c03 | 3 | which is the cheapest? | question |  |  |  | 10 | 720 | The cheapest pressure cooker is the Dunedar Stainless Steel 7.5 L Pressure Cooker Black for Home Use |
-| c04 | 1 | saree under rs 1000 | new | Under ₹1,000, Sarees | 1.00 | Only 1 match under ₹1,000. Want to see options slightly over budget? | 12 | 763 | The Jalvaar Women's Chiffon Saree in yellow is priced at ₹899 and has a rating of 4.3 [AP-00437]. Ot |
-| c04 | 2 | Show slightly over budget | refine | Under ₹1,300, Sarees | 0.73 |  | 21 | 871 | The Sparsh Clothing Wine Women's Georgette Saree is priced at ₹1299, slightly over the budget limit  |
-| c05 | 1 | shoes | new |  | 1.00 | Which kind are you looking for? | 18 | 819 | The Sohum White Synthetic Running Shoes for Men are priced at ₹1,999 with a rating of 4.1 and are in |
-| c05 | 2 | Running Shoes | refine | Running Shoes | 1.00 |  | 7 | 681 | The Sohum White Synthetic Running Shoes for Men are priced at ₹1,999 with a rating of 4.1 and are in |
-| c05 | 3 | under 1500 | refine | Running Shoes, Under ₹1,500 | 0.98 |  | 11 | 670 | You can find men's running shoes under ₹1500 such as the Sohum Blue Synthetic Slip-On shoes priced a |
-| c06 | 1 | water bottle | new | Water Bottles | 1.00 | Any preference for color? | 18 | 808 | The Dunedar Blue Water Bottle is a 1-liter plastic bottle priced at 549 with the highest rating of 4 |
-| c06 | 2 | not plastic | refine | Not Plastic, Water Bottles | 1.00 |  | 20 | 675 | There are several non-plastic water bottles available made from copper and stainless steel. The Saaj |
-| c06 | 3 | only copper | refine | Not Plastic, Copper, Copper, Water Bottles | 0.56 |  | 14 | 730 | The AyushKitchen Copper Water Bottle 750 ml has the highest rating of 4.1 and costs 499 [HK-00087].  |
-| c07 | 1 | bluetooth earbuds | new | Bluetooth Earbuds | 1.00 | Any preference for color? | 21 | 631 | The Fablez White Bluetooth Earbuds offer the highest rating of 4.8 and 50 hours of playback for 2099 |
-| c07 | 2 | aur sasta | refine | Under ₹1,699, Bluetooth Earbuds, Lower prices first | 0.94 |  | 26 | 742 | Sabse sasta Bluetooth Earbuds hai Fablez Blue Bluetooth Neckband ₹549 mein [EL-00427]. Agar earbuds  |
-| c07 | 3 | sabse sasta kaunsa hai? | question |  |  |  | 9 | 988 | Sabse sasta product Fablez Blue Bluetooth Neckband hai jo 549 INR ka hai [EL-00427]. |
-| c08 | 1 | power bank | new | Power Banks | 1.00 | Any preference for color? | 19 | 948 | The Connecta Power Bank offers 20000mAh capacity with 10W output at a price of 2599 [EL-00243]. The  |
-| c08 | 2 | 20000mAh only | refine | 20000mAh, Power Banks | 1.00 |  | 18 | 652 | There are several 20000mAh power banks available, including the Vibrota White High Capacity Power Ba |
-| c08 | 3 | does the first one support fast charging? | question |  |  |  | 6 | 707 | The first product, Connecta Power Bank 20000mAh [EL-00243], has a wattage of 10W, which typically do |
-| c09 | 1 | sarson ka tel | new | Mustard Oil | 1.00 | Volume ka koi preference? | 18 | 703 | Sarson ka tel ke liye aap GauriGourmet Mustard Oil 1 L 549 Rs mein le sakte hain [GR-00226]. Agar aa |
-| c09 | 2 | 5 L wala | refine | 5 L, Mustard Oil | 1.00 |  | 16 | 648 | 5 L mustard oil me sabse sasta DishaDhaba Mustard Oil hai 199 Rs me, jo cold pressed hai [GR-00182]. |
-| c10 | 1 | hi | chitchat |  |  |  | 4 | 4 | I can help you find products. Try something like 'black running shoes under 1500'. |
-| c10 | 2 | I need a helmet for my bike | new | Helmets, Bike | 1.00 | Any preference for brand? | 7 | 651 | You can consider the KritiCraze Red Fibreglass Full Face Bike Helmet priced at 1099 with a rating of |
-| c10 | 3 | full face | refine | Full Face, Helmets, Bike | 1.00 |  | 17 | 704 | The KritiCraze Red Fibreglass Full Face Bike Helmet is priced at 1099 and has a rating of 4.2 [AU-00 |
-| c10 | 4 | thanks! | chitchat |  |  |  | 4 | 4 | I can help you find products. Try something like 'black running shoes under 1500'. |
-| c11 | 1 | gents chappal | new | Men | 1.00 | Kaunsa type chahiye? | 10 | 753 | Gents chappal mein Sohum Men's Grey Rubber Sandal sabse acchi rating ke sath 4.5 rating aur price ₹1 |
-| c11 | 2 | brown wala | refine | Men, Brown | 1.00 |  | 18 | 821 | Brown color ke men's sandals mein Kalyanx ke Genuine Leather sandals [FW-00024] ka rating sabse zyad |
-| c12 | 1 | t-shirt for men | new | Men, T-Shirts or T-Shirts | 1.00 |  | 21 | 750 | You can find men's t-shirts ranging from ₹349 to ₹999. The highest rated t-shirt is the Duniya Style |
-| c12 | 2 | oversized | refine | Men, Oversized, T-Shirts or T-Shirts | 1.00 |  | 16 | 669 | The highest rated oversized men's T-shirt is the Ragamaya Green Cotton Half Sleeve Solid T-Shirt pri |
-| c12 | 3 | under 500 | refine | Men, Oversized, Under ₹500, T-Shirts or T-Shirts | 0.85 |  | 23 | 710 | There are several oversized men's T-shirts under ₹500, including the Duniya Style Grey Oversized Cot |
-| c13 | 1 | khana banane ke bartan | new | Cookware | 1.00 | Kaunsa type chahiye? | 22 | 898 | Aapke liye kuch khana banane ke bartan hain jaise Aahwan ka 3 L Silver Aluminium Pressure Cooker jo  |
-| c13 | 2 | Kadai | refine | Kadai | 1.00 |  | 11 | 694 | The Kalyaniware Classic Kadai 1.5 L is a cast iron cookware with the highest rating of 4.9 and price |
-| c13 | 3 | lohe ki | refine | Kadai, Iron | 1.00 |  | 14 | 710 | Lohe ki Kadai me AyushKitchen ka 1.5 L Black Iron Kadai sabse accha rating wala hai 4.6 ke saath [HK |
-| c14 | 1 | car seat cover | new | Car, Seat Covers | 1.00 |  | 20 | 644 | The Dhruvix Red Car Seat Cover is a velvet universal fit option priced at 1999 [AU-00211]. The Bolti |
-| c14 | 2 | leatherette | refine | Leatherette, Car, Seat Covers | 1.00 |  | 6 | 717 | Leatherette car seat covers are available in various colors and fits, including custom and universal |
-| c14 | 3 | what colours does the first one come in? | question |  |  |  | 6 | 650 | The first product, PulsarPro Tan Custom Fit Leatherette Car Seat Cover for Car [AU-00451], comes in  |
-| c15 | 1 | atta | new |  | 1.00 | Which kind are you looking for? | 13 | 752 | The HariyaliHub 10 kg Whole Wheat Atta is highly rated at 4.6 and priced at 299 [GR-00342]. The Sara |
-| c15 | 2 | smaller pack | refine | 1 kg or 2 kg or 5 kg | 0.63 |  | 21 | 660 | For smaller pack options, there are several 1 kg whole wheat atta products such as PragatiProvisions |
-| c16 | 1 | bacchon ke school ke joote | new | Kids, School Shoes | 1.00 |  | 19 | 698 | Bacchon ke school shoes mein Aadivaan White Synthetic Leather shoes sirf 399 rupees ke price par mil |
-| c16 | 2 | white wale | refine | Kids, White, School Shoes | 1.00 |  | 15 | 634 | White kids school shoes me sabse sasta option SAPTAK ka hai jo 349 rupees me milta hai aur synthetic |
-| c16 | 3 | velcro wale? | refine | Kids, White, Velcro, School Shoes | 1.00 |  | 20 | 774 | Velcro wale white kids school shoes me se Aadivaan Canvas shoes ka rating sabse zyada 4.8 hai aur pr |
-| c17 | 1 | laptop bag | new | Laptop Bags | 1.00 | Any preference for color? | 18 | 650 | The Sparkzen Men's Laptop Bag in Navy Blue is priced at 2399 with a rating of 3.9 and fits 17-inch l |
-| c17 | 2 | for a 15.6 inch laptop | refine | 15.6 inch, Laptop Bags | 1.00 |  | 18 | 1855 | For a 15.6 inch laptop, the KritiKraft Grey Nylon Laptop Bag has the highest rating of 4.4 and is pr |
-| c17 | 3 | now show me wireless mouse | new | Wireless, Mouse | 1.00 | Any preference for color? | 13 | 715 | The KritiKraft Wireless Computer Mouse Blue has the highest rating of 5.0 and is priced at 1199 [EL- |
-| c18 | 1 | chai patti | new | Tea | 1.00 |  | 10 | 677 | Chai patti ke liye aapko 250g ka DishaDhaba Chai Patti 149 Rs mein milta hai jiska rating 4 hai [GR- |
-| c18 | 2 | masala chai wali | refine | Tea ✗ | 0.35 |  | 18 | 712 | Masala chai ke liye aapko chai patti mil sakti hai jaise DishaDhaba Chai Patti for Men 250g sirf ₹14 |
-| c18 | 3 | isme sabse badi packing kaunsi hai? | question |  |  |  | 7 | 1116 | Sabse badi packing 1 kg ki hai, jaise ki NirvanaNourish 1 kg CTC Veg Tea Leaves [GR-00241], SaralSpi |
-| c19 | 1 | refrigerator | new |  |  | I couldn't find an exact match. Is one of these close? | 20 | 773 | There are no exact matches for refrigerators in the results. The items shown include various pressur |
-| c19 | 2 | ok what about an electric kettle | new | Electric Kettles | 1.00 | Any preference for color? | 18 | 695 | There are several electric kettles available with prices ranging from 649 to 1999. The Aahwan Silver |
-| c20 | 1 | mobile charge karne wala tar | new | Cables | 1.00 |  | 24 | 825 | Mobile charging cables me braided nylon material wale options jaise DigiCraft 2m black cable 449 rup |
-| c20 | 2 | type c wala | new ✗ |  | 0.87 | Kaunsa type chahiye? | 12 | 820 | Type C cables me se sabse sasta braided nylon cable KritiKraft ka 1m cable hai jo 199 rupees me milt |
-| c20 | 3 | 2m lamba chahiye | refine | 2m | 1.00 |  | 9 | 730 | 2m lamba braided nylon USB-C cable ChargeOn se 349₹ mein milta hai [EL-00102]. Agar aapko sabse sast |
-| c21 | 1 | silk saree | new | Silk, Sarees | 1.00 |  | 9 | 657 | The highest rated silk saree is the Aaramyaa Women's Red Silk Embroidered Saree priced at 2099 with  |
-| c21 | 2 | red or maroon | refine | Silk, Red or Maroon, Sarees | 0.63 |  | 15 | 674 | You can choose the Kaalpaash Maroon Silk Saree priced at 4699 with a rating of 3.8 [AP-00347], or th |
-| c21 | 3 | is the first one embroidered? | question |  |  |  | 10 | 727 | The first saree, Kaalpaash Maroon Silk Saree, is woven and not embroidered [AP-00347]. The embroider |
-| c22 | 1 | dal | new |  | 1.00 |  | 17 | 969 | The SampoornaStore Moong Dal 1 kg pack is priced at 149 with a rating of 4.1 and is in stock [GR-002 |
-| c22 | 2 | Moong Dal | refine | Moong Dal | 1.00 |  | 7 | 749 | The SampoornaStore Moong Dal 1 kg pack is priced at 149 with a rating of 4.1 [GR-00280]. HariyaliHub |
-| c22 | 3 | 1 kg | refine | Moong Dal, 1 kg | 1.00 |  | 11 | 839 | The SampoornaStore Moong Dal 1 kg pack is priced at 149 with a rating of 4.1 and is in stock [GR-002 |
-| c23 | 1 | dash cam | new |  | 1.00 | Any preference for resolution? | 19 | 881 | The Dhruvix 2K Dash Cam for Cars offers the highest rating of 4.5 and is priced at 5499 [AU-00127].  |
-| c23 | 2 | 4K only, just show | refine | 4K | 1.00 |  | 10 | 659 | The Boltixx 4K Dash Cam for Cars [AU-00487] has the highest rating of 4.2 and includes night vision. |
-| c23 | 3 | does it have night vision? | question |  |  |  | 12 | 1047 | The Boltixx 4K Dash Cam for Cars with ID AU-00487 has night vision. The other dash cams listed do no |
-| c24 | 1 | jeans | new | Jeans | 1.00 | Any preference for color? | 15 | 1051 | You can find men's jeans in various colors such as black, grey, blue, and navy blue. The lowest pric |
-| c24 | 2 | slim fit, black nahi | refine | Not Black, Not Slim Fit, Jeans | 0.33 |  | 17 | 679 | You can find men's regular fit jeans in grey and blue colors such as the Kaviya Kraft Grey Regular F |
-| c25 | 1 | football | new |  |  |  | 19 | 834 | No products related to "football" were found in the catalog. |
-| c25 | 2 | how are you | chitchat |  |  |  | 9 | 9 | I can help you find products. Try something like 'black running shoes under 1500'. |
-| c25 | 3 | show me yoga mats | new |  |  | I couldn't find an exact match. Is one of these close? | 523 | 1208 | The search results do not include yoga mats but show various women's leggings suitable for yoga and  |
+| c01 | 1 | running shoes for men | new | Men, Running Shoes | 1.00 |  | 68 | 3776 |  [FW-00131] and [FW-00221] are both in stock. [FW-00131] is made of Mesh material and is available i |
+| c01 | 2 | cheaper ones | refine | Men, Under ₹2,199, Running Shoes, Lower prices first | 1.00 |  | 29 | 4460 | Top result: [FW-00201] |
+| c01 | 3 | only black | refine | Men, Under ₹2,199, Black, Running Shoes, Lower prices first | 0.71 |  | 26 | 3784 | The cheapest black running shoe is [FW-00381] with a price of ₹599. |
+| c01 | 4 | is the second one lace-up? | question |  |  |  | 14 | 5477 | Yes, the second product is a lace-up shoe. |
+| c02 | 1 | ladies ke liye kurti chahiye | new | Women | 1.00 |  | 34 | 3471 | Aapki search ke liye yeh results aaye hain. |
+| c02 | 2 | 500 ke andar | refine | Women, Under ₹500 | 0.92 |  | 20 | 3812 | Kya aapko kurti chahiye? |
+| c02 | 3 | pink nahi chahiye | refine | Women, Under ₹500, Not Pink | 0.84 |  | 24 | 3694 | Duniya Style ki Blue Embroidered Sleeveless Cotton Kurti [AP-00286] bahut achhi hai. |
+| c03 | 1 | pressure cooker | new | Pressure Cookers | 1.00 |  | 28 | 3804 |  The cheapest option is [HK-00291] with a price of ₹1,099. The most expensive option is [HK-00091] w |
+| c03 | 2 | a bigger one | refine | 7.5 L or 5 L, Pressure Cookers | 1.00 |  | 22 | 4589 | Top result: [HK-00281] |
+| c03 | 3 | which is the cheapest? | question |  |  |  | 12 | 5529 | The cheapest product is [HK-00231]. |
+| c04 | 1 | saree under rs 1000 | new | Under ₹1,000, Sarees | 1.00 | Only 1 match under ₹1,000. Want to see options slightly over budget? | 37 | 4158 | Top result: [AP-00437] |
+| c04 | 2 | Show slightly over budget | refine | Under ₹1,300, Sarees | 0.73 |  | 28 | 2133 | The lowest priced saree is [AP-00437] at a price of ₹899. The highest priced saree is [AP-00277] at  |
+| c05 | 1 | shoes | new |  | 1.00 | Which kind are you looking for? | 29 | 3348 | The Sohum White Synthetic Running Shoes for Men [FW-00101] is in stock and has a rating of 4.1. The  |
+| c05 | 2 | Running Shoes | refine | Running Shoes | 1.00 |  | 23 | 3807 | The Sohum White Synthetic Running Shoes for Men [FW-00101] is in stock. The lowest priced running sh |
+| c05 | 3 | under 1500 | refine | Running Shoes, Under ₹1,500 | 0.98 |  | 22 | 3961 | The cheapest running shoe is [FW-00011] at a price of ₹549. |
+| c06 | 1 | water bottle | new | Water Bottles | 1.00 |  | 43 | 979 | The Saajni Copper Water Bottle [HK-00267] is in stock and has a silver color. The SuruchiSpace Green |
+| c06 | 2 | not plastic | refine | Not Plastic, Water Bottles | 1.00 |  | 17 | 5279 | The following water bottles are made of non-plastic materials: [HK-00267] (Copper), [HK-00307] (Stai |
+| c06 | 3 | only copper | refine | Not Plastic, Copper, Water Bottles | 1.00 |  | 14 | 4860 | Top result: [HK-00267] |
+| c07 | 1 | bluetooth earbuds | new | Bluetooth Earbuds | 1.00 |  | 34 | 4344 | The DigiCraft Blue Bluetooth Earbuds [EL-00156] are in stock and have a playback time of 24 hours. T |
+| c07 | 2 | aur sasta | refine | Under ₹1,699, Bluetooth Earbuds, Lower prices first | 0.94 |  | 31 | 4103 | 
+ TechRush Grey Bluetooth Earbuds [EL-00116] ki price ₹999 hai, aur yeh in stock hai.
+ Sparkzen Whit |
+| c07 | 3 | sabse sasta kaunsa hai? | question |  |  |  | 13 | 5764 | Main iska pakka jawab nahi de paaya; product details cards par dekh sakte hain. |
+| c08 | 1 | power bank | new | Power Banks | 1.00 |  | 25 | 3789 | The Connecta Power Bank [EL-00243] is a Black power bank with a wattage of 10W. The Proxima Black [E |
+| c08 | 2 | 20000mAh only | refine | 20000mAh, Power Banks | 1.00 |  | 19 | 5143 |  
 
-### Analysis
+[EL-00453] is the cheapest option at ₹799. |
+| c08 | 3 | does the first one support fast charging? | question |  |  |  | 8 | 6129 | I don't have that detail. |
+| c09 | 1 | sarson ka tel | new | Mustard Oil | 1.00 |  | 43 | 4185 | Dekho, maine aapko kuch sahi product milaya hai. GauriGourmet Mustard Oil [GR-00226] aur GauriGourme |
+| c09 | 2 | 5 L wala | refine | 5 L, Mustard Oil | 1.00 |  | 26 | 4596 | Sabse upar: [GR-00182] |
+| c10 | 1 | hi | chitchat |  |  |  | 8 | 8 | I can help you find products. Try something like 'black running shoes for men'. |
+| c10 | 2 | I need a helmet for my bike | new | Helmets, Bike | 1.00 |  | 23 | 4208 | The RohanRide Blue Bike Helmet [AU-00288] is in stock. The KritiCraze Red Fibreglass Full Face Bike  |
+| c10 | 3 | full face | refine | Full Face, Helmets, Bike | 1.00 |  | 19 | 5549 | Top result: [AU-00108] |
+| c10 | 4 | thanks! | chitchat |  |  |  | 9 | 9 | I can help you find products. Try something like 'black running shoes for men'. |
+| c11 | 1 | gents chappal | new | Men | 1.00 | Kaunsa type chahiye? | 35 | 4209 | Bhai, maine aapke liye kuch achhe chappal milaye hain. Sabhi chappal gents ke liye hain aur quality  |
+| c11 | 2 | brown wala | refine | Men, Brown | 1.00 |  | 35 | 5849 | Sabse upar: [FW-00274] |
+| c12 | 1 | t-shirt for men | new | Men, T-Shirts or T-Shirts | 1.00 |  | 40 | 5601 | Top result: [AP-00371] |
+| c12 | 2 | oversized | refine | Men, Oversized, T-Shirts or T-Shirts | 1.00 |  | 26 | 6992 | Top result: [AP-00461] |
+| c12 | 3 | under 500 | refine | Men, Oversized, Under ₹500, T-Shirts or T-Shirts | 0.85 |  | 34 | 3070 | The cheapest product is [AP-00451] at ₹249. [AP-00471] is the most expensive at ₹499. |
+| c13 | 1 | khana banane ke bartan | new | Cookware | 1.00 | Kaunsa type chahiye? | 44 | 4190 | Aapke khana banane ke bartan ke liye yeh products milte hain:
 
-**Model choice.** The brief asks for claude-haiku-4-5. No Anthropic key was available, so Rohit approved OpenAI.
-The same 71-turn eval was run with three chat models:
+ Aahwan L Silver Aluminium Pressure C |
+| c13 | 2 | Kadai | refine | Kadai | 1.00 |  | 23 | 4469 | The Kalyaniware Silver Stainless Steel Kadai for Cooking [HK-00373] is in stock. |
+| c13 | 3 | lohe ki | refine | Kadai, Iron | 1.00 |  | 37 | 4776 | Kalyaniware Black Iron Kadai for Cooking, Black - Kadai for Cooking [HK-00173] is a good quality iro |
+| c14 | 1 | car seat cover | new | Car, Seat Covers | 1.00 |  | 45 | 5694 | Top result: [AU-00211] |
+| c14 | 2 | leatherette | refine | Leatherette, Car, Seat Covers | 1.00 |  | 31 | 5598 |  The cheapest product is [AU-00471] Veloxo Custom Fit Car Seat Cover Beige / Leatherette Material, P |
+| c14 | 3 | what colours does the first one come in? | question |  |  |  | 5 | 6662 | The first product, [AU-00451], comes in the colour Tan. |
+| c15 | 1 | atta | new |  | 1.00 | Which kind are you looking for? | 63 | 4848 | The lowest priced product is [GR-00486] with a price of ₹149. 
 
-| Model | First token p95 | Groundedness |
-|---|---:|---:|
-| gpt-4.1-mini (default) | 915–1,109 ms | 88–90% |
-| gpt-4o-mini | 1,009 ms | 84% |
-| gpt-5.4-mini (reasoning `none`) | 1,237–1,456 ms | 93–96% |
+[GR-00342] is a whole wheat atta fro |
+| c15 | 2 | smaller pack | refine | 1 kg or 2 kg or 5 kg | 0.63 |  | 39 | 6739 |  The lowest price is [GR-00486] (₹149). |
+| c16 | 1 | bacchon ke school ke joote | new | Kids, School Shoes | 1.00 |  | 50 | 4606 | Bachche ke school ke jootey hain. Sabhi jootey bachchon ke liye hain aur school ke liye.
+ [FW-00040] |
+| c16 | 2 | white wale | refine | Kids, White, School Shoes | 1.00 |  | 49 | 4899 |  Main tumhein kuch options deta hoon. Aadivaan ke [FW-00040] aur [FW-00130] shoes white hain aur ink |
+| c16 | 3 | velcro wale? | refine | Kids, White, Velcro, School Shoes | 1.00 |  | 28 | 5916 |  [FW-00040] and [FW-00380] are in stock. |
+| c17 | 1 | laptop bag | new | Laptop Bags | 1.00 |  | 38 | 4811 | Top result: [EL-00210] |
+| c17 | 2 | for a 15.6 inch laptop | refine | 15.6 inch, Laptop Bags | 1.00 |  | 38 | 4502 | The DigiCraft Brown Laptop Bag [EL-00380] is the highest priced option at ₹1,899. |
+| c17 | 3 | now show me wireless mouse | new | Wireless, Mouse | 1.00 |  | 31 | 3627 | The Fablez Wireless White Computer Mouse [EL-00268] is in stock and has a wireless connectivity. The |
+| c18 | 1 | chai patti | new | Tea | 1.00 |  | 33 | 4519 | Chai patti mil gayi hai! You have many options. |
+| c18 | 2 | masala chai wali | refine | Tea ✗ | 0.35 |  | 79 | 6797 | Sabse upar: [GR-00065] |
+| c18 | 3 | isme sabse badi packing kaunsi hai? | question |  |  |  | 9 | 6671 | Main iska pakka jawab nahi de paaya; product details cards par dekh sakte hain. |
+| c19 | 1 | refrigerator | new |  |  | I couldn't find an exact match. Is one of these close? | 76 | 4695 | These search results are not exact matches for "refrigerator". The products listed are mostly kitche |
+| c19 | 2 | ok what about an electric kettle | new | Electric Kettles | 1.00 |  | 50 | 5409 | Top result: [HK-00128] |
+| c20 | 1 | mobile charge karne wala tar | new | Cables | 1.00 |  | 56 | 3945 | Sabse sasta cable hai [EL-00282] aur sabse mahanga cable hai [EL-00322]. |
+| c20 | 2 | type c wala | new ✗ |  | 0.87 | Kaunsa type chahiye? | 33 | 4084 |  KritiKraft ka [EL-00472] PVC material ka hai. PulseZone ka [EL-00342] braided nylon material ka hai |
+| c20 | 3 | 2m lamba chahiye | refine | 2m | 1.00 |  | 27 | 4771 |  Sabhi cable ke price alag-alag hain, lekin sabse sasta cable [EL-00212] hai, jiska price ₹199 hai. |
+| c21 | 1 | silk saree | new | Silk, Sarees | 1.00 |  | 41 | 4013 | The lowest priced silk saree is [AP-00487] with a price of ₹1,099. |
+| c21 | 2 | red or maroon | refine | Silk, Red or Maroon, Sarees | 0.63 |  | 35 | 2351 |  The lowest priced product is [AP-00057] with a price of ₹2,099. |
+| c21 | 3 | is the first one embroidered? | question |  |  |  | 13 | 2135 | No, the first one is woven. |
+| c22 | 1 | dal | new |  | 1.00 |  | 41 | 3699 | The search results for "dal" show multiple products from various brands. The cheapest product is [GR |
+| c22 | 2 | Moong Dal | refine | Moong Dal | 1.00 |  | 28 | 3954 | The cheapest Moong Dal is [GR-00280] at a price of ₹149. |
+| c22 | 3 | 1 kg | refine | Moong Dal, 1 kg | 1.00 |  | 22 | 3983 | The SampoornaStore Moong Dal [GR-00280] is the cheapest option at ₹149. |
+| c23 | 1 | dash cam | new |  | 1.00 |  | 39 | 4072 | Top result: [AU-00117] |
+| c23 | 2 | 4K only, just show | refine | 4K | 1.00 |  | 26 | 5289 | Top result: [AU-00117] |
+| c23 | 3 | does it have night vision? | question |  |  |  | 10 | 5514 | Only one product has night vision mentioned in its description: [AU-00487]. |
+| c24 | 1 | jeans | new | Jeans | 1.00 |  | 40 | 4489 |  Duniya Style also makes [AP-00213] and [AP-00493] jeans. |
+| c24 | 2 | slim fit, black nahi | refine | Slim Fit, Not Black, Jeans | 1.00 |  | 63 | 4411 | 
+Top result: [AP-00063] |
+| c25 | 1 | football | new |  |  |  | 35 | 1029 | No results matched your search for "football". |
+| c25 | 2 | how are you | chitchat |  |  |  | 8 | 8 | I can help you find products. Try something like 'black running shoes for men'. |
+| c25 | 3 | show me yoga mats | new |  |  | I couldn't find an exact match. Is one of these close? | 37 | 3857 | The search results for "yoga mats" are not exact matches, as none of the products are specifically t |
 
-gpt-5.4-mini grounds best but misses the 1.2 s first-token target, so the default is gpt-4.1-mini. Two prompt
-changes closed most of the grounding gap:
-- the model sees every product on screen, not just the top 5;
-- comparisons ("cheapest", "highest rated") are computed in code and handed to the model as facts.
+### M4 re-measurement (2026-10-08): chat on local Ollama, groundedness reviewed by hand
 
-Set `ZERCH_CHAT_MODEL=gpt-5.4-mini` to prefer grounding over latency.
+**Setup.** OpenAI credits ran out during M4, so this run uses local `llama3.1:8b` through Ollama for answers
+and unclear-turn classification. That is free, but slower and weaker than gpt-4.1-mini. No paid API calls were
+made. Groundedness wasn't judged by an LLM: I (Claude, the author of this system) reviewed all 68 non-chit-chat
+answers by hand against the fields of the products on screen. Claim-by-claim verdicts are in
+`eval/chat_review_m4.md`.
 
-**Known-problem fixes from M2.**
-- *match_quality:* now also uses planner evidence (did the rules recognise a catalog value or category, or did the
-  user confirm one in chat) and how many query words the top results actually contain. Synonym expansions count,
-  and missing words only lower the quality when the catalog has never seen them.
-  - Result: 18/20 out-of-catalog queries get `none`/`weak`, and 0 in-catalog queries get `none`.
-  - Still `good`: "laptop" (laptop bags) and "washing machine" (laundry organisers).
-- *Backfill:* "saree under rs 1000" now shows the one saree under ₹1,000, then sarees just over budget, cheapest
-  first. It used to show tea and bellies. Rules:
-  - Filler and backfill stay inside the category the lexical matches agree on.
-  - Category votes are weighted by lexical score, so a weak fuzzy match can't redirect it.
-  - Price segment: 0.900 → 0.954.
+| Target | Result | |
+|---|---|---|
+| Groundedness ≥ 97% (every claim supported by the shown products' fields) | **66/68 = 97.1%** (48/50 model-written answers, 18/18 fallbacks) | ✅ met, just |
+| 0 numeric errors | **0**: every number comes from a server-filled slot | ✅ met |
+| Clarifier rate (question only for category, budget, weak match) | 8/71 turns (11%, was 19/71); recall 75%, precision 100% | |
+| Negation scope ("slim fit, black nahi") | c24 nDCG 0.33 → 1.00; tests cover English and Hinglish forms | ✅ |
+| Results event p95 ≤ 150 ms | 63 ms | ✅ met |
+| First text token p95 ≤ 1.2 s | 6.7 s (local 8B model; the target assumed Haiku) | ❌ missed |
 
-**Remaining failures.**
-- *Turn type ("type c wala").* "type c" isn't recognised as USB-C, so it's treated as a new search. That
-  needs a synonym the packs don't have; it wasn't added to avoid tuning on the eval.
-- *Groundedness (judge-flagged answers, about 10%), three kinds:*
-  - Category slips: calling a neckband "earbuds", because "bluetooth earbuds" retrieval includes neckbands.
-  - Inference beyond the fields: "10W typically means no fast charging".
-  - A few judge disagreements. For example, "slightly over budget" for ₹1,299 is correct relative to the
-    original ₹1,000 budget, but the judge only sees the relaxed ₹1,300 cap.
-- *Clarifier recall 75%.* "dal" doesn't trigger a category question. The query also matches a spice ("dal
-  tadka masala"), so no single parent category covers 90% of the results.
-- *Clarifier frequency.* It asks on 19/71 turns. Bare category queries ("water bottle", "jeans") get an
-  attribute question ("Any preference for color?") when results spread evenly. The brief's rule allows it.
-  Whether it's wanted is a product call for review.
+**How the numbers are made safe.**
+- The model writes `{price:ID}`-style slots, and the server fills them from that product.
+- Every sentence is checked before it streams, and dropped whole if it:
+  - contains a number the model wrote itself;
+  - puts a slot on a product the sentence doesn't cite;
+  - names a product type that doesn't fit the cited product;
+  - names an attribute value the cited product doesn't have, or another product's brand;
+  - makes an uncited claim;
+  - makes an "all/sabhi/both" claim that isn't true for every product it covers;
+  - makes a stock claim that isn't true;
+  - makes a comparison (English or Hindi) not backed by the fact computed in code.
+- All checks run in code at no cost; `tests/test_slots.py` has a test for each.
+
+**The two remaining failures** are both broad claims the checks don't parse:
+- "sabhi cable ke price alag-alag hain" (every cable has a different price): three cost ₹549;
+- "the products are all vegetarian and available": one is out of stock.
 
 **Caveats.**
-- *The conversations aren't independent.* They were written by the same model that built the rules, and are
-  marked `needs_review`. Several were checked while iterating (turn classification, refinement rules), so the
-  turn-type and plan numbers are dev-set numbers, not holdout numbers.
-- *The judge is an LLM too* (gpt-5.5), not human review.
-- *Latency is client-measured* against Docker on a laptop. First-token time is dominated by the OpenAI API, about
-  700 ms at p50.
+- *Checks built from the eval itself.* Most checks were written after reading failures on these same 25
+  conversations, so 97% is a dev-set number. Expect lower on new conversations.
+- *Fallbacks.* 18 of 68 answers are the plain fallback ("Top result: [ID]"), used when every sentence the 8B model
+  wrote was dropped. They're grounded, but not helpful.
+- *Not independent.* The reviewer is the system's author. The per-answer file exists so a person can spot-check it.
+- *The conversations are still `needs_review`.*
 
 <!-- M3:END -->

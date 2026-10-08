@@ -15,7 +15,7 @@ and later a chat-style refinement mode. Open source (Apache-2.0) from day one; h
 | M1 | Core: projects/keys, ingestion, schema inference, hybrid search, demo catalog, eval baseline | done |
 | M2 | AI query understanding (filters/price/attributes inferred from the query, Hinglish normalisation) | done |
 | M3 | Chat search (conversational refinement over the M2 query representation) | done (conversations need review) |
-| **M4** | JS SDK / drop-in widget (uses the browser-safe `search_key`) | done (chat groundedness re-measure pending OpenAI credits) |
+| **M4** | JS SDK / drop-in widget (uses the browser-safe `search_key`) | done |
 
 Do not build M2–M4 early, but do not make choices that block them:
 - Search request/response shapes are versioned (`/v1`) and additive. M2 will add a parsed-query
@@ -37,8 +37,9 @@ Do not build M2–M4 early, but do not make choices that block them:
 - Postgres: projects, keys (hashed), schemas, ingest jobs + payloads
 - Redis: search/embedding cache, per-key rate limit
 - Embeddings: local `intfloat/multilingual-e5-small` behind `zerch.embeddings.Embedder`
-- LLM: `zerch.llm` provider interface (Ollama, Anthropic, OpenAI). M2 planner (conditional), M3 chat answers
-  (OpenAI gpt-4.1-mini by default, approved in place of Haiku), eval judge/holdout generation (gpt-5.5).
+- LLM: `zerch.llm` provider interface (Ollama, Anthropic, OpenAI). Local Ollama by default for the M2 planner and
+  M3 chat. Paid providers (OpenAI/Anthropic) only when explicitly set via ZERCH_CHAT_PROVIDER / ZERCH_PLANNER_PROVIDER;
+  never spend paid API calls on evals, judging or data generation without asking (review eval output in-session).
 - docker compose for everything: `docker compose up -d --build`
 
 ## Rules

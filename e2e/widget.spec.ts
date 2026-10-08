@@ -35,6 +35,7 @@ test("search shows understood chips, pills and product cards", async ({ page }) 
     els.map((el) => Number((el.firstChild?.textContent ?? "").replace(/[^\d.]/g, ""))));
   expect(prices.length).toBeGreaterThan(0);
   for (const p of prices) expect(p).toBeLessThanOrEqual(1000);
+  await w(page).locator(".filters-toggle").click();
   await expect(w(page).locator(".pills .pill").first()).toBeVisible();
   await expect(w(page).locator("[role=status]")).toContainText(/\d+ results/);
 });
@@ -54,6 +55,7 @@ test("removing a chip sends a patch and widens the results", async ({ page }) =>
 
 test("facet pill refines the results", async ({ page }) => {
   await search(page, "water bottle");
+  await w(page).locator(".filters-toggle").click();
   const pill = w(page).locator(".pills .pill").first();
   await expect(pill).toBeVisible();
   const label = (await pill.evaluate((el) => el.firstChild?.textContent ?? "")).trim();
@@ -63,8 +65,8 @@ test("facet pill refines the results", async ({ page }) => {
 
 test("ask AI: new search then refinement in chat", async ({ page }) => {
   await w(page).getByRole("radio", { name: /ask ai/i }).click();
-  await expect(w(page).locator("[role=log]")).toBeVisible();
   await ask(page, "water bottle");
+  await expect(w(page).locator("[role=log]")).toBeVisible();
   await expect(cards(page).first()).toBeVisible();
   await ask(page, "only copper");
   await expect(chips(page).filter({ hasText: "Copper" })).toHaveCount(1);

@@ -161,16 +161,16 @@ export class ZerchSearch extends HTMLElement {
     const form = h("form", { class: "box", role: "search", onsubmit: (e: Event) => {
       e.preventDefault();
       this.#submit();
-    } }, this.#input, this.#els.go);
-    this.#els.chips = h("div", { class: "row", role: "group" });
-    this.#els.pills = h("div", { class: "pills" });
+    } }, this.#els.modes, this.#input, this.#els.go);
+    this.#els.chips = h("div", { class: "row chips", role: "group" });
+    this.#els.pills = h("div", { class: "pills", id: "zerch-filters" });
     this.#els.status = h("div", { class: "status", role: "status", "aria-live": "polite" });
     this.#els.results = h("div", {});
     this.#els.panel = h("div", { class: "panel", role: "log", "aria-live": "polite" });
     this.#els.layout = h("div", { class: "layout" }, this.#els.panel,
       h("section", { "aria-label": s.products }, this.#els.status, this.#els.results));
     this.#root.append(h("div", { class: "root", part: "root" },
-      h("div", { class: "bar" }, this.#els.modes, form), this.#els.chips, this.#els.pills, this.#els.layout));
+      form, this.#els.chips, this.#els.pills, this.#els.layout));
   }
 
   #setMode(m: "search" | "ai", focus = false) {
@@ -324,24 +324,35 @@ export class ZerchSearch extends HTMLElement {
     this.#renderPanel();
   }
 
+  #filtersOpen = false;
+
   #renderChips() {
     const s = this.#s;
     const v = this.#view;
     const chips = v?.chips ?? [];
+    const pills = v?.pills ?? [];
+    const canFilter = !!pills.length && !!v?.hits.length;
     this.#els.chips.replaceChildren();
-    this.#els.chips.hidden = !chips.length;
-    if (chips.length) {
-      this.#els.chips.setAttribute("aria-label", s.understood);
-      this.#els.chips.append(h("span", { class: "row-label", "aria-hidden": "true" }, s.understood));
+    this.#els.chips.hidden = !chips.length && !canFilter;
+    this.#els.chips.setAttribute("aria-label", s.understood);
+    {
       for (const c of chips) {
         this.#els.chips.append(h("span", { class: `chip ${c.kind}`, title: c.source || undefined }, c.label,
           h("button", { type: "button", "aria-label": fmt(s.removeFilter, { label: c.label }),
                         onclick: () => this.#applyPatch(c.remove ?? [], `− ${c.label}`) }, "×")));
       }
     }
+    if (canFilter) {
+      this.#els.chips.append(h("button", {
+        type: "button", class: "filters-toggle", "aria-expanded": String(this.#filtersOpen),
+        "aria-controls": "zerch-filters", onclick: () => {
+          this.#filtersOpen = !this.#filtersOpen;
+          this.#renderChips();
+        },
+      }, this.#filtersOpen ? `${s.refine} ▴` : `${s.refine} ▾`));
+    }
     this.#els.pills.replaceChildren();
-    const pills = v?.pills ?? [];
-    this.#els.pills.hidden = !pills.length || !v?.hits.length;
+    this.#els.pills.hidden = !canFilter || !this.#filtersOpen;
     for (const p of pills) {
       const row = h("div", { class: "row", role: "group", "aria-label": `${s.refine}: ${p.label}` },
         h("span", { class: "row-label", "aria-hidden": "true" }, p.label));
@@ -399,7 +410,10 @@ export class ZerchSearch extends HTMLElement {
   };
 
   #image(src: unknown, alt: string): HTMLElement {
-    const fallback = () => h("div", { class: "img", "aria-hidden": "true" }, (alt.trim()[0] || "?").toUpperCase());
+    let hue = 0;
+    for (const ch of alt) hue = (hue * 31 + ch.charCodeAt(0)) % 360;
+    const fallback = () => h("div", { class: "img ph", "aria-hidden": "true", style: `--h:${hue}` },
+      (alt.trim()[0] || "?").toUpperCase());
     if (typeof src !== "string" || !src) return fallback();
     const img = h("img", { class: "img", src, alt: "", loading: "lazy", decoding: "async" });
     img.addEventListener("error", () => img.replaceWith(fallback()), { once: true });

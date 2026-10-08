@@ -300,7 +300,7 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
                 system = answer.SYSTEM_SEARCH
                 by_id = {h.id: h.document for h in resp.hits}
             # numbers and field values come from the documents, never from the model (zerch.chat.slots)
-            filler = SlotFiller(by_id, schema, symbol, fact_ids)
+            filler = SlotFiller(by_id, schema, symbol, fact_ids, order=list(by_id))
 
             async def model_stream():
                 async for c in _stream_text(state.chat_llm, prompt, system):
@@ -323,9 +323,10 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
                 text = (answer.fallback_search_text(resp.total if resp else 0,
                                                     resp.understood.match_quality if resp and resp.understood
                                                     else "good", docs, hinglish, title_field)
-                        if turn != "question" else ("Iska jawab dikhaye gaye products ki details mein nahi hai."
-                                                    if hinglish else
-                                                    "The details shown for these products don't answer that."))
+                        if turn != "question" else ("Main iska pakka jawab nahi de paaya; product details "
+                                                    "cards par dekh sakte hain." if hinglish else
+                                                    "I couldn't give a verified answer to that; the product cards "
+                                                    "show each product's details."))
                 yield sse("text", {"delta": text})
                 text_parts.append(text)
                 first = first or time.perf_counter()

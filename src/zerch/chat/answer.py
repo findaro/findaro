@@ -194,9 +194,9 @@ def fallback_search_text(total: int, quality: str, docs: list[tuple[str, dict, b
     States only what the shown products' own fields say."""
     if not docs or quality == "none":
         return "Koi matching product nahi mila." if hinglish else "I couldn't find anything matching that."
-    did, view, _ = docs[0]
-    title = view.get(title_field, did) if title_field else did
+    did = docs[0][0]
+    # the UI renders [ID] as a product card, so the title isn't repeated in the text
     if quality == "weak":
-        return (f"Exact match nahi mila; sabse kareeb: {title} [{did}]." if hinglish
-                else f"No exact match; the closest is {title} [{did}].")
-    return (f"Pehla result: {title} [{did}]." if hinglish else f"First result: {title} [{did}].")
+        return (f"Exact match nahi mila. Sabse kareeb: [{did}]" if hinglish
+                else f"No exact match. Closest: [{did}]")
+    return (f"Sabse upar: [{did}]" if hinglish else f"Top result: [{did}]")

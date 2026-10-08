@@ -36,6 +36,9 @@ def make_settings(**over: Any) -> Settings:
         rate_limit_per_second=0,
         bulk_batch_size=50,
         match_floor=0.0,  # the hash embedder's scores aren't on e5's scale
+        chat_provider="none",  # tests never call a real chat LLM (fakes are injected where needed)
+        openai_api_key=None,
+        anthropic_api_key=None,
         understand_llm=True,
     )
     base.update(over)

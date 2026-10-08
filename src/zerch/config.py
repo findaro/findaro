@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     match_floor: float = 0.905
 
     # Chat (M3)
-    chat_provider: str | None = None  # default: openai if OPENAI_API_KEY is set, else anthropic/llm_provider
+    chat_provider: str | None = None  # default: llm_provider (local Ollama); "openai"/"anthropic" are paid, opt-in
     chat_model: str | None = None  # default: gpt-4.1-mini (openai) / claude-haiku-4-5 (anthropic)
     chat_reasoning_effort: str | None = "none"  # openai reasoning models: keep first-token latency low
     chat_classify_timeout_ms: int = 1500  # LLM turn classification, only when the rules can't tell

@@ -125,8 +125,8 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--base-url", default="http://localhost:8000")
     ap.add_argument("--search-key", required=True)
-    ap.add_argument("--judge-provider", default="openai")
-    ap.add_argument("--judge-model", default="gpt-4.1-mini")
+    ap.add_argument("--judge-provider", default="ollama")
+    ap.add_argument("--judge-model", default="llama3.1:8b")
     ap.add_argument("--chat-model", default="see docker-compose.yml / ZERCH_CHAT_MODEL")
     ap.add_argument("--judge", action="store_true",
                     help="LLM groundedness judge (paid API calls, ~68 per run). Off by default: the numeric check "

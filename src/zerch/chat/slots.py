@@ -10,6 +10,9 @@ streamed, and a sentence that fails any check is dropped whole (dropping half a 
 - any digit the model wrote itself (outside a slot or citation)
 - a comparison ("cheapest", "highest rated", "sabse sasta"...) about a product other than the one the
   server computed for that comparison
+- an uncited sentence that asserts an attribute value, product type or stock status (unverifiable)
+- "all / sabhi / both / dono" claims that don't hold for every product they cover
+- a product-type name that doesn't fit the cited product ("bluetooth earbuds" for a neckband)
 """
 
 from __future__ import annotations
@@ -29,7 +32,8 @@ DIGIT = re.compile(r"\d")
 LOW_PRICE = ("cheapest", "cheaper", "lowest price", "least expensive", "most affordable", "more affordable",
              "budget-friendly", "sabse sasta", "sabse sasti", "sabse saste", "sabse kam", "kam price", "kam daam")
 HIGH_PRICE = ("most expensive", "costliest", "priciest", "highest price", "more expensive", "premium",
-              "sabse mehenga", "sabse mehnga", "sabse mehengi", "zyada price", "zyada daam")
+              "sabse mehenga", "sabse mehnga", "sabse mehengi", "sabse mahanga", "sabse mahangi", "mahanga",
+              "mehenga", "mehnga", "zyada price", "zyada daam")
 MAX_SIZE = ("largest", "biggest", "heaviest", "longest", "most capacity", "sabse bada", "sabse badi",
             "sabse bade", "sabse zyada capacity")
 MIN_SIZE = ("smallest", "lightest", "shortest", "least capacity", "sabse chhota", "sabse chhoti", "sabse chota",
@@ -42,16 +46,122 @@ def _has_any(text: str, words: tuple[str, ...]) -> bool:
     return any(re.search(rf"(?<![a-z]){re.escape(w)}(?![a-z])", text) for w in words)
 
 
+GENERIC_LOW = re.compile(r"\b(lowest|cheapest|least expensive)\b")
+GENERIC_HIGH = re.compile(r"\b(highest|costliest|priciest|most expensive)\b")
+RATING_WORDS = re.compile(r"\b(rating|rated|ratings|review|reviews)\b")
+SIZE_WORDS = re.compile(r"\b(capacity|size|weight|length|volume|wattage|largest|smallest|biggest)\b")
+UNIVERSAL = re.compile(r"\b(all|every|each|sabhi|sab|saare|saari|sare|sari)\b")
+DUAL = re.compile(r"\b(both|dono)\b")
+IN_STOCK = re.compile(r"\bin stock\b|\bstock (mein|me|main) (hai|hain|available)\b|\bavailable\b|\buplabdh\b")
+# Hindi superlatives: "sabse adhik/zyada rating", "sabse kam daam"
+HI_MOST = re.compile(r"\bsabse (adhik|zyada|jyada|ziada|uncha|unchi|ooncha|badhiya)\b")
+HI_LEAST = re.compile(r"\bsabse (kam|neeche|nicha)\b")
+PRICE_WORDS = re.compile(r"\b(price|priced|daam|dam|keemat|kimat|cost|costs|rupaye|rs)\b")
+STOCK_ANY = re.compile(r"\bstock\b")
+NUMBER_WORDS = re.compile(r"\b(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|dozen|teen|chaar|char|"
+                          r"paanch|panch|chhe|saat|aath|nau|das)\b")
+ORDINALS = {"first": 0, "1st": 0, "pehla": 0, "pehli": 0, "pehle": 0, "second": 1, "2nd": 1, "dusra": 1,
+            "dusri": 1, "doosra": 1, "dusre": 1, "third": 2, "3rd": 2, "teesra": 2, "teesri": 2, "tisra": 2,
+            "fourth": 3, "4th": 3, "chautha": 3, "fifth": 4, "5th": 4}
+NOT_AVAILABLE = re.compile(r"\b(not (shown|listed|available|mentioned|given|provided)|unknown|no information|"
+                           r"nahi (diya|di|hai|mila|mili)|pata nahi)\b")
+
+
+def _key(text: str) -> str:
+    from zerch.understand.lexicon import match_key
+
+    return match_key(text)
+
+
 class SlotFiller:
     def __init__(self, docs: dict[str, dict[str, Any]], schema: Schema, currency_symbol: str = "",
-                 facts: dict[str, str] | None = None):
-        """`facts`: {"low_price": id, "high_price": id, "top_rating": id} computed in code."""
+                 facts: dict[str, str] | None = None, order: list[str] | None = None):
+        """`facts`: {"low_price": id, "high_price": id, "top_rating": id} computed in code.
+        `order`: product ids in the order the user sees them, so "the second one" counts as citing it."""
+        self.order = order or list(docs)
         self.docs = docs
         self.schema = schema
         self.symbol = currency_symbol
         self.facts = facts or {}
         self.dropped: list[tuple[str, str]] = []  # (sentence, reason), for debugging/eval
         self.filled = 0
+        self._index_values()
+
+    def _index_values(self) -> None:
+        """Attribute values and product-type names of the shown products, for checking model-written claims."""
+        facets = [f.name for f in self.schema.fields if f.role == Role.facet]
+        cat = next(iter(self.schema.by_role(Role.category)), None)
+        title = next(iter(self.schema.by_role(Role.title)), None)
+        self._stock = next((f.name for f in self.schema.by_role(Role.boolean) if "stock" in f.name.lower()), None)
+        self._doc_vals: dict[str, dict[str, set[str]]] = {}
+        self._title_key: dict[str, str] = {}
+        self.value_fields: dict[str, set[str]] = {}  # value key -> fields ("__type__" = category leaf)
+        for did, doc in self.docs.items():
+            vals: dict[str, set[str]] = {}
+            for f in facets:
+                v = doc.get(f)
+                keys = {_key(str(x)) for x in (v if isinstance(v, list) else [v]) if x not in (None, "")}
+                vals[f] = {k for k in keys if len(k) >= 3 and not k.replace(" ", "").isdigit()}
+            if cat is not None and doc.get(cat.name):
+                vals["__type__"] = {_key(str(doc[cat.name]).split(">")[-1])}
+            self._doc_vals[did] = vals
+            self._title_key[did] = " " + _key(str(doc.get(title.name, ""))) + " " if title else " "
+            for f, keys in vals.items():
+                for k in keys:
+                    self.value_fields.setdefault(k, set()).add(f)
+        # leading title word of each product, usually its brand ("Kosmo Copper Water Bottle" -> "kosmo")
+        self._brand = {did: (t.split() or [""])[0] for did, t in self._title_key.items()}
+
+    def _mentions(self, text: str) -> set[tuple[str, str]]:
+        t = " " + _key(text) + " "
+        return {(f, k) for k, fields in self.value_fields.items() if f" {k} " in t for f in fields}
+
+    def _claims_ok(self, low: str, cited: list[str]) -> str:
+        """'' if the model's own words make only checkable, true claims; else the reason to drop."""
+        mentions = self._mentions(low)
+        stock_claim = bool(IN_STOCK.search(low))
+        if cited and NOT_AVAILABLE.search(low):  # "rating is not shown" when the product has a rating
+            t = " " + _key(low) + " "
+            for f in self.schema.fields:
+                names = {_key(f.name), _key(f.name.replace("_", " "))}
+                if any(f" {n} " in t for n in names if n) and any(
+                        self.docs.get(d, {}).get(f.name) not in (None, "", []) for d in cited):
+                    return f"says {f.name} is missing but it is shown"
+        t = " " + _key(low) + " "
+        cited_brands = {self._brand.get(d, "") for d in cited}
+        words = t.split()
+        for did, brand in self._brand.items():  # another product's name used for the cited one
+            if len(brand) < 4 or brand in cited_brands or did in cited or \
+                    any(f" {brand} " in self._title_key.get(c, "") for c in cited):
+                continue
+            if any(w == brand or (w.startswith(brand) and len(w) - len(brand) <= 4) for w in words):
+                return "names a product the sentence doesn't cite"
+        if not cited:
+            if mentions or STOCK_ANY.search(low):
+                return "uncited claim about products"
+            return ""
+        types = {k for f, k in mentions if f == "__type__"}
+        if types:  # every cited product must be one of the named types (by category or title)
+            for did in cited:
+                own = self._doc_vals.get(did, {}).get("__type__", set())
+                if not any(k in own or f" {k} " in self._title_key.get(did, "") for k in types):
+                    return "product type doesn't match the cited product"
+        universal, dual = UNIVERSAL.search(low), DUAL.search(low)
+        if universal or dual:
+            scope = cited if dual and not universal and len(set(cited)) >= 2 else list(self.docs)
+            for f, k in mentions:
+                if not all(k in self._doc_vals.get(d, {}).get(f, set()) for d in scope):
+                    return f"'all' claim not true for every product ({k})"
+            if stock_claim and self._stock and not all(self.docs[d].get(self._stock) is True for d in scope):
+                return "'all in stock' not true for every product"
+        else:
+            if stock_claim and self._stock and not all(self.docs[d].get(self._stock) is True for d in cited):
+                return "stock claim not supported"
+            for f, k in mentions:  # each attribute value named must belong to a cited product
+                if f != "__type__" and not any(k in self._doc_vals.get(d, {}).get(f, set()) or
+                                               f" {k} " in self._title_key.get(d, "") for d in cited):
+                    return f"attribute '{k}' doesn't belong to the cited product"
+        return ""
 
     def _field(self, name: str):
         name = name.lower()
@@ -85,6 +195,9 @@ class SlotFiller:
     def check(self, sentence: str) -> tuple[str | None, str]:
         """Return (filled sentence, "") or (None, reason it was dropped)."""
         cited = CITE.findall(sentence)
+        for word, pos in ORDINALS.items():  # "the second one" refers to a shown product
+            if re.search(rf"\b{word}\b", sentence.lower()) and pos < len(self.order):
+                cited.append(self.order[pos])
         for cid in cited:
             if cid not in self.docs:
                 return None, f"cites unknown product {cid}"
@@ -99,10 +212,29 @@ class SlotFiller:
         low = stripped.lower()
         if "#" in stripped:
             return None, "masked number copied"
-        for words, fact in ((LOW_PRICE, "low_price"), (HIGH_PRICE, "high_price"), (TOP_RATING, "top_rating"),
-                            (MAX_SIZE, "max_size"), (MIN_SIZE, "min_size")):
-            if _has_any(low, words) and (fact not in self.facts or set(cited) != {self.facts[fact]}):
-                return None, f"comparison not backed by computed fact {fact}"
+        if NUMBER_WORDS.search(low):
+            return None, "count written by the model"
+        kinds = {fact for words, fact in ((LOW_PRICE, "low_price"), (HIGH_PRICE, "high_price"),
+                                          (TOP_RATING, "top_rating"), (MAX_SIZE, "max_size"), (MIN_SIZE, "min_size"))
+                 if _has_any(low, words)}
+        if RATING_WORDS.search(low) and (GENERIC_HIGH.search(low) or HI_MOST.search(low)):
+            kinds.add("top_rating")
+        elif PRICE_WORDS.search(low) and HI_MOST.search(low):
+            kinds.add("high_price")
+        if PRICE_WORDS.search(low) and HI_LEAST.search(low):
+            kinds.add("low_price")
+        elif not SIZE_WORDS.search(low):
+            if GENERIC_LOW.search(low):
+                kinds.add("low_price")
+            if GENERIC_HIGH.search(low):
+                kinds.add("high_price")
+        if kinds:
+            ids = {self.facts.get(k) for k in kinds}
+            if None in ids or not cited or set(cited) - ids or ids - set(cited):
+                return None, f"comparison not backed by computed facts {sorted(kinds)}"
+        reason = self._claims_ok(low, cited)
+        if reason:
+            return None, reason
         bad = False
 
         def sub(m: re.Match) -> str:
@@ -116,8 +248,24 @@ class SlotFiller:
             self.filled += 1
             return text
 
-        out = SLOT.sub(sub, sentence)
-        return (None, "slot value missing") if bad else (out, "")
+        filled: list[str] = []
+
+        def sub_and_record(m: re.Match) -> str:
+            text = sub(m)
+            filled.append(text)
+            return text
+
+        out = SLOT.sub(sub_and_record, sentence)
+        if bad:
+            return None, "slot value missing"
+        # the model often repeats what the slot already contains: "₹{price:X}" -> "₹₹499", "{volume:X} L" -> "5 L L"
+        if self.symbol:
+            out = out.replace(self.symbol + self.symbol, self.symbol)
+        for v in filled:
+            last = v.split()[-1] if v.split() else ""
+            if last.isalpha():
+                out = re.sub(rf"{re.escape(v)}\s+{re.escape(last)}\b", v, out)
+        return out, ""
 
     async def stream(self, chunks: AsyncIterator[str] | Iterable[str]) -> AsyncIterator[str]:
         buf = ""

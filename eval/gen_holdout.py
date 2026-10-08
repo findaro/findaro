@@ -4,7 +4,7 @@ Targets (category + optional attribute + optional budget) are sampled from the d
 writes a natural Hinglish query for each without seeing packs/locales/*.yaml or eval/queries.jsonl.
 The sampled target is the ground-truth predicate. Rows are marked needs_review for a human pass.
 
-    uv run python eval/gen_holdout.py --provider openai --model gpt-5.5 --n 20
+    uv run python eval/gen_holdout.py --n 20   # local Ollama by default; paid providers only when asked
 """
 
 from __future__ import annotations
@@ -77,8 +77,8 @@ def sample_targets(docs, n, seed):
 
 async def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--provider", default="openai")
-    ap.add_argument("--model", default="gpt-5.5")
+    ap.add_argument("--provider", default="ollama")
+    ap.add_argument("--model", default="llama3.1:8b")
     ap.add_argument("--n", type=int, default=20)
     ap.add_argument("--seed", type=int, default=2026)
     args = ap.parse_args()

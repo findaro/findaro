@@ -11,10 +11,11 @@ x-app-env: &app-env
   # Query planner LLM (M2). Set ZERCH_PLANNER_PROVIDER=anthropic (+ key) to use Claude Haiku instead.
   ZERCH_PLANNER_PROVIDER: ${ZERCH_PLANNER_PROVIDER:-ollama}
   ZERCH_PLANNER_MODEL: ${ZERCH_PLANNER_MODEL:-llama3.2:3b}
-  # Chat (M3): answers and unclear-turn classification. OpenAI by default when OPENAI_API_KEY is set.
+  # Chat (M3/M4): answers and unclear-turn classification. Local Ollama by default (free).
+  # For OpenAI set ZERCH_CHAT_PROVIDER=openai, ZERCH_CHAT_MODEL=gpt-4.1-mini and OPENAI_API_KEY (paid; cap it).
   OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-  ZERCH_CHAT_PROVIDER: ${ZERCH_CHAT_PROVIDER:-}
-  ZERCH_CHAT_MODEL: ${ZERCH_CHAT_MODEL:-}
+  ZERCH_CHAT_PROVIDER: ${ZERCH_CHAT_PROVIDER:-ollama}
+  ZERCH_CHAT_MODEL: ${ZERCH_CHAT_MODEL:-llama3.1:8b}
 
 services:
   api:

@@ -58,8 +58,11 @@ def make_planner(settings: Settings) -> Any:
 def make_chat_llm(settings: Settings) -> Any:
     from zerch.llm import LLMError, get_llm
 
-    provider = settings.chat_provider or ("openai" if settings.openai_api_key else
-                                          "anthropic" if settings.anthropic_api_key else settings.llm_provider)
+    # Paid providers only when chosen explicitly (ZERCH_CHAT_PROVIDER=openai|anthropic); a key in .env alone never
+    # turns them on. "none" disables the chat LLM (template answers).
+    provider = settings.chat_provider or settings.llm_provider
+    if provider == "none":
+        return None
     model = settings.chat_model or {"openai": "gpt-4.1-mini", "anthropic": "claude-haiku-4-5"}.get(provider)
     try:
         return get_llm(provider, model, reasoning_effort=settings.chat_reasoning_effort)

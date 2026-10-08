@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -30,6 +31,8 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.1:8b"
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-sonnet-5-5"  # scripts (demo catalog generation)
+    openai_api_key: str | None = Field(None, validation_alias=AliasChoices("ZERCH_OPENAI_API_KEY", "OPENAI_API_KEY"))
+    openai_model: str = "gpt-5.5"
 
     # Search
     search_cache_ttl: int = 60  # seconds; 0 disables

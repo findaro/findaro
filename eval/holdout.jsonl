@@ -1,0 +1,20 @@
+{"id": "h001", "query": "haldi powder 100 ke andar", "type": "hinglish", "predicate": {"cat": "Grocery Staples > Spices & Masalas > Turmeric Powder", "price_max": 100}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h002", "query": "sabzi ke liye masala mix", "type": "hinglish", "predicate": {"cat": "Grocery Staples > Spices & Masalas > Garam Masala"}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h003", "query": "mens jeans 1800 ke andar", "type": "hinglish", "predicate": {"cat": "Apparel > Men > Jeans", "price_max": 1800}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h004", "query": "grey power bank chahiye", "type": "hinglish", "predicate": {"cat": "Electronics Accessories > Mobile Accessories > Power Banks", "color": "Grey"}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h005", "query": "jaldi khana banane wala cooker", "type": "hinglish", "predicate": {"cat": "Home & Kitchen > Cookware > Pressure Cookers"}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h006", "query": "ladko ke liye formal shirt", "type": "hinglish", "predicate": {"cat": "Apparel > Men > Shirts"}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h007", "query": "office ke liye black joota", "type": "hinglish", "predicate": {"cat": "Footwear > Men > Formal Shoes"}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h008", "query": "gram flour chahiye", "type": "hinglish", "predicate": {"cat": "Grocery Staples > Atta & Flours > Besan"}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h009", "query": "grey running shoes men", "type": "hinglish", "predicate": {"cat": "Footwear > Men > Running Shoes", "color": "Grey"}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h010", "query": "ladko ke liye cool tee under 700", "type": "hinglish", "predicate": {"cat": "Apparel > Men > T-Shirts", "price_max": 700}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h011", "query": "moong dal chahiye", "type": "hinglish", "predicate": {"cat": "Grocery Staples > Dals & Pulses > Moong Dal"}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h012", "query": "fast charging wala adapter", "type": "hinglish", "predicate": {"cat": "Electronics Accessories > Mobile Accessories > Chargers"}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h013", "query": "phone ke liye aux earphones 700 tak", "type": "hinglish", "predicate": {"cat": "Electronics Accessories > Audio > Wired Earphones", "price_max": 700}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h014", "query": "grey tyre pump car ke liye", "type": "hinglish", "predicate": {"cat": "Auto Accessories > Car > Tyre Inflators", "color": "Grey"}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h015", "query": "tambe wali kadai", "type": "hinglish", "predicate": {"cat": "Home & Kitchen > Cookware > Kadai", "color": "Copper"}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h016", "query": "laptop ke liye kala bag", "type": "hinglish", "predicate": {"cat": "Electronics Accessories > Computer Accessories > Laptop Bags", "color": "Black"}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h017", "query": "kurti style top chahiye 700 tak", "type": "hinglish", "predicate": {"cat": "Apparel > Women > Tops", "price_max": 700}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h018", "query": "cooking ke liye sarso oil", "type": "hinglish", "predicate": {"cat": "Grocery Staples > Edible Oils > Mustard Oil"}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h019", "query": "car ke liye plastic mobile stand", "type": "hinglish", "predicate": {"cat": "Auto Accessories > Car > Phone Holders", "material": "Plastic"}, "needs_review": true, "written_by": "openai:gpt-5.5"}
+{"id": "h020", "query": "running ke liye earphones", "type": "hinglish", "predicate": {"cat": "Electronics Accessories > Audio > Neckbands"}, "needs_review": true, "written_by": "openai:gpt-5.5"}

@@ -19,7 +19,16 @@
 
 **Caveats**
 
-- **The lexicon was written with the eval visible.** The M2 brief listed some words (tar, sarson ka tel, bartan, gents, ladkiyon, bacchon), and the eval's Hinglish queries were known while writing `hi-en.yaml` (288 entries, mostly general vocabulary). The Hinglish score is therefore an upper bound until the holdout set exists. `eval/holdout.jsonl` is empty and waiting for Rohit's queries.
+- **Holdout: the honest Hinglish number is 0.82, not 0.91.** The lexicon was written with the eval visible. To get an independent number, `eval/gen_holdout.py` had a different model (OpenAI gpt-5.5) write 20 Hinglish queries. It wrote them for targets sampled from the catalog and never saw `hi-en.yaml` or `queries.jsonl`. On that set:
+  - M1 (understanding off): nDCG@10 0.540, R@20 0.466.
+  - M2: nDCG@10 **0.818** (0.828 with cached planner answers), R@20 0.80.
+
+  Understanding clearly generalises (+0.28), but the dev-set Hinglish score (0.909) overstates it by about 0.09. Holdout failures:
+  - spellings the pack doesn't have ("ladko" vs "ladke"/"ladkon");
+  - "tee" for t-shirt;
+  - ambiguous targets ("kurti style top" → Tops; "running ke liye earphones" → Neckbands; "office ke liye black joota", whose target has no colour).
+
+  Nothing was tuned on the holdout. Its queries are marked `needs_review`.
 - **The LLM path barely runs on this eval.** Only 1 of 66 queries reaches it, so the "LLM p95 ≤ 1 s" target is met on n=1, and only because of the 800 ms timeout. The separate probe (`eval/llm_queries.jsonl`, 10 queries with words the rules can't read) is more informative. With local `llama3.2:3b` every call times out uncached (p95 ≈ 830 ms incl. fallback). Once its answers are cached, nDCG on the probe rises from 0.57 to 0.69. A faster, stronger planner (Claude Haiku 4.5 needs `ZERCH_ANTHROPIC_API_KEY`, not available in this environment) is the obvious next measurement. The probe was used to fix a prompt bug (the model copied the example price into its answer), so it is not a clean holdout either.
 - **The "no match" floor barely separates.** With e5-small, out-of-catalog queries score 0.901–0.920 on vectors. Untranslated in-catalog Hinglish scores 0.899–0.914. The floor (0.905) is set conservatively, so unknown Hinglish isn't blanked. As a result, 4 of 20 negatives get `none`, 12 get `weak` (no lexical match), and 4 get `good` through accidental word overlap ("sofa set" → dinner set, "laptop" → laptop bag). In-catalog queries never get `none`.
 - **Latency.** 30 ms holds with a warm query embedding (p95 ≈ 11 ms here, 13 ms at 10k docs). A query whose embedding isn't cached pays about 50 ms of CPU e5 inference (p95 ≈ 66 ms at 10k docs), the same as in M1.

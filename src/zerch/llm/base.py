@@ -58,4 +58,10 @@ def get_llm(provider: str | None = None, model: str | None = None) -> LLM:
         if not settings.anthropic_api_key:
             raise LLMError("ZERCH_ANTHROPIC_API_KEY is not set")
         return AnthropicLLM(api_key=settings.anthropic_api_key, model=model or settings.anthropic_model)
+    if provider == "openai":
+        from zerch.llm.openai import OpenAILLM
+
+        if not settings.openai_api_key:
+            raise LLMError("OPENAI_API_KEY is not set")
+        return OpenAILLM(api_key=settings.openai_api_key, model=model or settings.openai_model)
     raise LLMError(f"unknown LLM provider {provider!r}")

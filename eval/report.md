@@ -1,8 +1,8 @@
 # Eval report — M2 query understanding
 
-- Date: 2026-10-07 21:49 UTC · commit `5915584` · arm64 Darwin
-- Catalog: `data/demo_catalog.jsonl` (3000 docs) · 66 queries · 20 out-of-catalog negatives · 0 holdout queries
-- Planner LLM: Ollama llama3.2:3b (local, no Anthropic key in this environment), 800 ms timeout
+- Date: 2026-10-08 06:32 UTC · commit `7762858` · arm64 Darwin
+- Catalog: `data/demo_catalog.jsonl` (3000 docs) · 66 queries · 20 out-of-catalog negatives · 20 holdout queries
+- Planner LLM: Ollama llama3.2:3b (local), 800 ms timeout
 - Baseline: `eval/baselines/m1.json` (M1 on the reviewed query set, nDCG@10 0.808); M1 report kept in `eval/report_m1.md`
 
 ## Targets
@@ -12,8 +12,8 @@
 | price nDCG@10 ≥ 0.85 | 0.900 | ✅ met |
 | hinglish nDCG@10 ≥ 0.8 | 0.909 | ✅ met |
 | no segment regresses by more than 0.02 | worst: plain +0.000 | ✅ met |
-| server p95 ≤ 30 ms, rules-only path | 11.9 ms | ✅ met |
-| server p95 ≤ 1000 ms, LLM path uncached | 811.3 ms (n=1) | ✅ met |
+| server p95 ≤ 30 ms, rules-only path | 10.5 ms | ✅ met |
+| server p95 ≤ 1000 ms, LLM path uncached | 811.7 ms (n=1) | ✅ met |
 
 ## Relevance vs M1
 
@@ -48,7 +48,16 @@
 
 **Caveats**
 
-- **The lexicon was written with the eval visible.** The M2 brief listed some words (tar, sarson ka tel, bartan, gents, ladkiyon, bacchon), and the eval's Hinglish queries were known while writing `hi-en.yaml` (288 entries, mostly general vocabulary). The Hinglish score is therefore an upper bound until the holdout set exists. `eval/holdout.jsonl` is empty and waiting for Rohit's queries.
+- **Holdout: the honest Hinglish number is 0.82, not 0.91.** The lexicon was written with the eval visible. To get an independent number, `eval/gen_holdout.py` had a different model (OpenAI gpt-5.5) write 20 Hinglish queries. It wrote them for targets sampled from the catalog and never saw `hi-en.yaml` or `queries.jsonl`. On that set:
+  - M1 (understanding off): nDCG@10 0.540, R@20 0.466.
+  - M2: nDCG@10 **0.818** (0.828 with cached planner answers), R@20 0.80.
+
+  Understanding clearly generalises (+0.28), but the dev-set Hinglish score (0.909) overstates it by about 0.09. Holdout failures:
+  - spellings the pack doesn't have ("ladko" vs "ladke"/"ladkon");
+  - "tee" for t-shirt;
+  - ambiguous targets ("kurti style top" → Tops; "running ke liye earphones" → Neckbands; "office ke liye black joota", whose target has no colour).
+
+  Nothing was tuned on the holdout. Its queries are marked `needs_review`.
 - **The LLM path barely runs on this eval.** Only 1 of 66 queries reaches it, so the "LLM p95 ≤ 1 s" target is met on n=1, and only because of the 800 ms timeout. The separate probe (`eval/llm_queries.jsonl`, 10 queries with words the rules can't read) is more informative. With local `llama3.2:3b` every call times out uncached (p95 ≈ 830 ms incl. fallback). Once its answers are cached, nDCG on the probe rises from 0.57 to 0.69. A faster, stronger planner (Claude Haiku 4.5 needs `ZERCH_ANTHROPIC_API_KEY`, not available in this environment) is the obvious next measurement. The probe was used to fix a prompt bug (the model copied the example price into its answer), so it is not a clean holdout either.
 - **The "no match" floor barely separates.** With e5-small, out-of-catalog queries score 0.901–0.920 on vectors. Untranslated in-catalog Hinglish scores 0.899–0.914. The floor (0.905) is set conservatively, so unknown Hinglish isn't blanked. As a result, 4 of 20 negatives get `none`, 12 get `weak` (no lexical match), and 4 get `good` through accidental word overlap ("sofa set" → dinner set, "laptop" → laptop bag). In-catalog queries never get `none`.
 - **Latency.** 30 ms holds with a warm query embedding (p95 ≈ 11 ms here, 13 ms at 10k docs). A query whose embedding isn't cached pays about 50 ms of CPU e5 inference (p95 ≈ 66 ms at 10k docs), the same as in M1.
@@ -63,28 +72,28 @@
 
 | Path | n | p50 | p95 | p99 |
 |---|---:|---:|---:|---:|
-| rules only | 325 | 5.8 ms | 11.9 ms | 16.1 ms |
-| LLM, uncached (incl. timeouts) | 1 | 811.3 ms | 811.3 ms | 811.3 ms |
-| LLM plan from cache | 5 | 4.1 ms | 128.8 ms | 128.8 ms |
+| rules only | 325 | 5.7 ms | 10.5 ms | 16.1 ms |
+| LLM, uncached (incl. timeouts) | 1 | 811.7 ms | 811.7 ms | 811.7 ms |
+| LLM plan from cache | 5 | 4.1 ms | 4.5 ms | 4.5 ms |
 
 ### LLM path probe (`eval/llm_queries.jsonl`, 10 queries with words the rules can't read)
 
 - Reached the LLM: 8/10; outcomes: timeout 8
-- Server latency, uncached: p50 822.7 ms, p95 825.0 ms
+- Server latency, uncached: p50 818.4 ms, p95 823.2 ms
 - nDCG@10 uncached (timeouts fall back to rules): **0.570** · with the LLM plan from cache: **0.685**
 
 | query | LLM (uncached) | took | nDCG uncached | nDCG cached plan | semantic text (cached plan) |
 |---|---|---:|---:|---:|---|
-| safai ka kapda gaadi ke liye | timeout | 815.6 ms | 1.00 | 1.00 | Car cleaning cloth |
-| nahane ke baad pehenne wali chappal | timeout | 823.8 ms | 1.00 | 0.00 | Women Flats & Bellies |
-| paani ubalne wali ketli | timeout | 825.0 ms | 0.94 | 1.00 | water kettle |
-| sabzi kaatne ki machine | timeout | 820.0 ms | 0.00 | 1.00 | Vegetable chopper |
-| makhmali seat cover | not_needed | 12.6 ms | 0.85 | 0.85 | makhmali seat cover |
-| khushboo wala gaadi ka | timeout | 823.9 ms | 0.61 | 1.00 | Car with fragrance smell |
-| sir ki suraksha ke liye bike | timeout | 818.3 ms | 0.30 | 1.00 | bike safety |
-| haath ke dastane bike chalane ke liye | timeout | 823.1 ms | 0.00 | 0.00 | bike helmets |
-| kaan mein lagane wale bina taar ke | timeout | 822.7 ms | 0.00 | 0.00 | Earphones without cable |
-| roti banane ka tawa lohe ka | not_needed | 10.4 ms | 1.00 | 1.00 | roti making tawa iron |
+| safai ka kapda gaadi ke liye | timeout | 821.2 ms | 1.00 | 1.00 | Car cleaning cloth |
+| nahane ke baad pehenne wali chappal | timeout | 823.2 ms | 1.00 | 0.00 | Women Flats & Bellies |
+| paani ubalne wali ketli | timeout | 817.6 ms | 0.94 | 1.00 | water kettle |
+| sabzi kaatne ki machine | timeout | 816.7 ms | 0.00 | 1.00 | Vegetable chopper |
+| makhmali seat cover | not_needed | 12.2 ms | 0.85 | 0.85 | makhmali seat cover |
+| khushboo wala gaadi ka | timeout | 822.2 ms | 0.61 | 1.00 | Car with fragrance smell |
+| sir ki suraksha ke liye bike | timeout | 817.3 ms | 0.30 | 1.00 | bike safety |
+| haath ke dastane bike chalane ke liye | timeout | 819.0 ms | 0.00 | 0.00 | bike helmets |
+| kaan mein lagane wale bina taar ke | timeout | 818.4 ms | 0.00 | 0.00 | Earphones without cable |
+| roti banane ka tawa lohe ka | not_needed | 9.9 ms | 1.00 | 1.00 | roti making tawa iron |
 
 Cold-embedding and 10k-document numbers: `eval/latency_10k.md` (`scripts/bench.py`).
 
@@ -112,12 +121,15 @@ Cold-embedding and 10k-document numbers: `eval/latency_10k.md` (`scripts/bench.p
 | ceiling fan | weak | 100 | Saajni Silver Stainless Steel 1 L Electric Kettle - Fast Boi |
 | yoga mat | weak | 100 | Ragamaya Women's Black Cotton Lycra Leggings for Yoga, Gym,  |
 | sunglasses | weak | 100 | Kalyanx Women's Beige Canvas Sneakers for Running, Gym, Jogg |
-| aata chakki machine | good | 92 | SaralSpice Besan Atta / 1 kg Pack of Gram Flour for Veg Cook |
+| aata chakki machine | good | 92 | DishaDhaba 5 kg Whole Wheat Atta - Pure Veg / 5kg Whole Whea |
 | laptop | good | 93 | DigiCraft Brown Laptop Bag / Stylish Synthetic Leather Lapto |
 
-## Holdout
+## Holdout (never tuned on)
 
-`eval/holdout.jsonl` is empty. Add queries (format in `eval/README.md`) and rerun.
+| Segment | n | M1 nDCG@10 | **M2 nDCG@10** | Δ | M1 R@20 | M2 R@20 | zero-result |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| **All** | 20 | — | **0.818** | — | — | 0.800 | 0% |
+| hinglish | 20 | — | **0.818** | — | — | 0.800 | 0% |
 
 ## Per query
 

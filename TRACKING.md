@@ -8,6 +8,7 @@ Notion MCP was not authorised in the session, so tracking lives here.
 | AI search SaaS: M2 | Claude Code: ai-search M2 | Done (holdout: nDCG@10 0.818, written by gpt-5.5) |
 | AI search SaaS: M3 | Claude Code: ai-search M3 | Waiting on Rohit (review eval/conversations.jsonl) |
 | AI search SaaS: M4 | Claude Code: ai-search M4 | Done (groundedness 97.1% on local Ollama, reviewed by hand) |
+| AI search SaaS: M5 | Claude Code: ai-search M5 | Done (product conversation: 0/48 false claims, reviewed by hand) |
 
 ## M1 status (2026-10-08)
 
@@ -64,3 +65,14 @@ Docs brought in line with the code. Fixes: planner call caps (shared in-flight c
 while typing, admin-only cache bypass), SKU-like codes never sent to the LLM, widget link sanitising, session
 expiry handling in chat, request size bounds, Linux `host.docker.internal`, sturdier `demo_setup.py`.
 Still open: review `eval/conversations.jsonl` and `eval/holdout.jsonl` (both `needs_review`).
+
+## M5 product conversation (2026-10-11)
+
+Done: chat about a specific product ("what is it made of?", "made in India or imported?", "return ho jayega?").
+`product_ids` on `/v1/chat`, labeled general know-how (`text.part = "general"`), product drawer in the widget
+("Ask" on each card), synthetic catalog enrichment (`scripts/enrich_demo_catalog.py`: origin, warranty, returns,
+care, seller Q&A, some deliberately unlisted), new sentence checks (suitability verdicts, after-sale promises,
+catalog-wide values, listed-but-called-missing with one retry). `eval/run_product_chat.py` + hand review
+(`eval/product_chat_review_m5.md`): 0/48 false product claims, first token p95 886 ms on local Ollama.
+Search gate holds (nDCG@10 0.966 vs M1 0.808; small drift from 0.967 after the new text fields). Chat eval: no
+regression (nDCG 0.958, clarifier recall 100%). No paid calls.

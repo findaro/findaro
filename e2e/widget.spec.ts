@@ -113,3 +113,18 @@ test("fits the viewport without horizontal scroll", async ({ page }) => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
 });
+
+test("product drawer: ask about a product, then close", async ({ page }) => {
+  await search(page, "women shoes under 1k");
+  await w(page).locator(".ask").first().click();
+  const drawer = w(page).locator(".drawer");
+  await expect(drawer).toBeVisible();
+  await expect(drawer.locator("#zd-title")).not.toBeEmpty();
+  await expect(drawer.locator(".facts dt").first()).toBeVisible(); // every listed field is shown
+  await drawer.locator(".suggestions .pill").first().click();
+  await expect(drawer.locator(".msg.assistant .text").last()).not.toHaveClass(/typing/, { timeout: 60_000 });
+  await expect(drawer.locator(".msg.assistant .text").last()).not.toBeEmpty();
+  await page.keyboard.press("Escape");
+  await expect(drawer).toBeHidden();
+  await expect(w(page).locator(".ask").first()).toBeFocused(); // focus returns to the button that opened it
+});

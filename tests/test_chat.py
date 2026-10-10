@@ -266,7 +266,7 @@ async def test_question_answers_from_shown_products(loaded, chat_llm):
     assert first(ev2, "done")["turn_type"] == "question"
     assert [i["id"] for i in first(ev2, "results")["items"]] == shown  # nothing re-searched
     prompt = chat_llm.prompts[-1]
-    assert f"2. [{shown[1]}]" in prompt and "Question:" in prompt
+    assert f"2. [{shown[1]}]" in prompt and "Shopper:" in prompt
 
 
 async def test_chitchat_is_one_line_without_llm(loaded, chat_llm):
@@ -355,3 +355,24 @@ async def test_patch_after_session_expired(loaded):
     ev = [(b.split("\n")[0][7:], json.loads(b.split("\n")[1][6:])) for b in r.text.strip().split("\n\n")]
     assert [e for e, _ in ev] == ["session", "plan", "results", "done"]
     assert ev[-1][1]["reason"] == "session_expired"
+
+
+async def test_product_conversation(loaded, chat_llm, catalog):
+    pid = catalog[3]["id"]
+    ev = await chat(loaded, "what is it made of?", apply=None)  # no focus: a search
+    r = await loaded.client.post("/v1/chat", json={"message": "what is it made of?", "product_ids": [pid]},
+                                 headers=loaded.searcher)
+    ev = [(b.split("\n")[0][7:], json.loads(b.split("\n")[1][6:])) for b in r.text.strip().split("\n\n")]
+    done = first(ev, "done")
+    assert done["turn_type"] == "product" and done["reason"] == "product focus"
+    prompt = chat_llm.prompts[-1]
+    assert f"1. [{pid}]" in prompt and "Shopper:" in prompt
+    sid = first(ev, "session")["session_id"]
+    r = await loaded.client.post("/v1/chat", json={"session_id": sid, "message": "is it waterproof?",
+                                                   "product_ids": [pid]}, headers=loaded.searcher)
+    assert "what is it made of?" in chat_llm.prompts[-1]  # follow-ups see the conversation so far
+    r = await loaded.client.post("/v1/chat", json={"message": "thanks", "product_ids": [pid]},
+                                 headers=loaded.searcher)
+    assert '"turn_type": "chitchat"' in r.text
+    r = await loaded.client.post("/v1/chat", json={"message": "hi", "product_ids": ["NOPE"]}, headers=loaded.searcher)
+    assert r.status_code == 200 and '"turn_type": "product"' not in r.text

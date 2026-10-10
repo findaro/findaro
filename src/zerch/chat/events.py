@@ -16,7 +16,7 @@ class SessionEvent(BaseModel):
 
 
 class PlanDeltaView(BaseModel):
-    turn_type: Literal["new", "refine", "question", "chitchat"]
+    turn_type: Literal["new", "refine", "question", "product", "chitchat"]
     added: list[str] = Field(default_factory=list)
     removed: list[str] = Field(default_factory=list)
     semantic_text: dict[str, str | None] | None = None
@@ -54,11 +54,12 @@ class ClarifyEvent(BaseModel):
 
 class TextEvent(BaseModel):
     delta: str
+    part: Literal["answer", "general"] = "answer"  # "general": labeled general know-how, not a product claim
 
 
 class DoneEvent(BaseModel):
     timings: dict[str, float]
-    turn_type: Literal["new", "refine", "question", "chitchat"]
+    turn_type: Literal["new", "refine", "question", "product", "chitchat"]
     reason: str = ""
     answer_source: Literal["model", "fallback", "error", "template"] = "template"
 

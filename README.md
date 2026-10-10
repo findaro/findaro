@@ -38,7 +38,9 @@ Open http://localhost:8080/demo.html. Things to try:
 - Search: `kaale joote 1000 ke andar`, then remove the "Black" chip;
 - Search: `presure coker` (typo), `sarson ka tel` (Hinglish), or `guitar strings` (nothing matches, said honestly);
 - Ask AI: `saree under 1000`, then tap "Show slightly over budget";
-- Ask AI: `running shoes for men`, then `only black`, then `is the second one lace-up?`.
+- Ask AI: `running shoes for men`, then `only black`, then `is the second one lace-up?`;
+- Search `women shoes under 1000`, tap **Ask** on a card, then `What is it made of?`, `Is this made in India or
+  imported?`, `Pasand na aaye to return ho jayega?`.
 
 The first build takes a few minutes. Chat answers take a few seconds on the local 8B model.
 
@@ -60,14 +62,16 @@ The first build takes a few minutes. Chat answers take a few seconds on the loca
    <zerch-search></zerch-search>
    ```
 
-Build the widget with `npm install && npm run build`; the file is `packages/widget/dist/zerch-widget.js`, 7.9 KB
+Build the widget with `npm install && npm run build`; the file is `packages/widget/dist/zerch-widget.js`, 10.3 KB
 gzipped with the SDK included. It gives you:
 - one search box with a **Search / Ask AI** toggle;
 - understood chips ("Under ₹1,000", "Black") that can be removed;
 - facet pills for refining, behind a "Filters" button;
 - a product grid (image, title, price, rating);
 - an AI panel with a streamed answer, inline product cards for the products it cites, clarifier chips (such as
-  "Show slightly over budget"), and a clear no-match state.
+  "Show slightly over budget"), and a clear no-match state;
+- an **Ask** button on every card that opens a product drawer: the product's details, suggested questions
+  (picked from the fields it has, e.g. material, origin, warranty) and a chat about that one product.
 
 The demo page above is `examples/plain-html/index.html` with the demo project's keys filled in.
 
@@ -118,6 +122,9 @@ await zerch.search({ query: res.query, patch: res.understood!.chips[1].remove })
 const turn = zerch.chat("sasta wala", { sessionId, onText: (_, full) => render(full) });
 for await (const ev of turn) if (ev.type === "results") showProducts(ev.data.items);
 const { sessionId: next, clarify } = await turn.result;
+
+// talk about one product (e.g. on a product page): facts in .text, labeled general know-how in .general
+const about = await zerch.chat("Is this made in India?", { productIds: ["FW-00421"] }).result;
 
 const searchAsYouType = debounce((q: string) => zerch.search(q), 250);
 ```
@@ -363,7 +370,7 @@ Sessions live in Redis for 30 minutes. If a patch arrives after its session expi
 | `plan` | always | `understood` (chips, relaxations, match quality); `delta`: turn type plus chips added or removed versus the previous turn |
 | `results` | as soon as the search returns, before any text | `items`, `total`, `facets`, `pills`, `display`, `match_quality`, `close_matches` (`unchanged: true` for questions and chit-chat) |
 | `clarify` | optional, at most one per turn | `question`; `chips` built from the result set's own facet counts, each with a `patch` |
-| `text` | streamed | answer deltas: 1–3 sentences, product ids cited as `[ID]`, same language as the user (Hinglish in, Hinglish out) |
+| `text` | streamed | answer deltas: 1–3 sentences, product ids cited as `[ID]`, same language as the user (Hinglish in, Hinglish out); `part` is `answer` or `general` (labeled general advice, product conversations only) |
 | `done` | last | `timings` (ms since the request), `turn_type`, `reason`, `answer_source` (`model`, `fallback`, `error` or `template`) |
 
 **How turns are handled.** Rules classify most turns; the LLM is only used when the rules can't tell.
@@ -397,6 +404,34 @@ it streams, and is dropped whole if it:
 
 If every sentence is dropped, or no chat LLM is configured, the answer is a plain template such as
 "Top result: [ID]".
+
+**Talking about a product.** Send `product_ids` (up to 3) and every turn is answered about those products, the
+way a shopper would ask about a product page: "what is it made of?", "is this made in India or imported?",
+"pasand na aaye to return ho jayega?". Keep sending the same `session_id` for follow-ups. The model sees the
+products' full listings (including text such as care instructions and seller Q&A).
+The `results` event resends what was on screen with `unchanged: true`, and `done.turn_type` is `product`.
+
+```bash
+curl -N -X POST localhost:8000/v1/chat -H "authorization: Bearer $SEARCH" -H 'content-type: application/json' \
+  -d '{"message": "Is this made in India or imported?", "product_ids": ["FW-00421"]}'
+```
+
+The answer has up to two parts, both streamed as `text` events:
+- `part: "answer"` (the default) holds the facts about the product, from its listing only. If the listing doesn't
+  have a detail, it says so ("The seller hasn't listed a warranty") instead of guessing.
+- `part: "general"` is an optional line of general know-how ("Always check the care label before washing…").
+  Show it labeled as general advice. It is checked to make no claim about the product: no numbers, brands,
+  citations or comparisons.
+
+On top of the checks above, a product answer is dropped sentence by sentence if it:
+- gives a yes/no suitability verdict ("it's fine for the monsoon", "roz use ke liye theek hai") the listing doesn't
+  state in its own words;
+- promises a return, refund, replacement or exchange the listing doesn't name (a "10-day replacement" is not "you
+  can return it");
+- names a value the catalog uses elsewhere (a country, a colour) that this product doesn't list;
+- says a listed detail is missing (the model is asked once more, pointed at that field).
+
+If nothing survives, the reply is honest: it quotes the listed policy, or says the seller doesn't state it.
 
 **Model:** local Ollama `llama3.1:8b` by default (`ZERCH_CHAT_MODEL`). For a hosted model, set
 `ZERCH_CHAT_PROVIDER=openai` (with `OPENAI_API_KEY`, e.g. `gpt-4.1-mini`) or `anthropic` (with
@@ -470,6 +505,11 @@ Run a single worker. Jobs for a project run in order.
   or `--provider anthropic` with `ZERCH_ANTHROPIC_API_KEY`. Structured attributes are sampled from a
   taxonomy, and the LLM writes the brand names, titles and descriptions. All brands are invented, and nothing in
   the repo is scraped.
+- `scripts/enrich_demo_catalog.py` adds what shoppers ask about (country of origin, warranty, return policy, care,
+  seller Q&A), seeded per product with no LLM. About 12% of products leave each one out, so "the seller hasn't
+  listed that" is a real answer.
+- `uv run python eval/run_product_chat.py --search-key ...` runs the product-conversation eval (12 products × 4
+  questions); hand review in `eval/product_chat_review_m5.md`.
 - `eval/build_queries.py` builds `eval/queries.jsonl`. Each query's relevant ids come from a predicate over the
   catalog's attributes.
 - `uv run python eval/run.py --setup` imports the catalog into a new project, then writes `eval/report.md` with

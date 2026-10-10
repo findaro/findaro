@@ -671,3 +671,13 @@ async def _retrieve(state: State, pid: str, schema: Schema, req: SearchRequest, 
                    lexical_hits=len(lex_hits), vector_top=knn_hits[0]["_score"] if knn_hits else None,
                    timings=timings, focus=focus)
 
+
+
+async def fetch_documents(state: State, pid: str, ids: list[str]) -> dict[str, dict[str, Any]]:
+    """Stored documents by id (missing ids are left out), in the order asked."""
+    if not ids:
+        return {}
+    r = await state.os.search(index=alias_name(state.settings.index_prefix, pid),
+                              body={"query": {"ids": {"values": ids}}, "size": len(ids), "_source": _SRC})
+    found = {h["_id"]: h["_source"]["zz_raw"] for h in r["hits"]["hits"]}
+    return {i: found[i] for i in ids if i in found}

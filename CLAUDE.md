@@ -16,6 +16,7 @@ a chat-style refinement mode, a headless SDK and a drop-in widget. Open source (
 | M2 | AI query understanding (filters/price/attributes inferred from the query, Hinglish normalisation) | done |
 | M3 | Chat search (conversational refinement over the M2 query representation) | done (conversations need review) |
 | M4 | JS SDK / drop-in widget (uses the browser-safe `search_key`) | done |
+| M5 | Product conversation (`product_ids` on `/v1/chat`, labeled general know-how, widget product drawer) | done |
 
 ## Contracts (change additively only)
 
@@ -29,7 +30,8 @@ a chat-style refinement mode, a headless SDK and a drop-in widget. Open source (
   `llm: false` (search-as-you-type) never call it.
 - `search_key` is browser-safe (read-only, search only); browser origins are checked against the project's
   `allowed_origins`; admin keys are refused from browsers.
-- `/v1/chat` SSE event sequence (session, plan, results, clarify?, text*, done) and the `PatchOp` list
+- `/v1/chat` SSE event sequence (session, plan, results, clarify?, text*, done); `text.part` is `answer` (facts
+  from the listing) or `general` (labeled know-how, never a claim about the product) and the `PatchOp` list
   (`patch`) used by chips, pills and clarifier chips. `plan_patch`/`apply` is the older form, kept working.
 - Chat answers must stay grounded: the model only sees products on screen, numbers come from server-filled
   slots, comparisons are computed in code, and every sentence is checked (`zerch.chat.slots`) before it streams.

@@ -12,6 +12,8 @@
 | `build_queries.py` | Builds `queries.jsonl` (relevant ids from predicates over the catalog, applying `reviews.json`). |
 | `run.py` | Search eval against a live API; writes `report.md` (keeps the chat section). Pass the admin key to also time uncached LLM planner calls. |
 | `run_chat.py` | Chat eval over `conversations.jsonl` + negatives; writes the chat section of `report.md` and every answer to `results/`. `--judge` adds an LLM groundedness judge (local Ollama by default). |
+| `run_product_chat.py` | Product-conversation eval (M5): 12 demo products × 4 questions via `/v1/chat` with `product_ids`; automatic checks plus every answer saved to `results/` for hand review. Local models only. |
+| `product_chat_review_m5.md` | Hand review of every answer from the M5 run (0/48 false product claims). |
 | `chat_review_m4.md` | Hand review of every chat answer from the M4 run (groundedness 66/68). |
 | `gen_holdout.py` | Generates holdout queries with an LLM (local Ollama by default). |
 | `calibrate_floor.py` | Picks `ZERCH_MATCH_FLOOR` from `queries.jsonl` + `negatives.jsonl`. |

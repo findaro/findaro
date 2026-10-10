@@ -61,10 +61,13 @@ export interface ChatOptions extends RequestOptions {
   sessionId?: string | null;
   /** Structured plan edits (e.g. a chip's `remove` or a clarifier chip's `patch`), applied without a new turn. */
   patch?: PatchOp[];
+  /** Talk about these products (up to 3), e.g. from a product page: every turn is answered about them. */
+  productIds?: string[];
   onSession?: (e: SessionEvent) => void;
   onPlan?: (e: PlanEvent) => void;
   onResults?: (e: ResultsEvent) => void;
   onClarify?: (e: ClarifyEvent) => void;
+  /** `fullText` is the answer so far (product facts); general know-how arrives with `e.part === "general"`. */
   onText?: (e: TextEvent, fullText: string) => void;
   onDone?: (e: DoneEvent) => void;
   onError?: (err: Error) => void;
@@ -73,6 +76,8 @@ export interface ChatOptions extends RequestOptions {
 export interface ChatResult {
   sessionId: string | null;
   text: string;
+  /** General know-how (labeled, not a claim about the product), if the answer had any. */
+  general: string;
   plan: PlanEvent | null;
   results: ResultsEvent | null;
   clarify: ClarifyEvent | null;
@@ -169,8 +174,8 @@ export function createClient(options: ClientOptions): ZerchClient {
     let wake: (() => void) | null = null;
     let finished = false;
     let failure: unknown = null;
-    const state: ChatResult = { sessionId: opts.sessionId ?? null, text: "", plan: null, results: null,
-                                clarify: null, done: null };
+    const state: ChatResult = { sessionId: opts.sessionId ?? null, text: "", general: "", plan: null,
+                                results: null, clarify: null, done: null };
 
     const emit = (ev: ChatEvent) => {
       switch (ev.type) {
@@ -178,7 +183,11 @@ export function createClient(options: ClientOptions): ZerchClient {
         case "plan": state.plan = ev.data; opts.onPlan?.(ev.data); break;
         case "results": state.results = ev.data; opts.onResults?.(ev.data); break;
         case "clarify": state.clarify = ev.data; opts.onClarify?.(ev.data); break;
-        case "text": state.text += ev.data.delta; opts.onText?.(ev.data, state.text); break;
+        case "text":
+          if (ev.data.part === "general") state.general += ev.data.delta;
+          else state.text += ev.data.delta;
+          opts.onText?.(ev.data, state.text);
+          break;
         case "done": state.done = ev.data; opts.onDone?.(ev.data); break;
       }
       queue.push(ev);
@@ -188,6 +197,7 @@ export function createClient(options: ClientOptions): ZerchClient {
     const run = (async () => {
       const body: Record<string, unknown> = { message, session_id: opts.sessionId ?? null };
       if (opts.patch) body.patch = opts.patch;
+      if (opts.productIds?.length) body.product_ids = opts.productIds;
       const res = await post("/v1/chat", body, c.signal, "text/event-stream");
       if (!res.body) throw new ZerchError("streaming not supported by this fetch", 0, "no_stream");
       const reader = res.body.getReader();

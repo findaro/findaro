@@ -31,6 +31,7 @@ class Session(BaseModel):
     last_quality: str | None = None  # match_quality of the last search
     clarified: bool = False  # did the previous turn ask a clarifying question
     clarify_chips: list[dict[str, Any]] = Field(default_factory=list)  # last clarifier's chips (label -> patch)
+    focus_ids: list[str] = Field(default_factory=list)  # products the conversation is about (product drawer)
 
     def remember(self, role: str, text: str, type_: str | None = None) -> None:
         self.history.append(Turn(role=role, text=text[:500], type=type_))

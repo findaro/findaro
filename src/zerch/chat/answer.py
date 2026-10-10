@@ -33,8 +33,8 @@ SYSTEM_QUESTION = (
 
 
 def language_rule(hinglish: bool) -> str:
-    return ("Reply in Hinglish (Hindi written in Latin letters mixed with English), the way the user writes."
-            if hinglish else "Reply in English.")
+    return ("Reply in Hinglish (Hindi written in Latin letters mixed with English), the way the user writes, "
+            "even if earlier replies were in English." if hinglish else "Reply in English.")
 
 
 def doc_view(doc: dict[str, Any], schema: Schema, detailed: bool = False) -> dict[str, Any]:
@@ -200,3 +200,63 @@ def fallback_search_text(total: int, quality: str, docs: list[tuple[str, dict, b
         return (f"Exact match nahi mila. Sabse kareeb: [{did}]" if hinglish
                 else f"No exact match. Closest: [{did}]")
     return (f"Sabse upar: [{did}]" if hinglish else f"Top result: [{did}]")
+
+
+# --- product conversation (M5) ------------------------------------------------------------------------------
+
+GENERAL_MARKER = "General:"
+
+SYSTEM_PRODUCT = (
+    "You are a helpful shopping assistant talking with a shopper about specific products, like a friend who "
+    "knows products well. First answer from the listing: 1 to 3 short sentences using ONLY the product fields "
+    "given. If the listing doesn't say (for example the country of origin or a warranty isn't listed), say "
+    "plainly that the seller hasn't listed it; never guess. For suitability questions (rain, gym, office, gifting...) "
+    "quote what the listing states (for example its care instructions or description) instead of answering yes "
+    "or no; put any general advice in the general line. Then, only if it genuinely helps, add one line "
+    "starting with \"" + GENERAL_MARKER + "\" with one or two sentences of general know-how about this kind of "
+    "product or material (care, suitability, what to check before buying). That general line must not state "
+    "anything about this specific product, and must not mention brands, prices or numbers. Don't label the parts.\n"
+    "No markdown, no lists. Copy names, numbers and values exactly as the listing gives them (a number that isn't "
+    "in the listing is removed). Cite products as [ID] when more than one is shown."
+)
+
+
+def product_prompt(message: str, docs: list[tuple[str, dict]], hinglish: bool, history: list[tuple[str, str]],
+                   facts: list[str] | None = None, schema: Schema | None = None) -> str:
+    lines = ["Products the shopper is asking about (position. [ID] and every field the seller listed):"]
+    id_fields = {f.name for f in schema.by_role(Role.id)} if schema is not None else set()
+    for i, (did, view) in enumerate(docs, 1):
+        view = {k: v for k, v in view.items() if k not in id_fields}
+        lines.append(f"{i}. [{did}] {json.dumps(view, ensure_ascii=False)}")
+    if facts:
+        lines.append("Computed facts (the only comparisons you may make): " + "; ".join(facts))
+    if history:
+        lines.append("Conversation so far:")
+        for role, text in history[-6:]:
+            lines.append(f"{role}: {text[:300]}")
+    lines.append(f"Shopper: {json.dumps(message, ensure_ascii=False)}")
+    lines.append(language_rule(hinglish))
+    return "\n".join(lines)
+
+
+def missing_detail_text(hinglish: bool) -> str:
+    return ("Main iska pakka jawab nahi de paaya; upar product details mein seller ki di hui saari jaankari hai."
+            if hinglish else
+            "I couldn't answer that reliably; the product details show everything the seller listed.")
+
+
+def listed_text(fields: list[tuple[str, str]], hinglish: bool) -> str:
+    """Fallback that quotes the listing word for word, e.g. after a reworded return policy was dropped."""
+    shown = "; ".join(f"{k.replace('_', ' ').capitalize()}: {v}" for k, v in fields)
+    return f"Seller ne ye likha hai — {shown}." if hinglish else f"The seller lists — {shown}."
+
+
+def not_stated_text(hinglish: bool) -> str:
+    """Fallback when the only answer would have been a suitability verdict the listing doesn't give."""
+    return ("Seller ne ye nahi bataya ki ye iske liye theek hai ya nahi." if hinglish
+            else "The seller doesn't say whether it suits that.")
+
+
+def retry_hint(fields: list[str]) -> str:
+    return ("\nNote: your previous answer said a detail was not listed, but the listing does include: "
+            + ", ".join(fields) + ". Answer from those fields.")

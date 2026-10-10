@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from zerch.chat import answer, clarify
 from zerch.chat import session as sess_mod
-from zerch.chat.slots import SlotFiller
+from zerch.chat.slots import AFTER_SALE, SlotFiller
 from zerch.chat.turns import (
     PlanDelta,
     apply_delta,
@@ -31,7 +31,7 @@ from zerch.chat.turns import (
 from zerch.llm.base import LLMError, parse_json
 from zerch.schema.model import Role, Schema
 from zerch.search.models import SearchRequest, SearchResponse
-from zerch.search.service import CURRENCY_SYMBOLS, search
+from zerch.search.service import CURRENCY_SYMBOLS, fetch_documents, search
 from zerch.understand.llm_planner import schema_summary
 from zerch.understand.patch import PatchOp, apply_patch
 from zerch.understand.plan import QueryPlan, validate_plan
@@ -47,6 +47,8 @@ class ChatRequest(BaseModel):
     apply: dict[str, Any] | None = None  # M3: a clarifier chip's plan_patch (PlanDelta shape)
     # M4: structured edits (remove a chip, set price range...), no message needed
     patch: list[PatchOp] | None = Field(None, max_length=20)
+    # M5: talk about these products (e.g. from a product page or drawer); every turn is about them
+    product_ids: list[str] | None = Field(None, max_length=3)
     size: int = Field(10, ge=1, le=50)
 
 
@@ -179,6 +181,16 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
     if req.patch is not None and old_plan is not None:
         turn, reason = "refine", "patch"
 
+    # product conversation: the client says which products this is about
+    focus_docs: dict[str, dict[str, Any]] = {}
+    if req.product_ids and turn is None:
+        focus_docs = await fetch_documents(state, pid, list(dict.fromkeys(req.product_ids)))
+        if focus_docs:
+            sess.focus_ids = list(focus_docs)
+            parsed_msg = validate_plan(RulesParser(schema, lex, d).parse(msg), schema, d) if msg else None
+            small_talk = parsed_msg is not None and classify(msg, False, False, parsed_msg, d)[0] == "chitchat"
+            turn, reason = ("chitchat", "greeting/thanks") if small_talk else ("product", "product focus")
+
     # a clarifier chip, sent as an M3 plan_patch or typed as its label
     patch = req.apply
     if turn is None and patch is None and msg and sess.clarify_chips:
@@ -248,7 +260,7 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
         sess.last_chips = new_chips
         sess.last_quality = resp.understood.match_quality if resp.understood else None
     else:
-        # question / chitchat: nothing changes; resend what's on screen so the sequence is always the same
+        # question / product / chitchat: results don't change; resend what's on screen so the sequence is fixed
         yield sse("plan", {"understood": None, "delta": {"turn_type": turn, "added": [], "removed": []}})
         yield sse("results", {"items": [{"id": i, "document": doc} for i, doc in zip(sess.last_ids, sess.last_docs,
                                                                                         strict=False)],
@@ -290,13 +302,18 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
             text_parts.append(text)
             first = time.perf_counter()
         else:
-            if turn == "question":
-                docs_q = [(i, answer.doc_view(doc, schema, detailed=True)) for i, doc in
-                          zip(sess.last_ids, sess.last_docs, strict=False)]
+            focus_ids: list[str] = []
+            if turn in ("question", "product"):
+                if turn == "product":
+                    by_id = focus_docs
+                    focus_ids = list(focus_docs)
+                else:  # a question about the products on screen
+                    by_id = dict(zip(sess.last_ids, sess.last_docs, strict=False))
+                docs_q = [(i, answer.doc_view(doc, schema, detailed=True)) for i, doc in by_id.items()]
                 fact_lines, fact_ids = answer.computed_facts(docs_q, schema)
-                prompt = answer.question_prompt(msg, docs_q, hinglish, fact_lines, schema)
-                system = answer.SYSTEM_QUESTION
-                by_id = dict(zip(sess.last_ids, sess.last_docs, strict=False))
+                history = [(t.role, t.text) for t in sess.history if t.type in ("product", "question")]
+                prompt = answer.product_prompt(msg, docs_q, hinglish, history, fact_lines, schema)
+                system = answer.SYSTEM_PRODUCT
             else:
                 close = set(resp.understood.close_matches) if resp and resp.understood else set()
                 focus = {c.field for c in (resp.understood.chips if resp.understood else [])}
@@ -310,7 +327,15 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
                 system = answer.SYSTEM_SEARCH
                 by_id = {h.id: h.document for h in resp.hits}
             # numbers and field values come from the documents, never from the model (zerch.chat.slots)
-            filler = SlotFiller(by_id, schema, symbol, fact_ids, order=list(by_id))
+            facet_fields = {f.name for f in schema.by_role(Role.facet)}
+            known = {}
+            if d is not None and turn in ("question", "product"):
+                for key, entries in d.values.items():
+                    fields = {f for f, _, _ in entries if f in facet_fields}
+                    if fields and len(key) >= 4:
+                        known[key] = fields
+            filler = SlotFiller(by_id, schema, symbol, fact_ids, order=list(by_id), focus=focus_ids,
+                                known_values=known)
 
             async def model_stream():
                 async for c in _stream_text(state.chat_llm, prompt, system):
@@ -318,25 +343,49 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
                         mark("first_model_token")
                     yield c
 
-            async for chunk in filler.stream(model_stream()):
+            held: list[str] = []  # an answer that is only a question back ("Kya problem hai?") isn't an answer
+            async for part, chunk in filler.stream_parts(model_stream(), answer.GENERAL_MARKER):
+                if part == "answer" and turn in ("question", "product") and not text_parts:
+                    held.append(chunk)
+                    if not chunk.strip() or chunk.rstrip().endswith("?"):
+                        continue
+                    chunk, held = "".join(held), []
                 if first is None:
                     first = time.perf_counter()
-                text_parts.append(chunk)
-                yield sse("text", {"delta": chunk})
+                if part == "answer":
+                    text_parts.append(chunk)
+                yield sse("text", {"delta": chunk, "part": part})
+            # one retry when the model claimed a listed detail was missing and nothing else survived
+            missed = [r.split()[1] for _, r in filler.dropped if r.startswith("says ") and "missing" in r]
+            if turn in ("question", "product") and missed and not "".join(text_parts).strip():
+                timings["retried"] = 1
+                retry_prompt = prompt + answer.retry_hint(list(dict.fromkeys(missed)))
+                async for part, chunk in filler.stream_parts(_stream_text(state.chat_llm, retry_prompt, system),
+                                                             answer.GENERAL_MARKER):
+                    if part != "answer":
+                        continue  # the general tip, if any, was already sent
+                    first = first or time.perf_counter()
+                    text_parts.append(chunk)
+                    yield sse("text", {"delta": chunk, "part": part})
             timings["dropped_sentences"] = len(filler.dropped)
             answer_source = "model"
             if filler.dropped:
                 log.info("dropped %d sentence(s): %s", len(filler.dropped), filler.dropped[:3])
             if not "".join(text_parts).strip():
                 answer_source = "fallback"
+                # a reworded return/replacement policy was dropped: quote the listed one instead
+                only = by_id[focus_ids[0]] if len(focus_ids) == 1 else {}
+                after_sale = [(k, v) for k, v in only.items()
+                              if any(r.startswith("after-sale") for _, r in filler.dropped)
+                              and isinstance(v, str) and len(v) < 80 and AFTER_SALE.search(v.lower())]
                 docs = [(h.id, answer.doc_view(h.document, schema), False) for h in (resp.hits if resp else [])[:5]]
                 text = (answer.fallback_search_text(resp.total if resp else 0,
                                                     resp.understood.match_quality if resp and resp.understood
                                                     else "good", docs, hinglish, title_field)
-                        if turn != "question" else ("Main iska pakka jawab nahi de paaya; product details "
-                                                    "cards par dekh sakte hain." if hinglish else
-                                                    "I couldn't give a verified answer to that; the product cards "
-                                                    "show each product's details."))
+                        if turn not in ("question", "product") else
+                        answer.listed_text(after_sale, hinglish) if after_sale else
+                        answer.not_stated_text(hinglish) if any(r.startswith("suitability") for _, r in filler.dropped)
+                        else answer.missing_detail_text(hinglish))
                 yield sse("text", {"delta": text})
                 text_parts.append(text)
                 first = first or time.perf_counter()

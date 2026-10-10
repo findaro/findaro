@@ -143,3 +143,104 @@ def test_hindi_superlatives_and_available():
     assert check("Sabse kam daam [C1] ka hai.", f)[0] is None
     assert check("[B2] is available.")[0] is None  # B2 is out of stock
     assert check("Kosmoin bottle [B1] is steel.")[0] is None  # misspelt brand of B2
+
+
+# --- product conversation: general part and focus (M5) -----------------------------------------------------
+
+def run_parts(chunks, focus):
+    """Returns ([(part, joined text)], filler) with whitespace normalised."""
+    f = SlotFiller(SHOWN, SCHEMA, "₹", {}, focus=focus)
+
+    async def go():
+        return [p async for p in f.stream_parts(chunks)]
+
+    joined: dict[str, str] = {}
+    for part, text in asyncio.run(go()):
+        joined[part] = joined.get(part, "") + text
+    return [(p, " ".join(t.split())) for p, t in joined.items() if t.strip()], f
+
+
+def test_answer_and_general_parts():
+    parts, f = run_parts(["It is made of steel and costs {price:B1}. ", "General: Steel bottles ",
+                          "keep water cool and are easy to clean."], ["B1"])
+    assert parts == [("answer", "It is made of steel and costs ₹499."),
+                     ("general", "Steel bottles keep water cool and are easy to clean.")]
+
+
+def test_general_part_cannot_carry_product_claims():
+    parts, f = run_parts(["Steel [B1]. General: Kosmo bottles are great. Most bottles hold two litres. "
+                          "This one is copper. Copper bottles need regular cleaning."], ["B1"])
+    general = [t for p, t in parts if p == "general"]
+    assert general == ["Copper bottles need regular cleaning."]
+    assert {r for _, r in f.dropped} >= {"general part names a product", "number in general part"}
+
+
+def test_focus_counts_as_citation_and_is_checked():
+    parts, _ = run_parts(["It is made of copper. ", "It is made of steel."], ["B1"])
+    assert parts == [("answer", "It is made of steel.")]
+
+
+def test_part_labels_from_the_model_are_handled():
+    parts, _ = run_parts(["Part 1: It is made of steel. Part 2: Steel bottles are easy to clean."], ["B1"])
+    assert parts == [("answer", "It is made of steel."), ("general", "Steel bottles are easy to clean.")]
+
+
+def test_hasnt_listed_when_field_is_listed_is_dropped():
+    f = SlotFiller(SHOWN, SCHEMA, "₹", {}, focus=["B1"])
+    assert f.check("The seller hasn't listed the material.")[0] is None
+    assert f.check("The seller hasn't listed the warranty.")[0] is not None  # no such field: nothing to contradict
+
+
+def test_suitability_verdicts_only_from_the_listing():
+    shown = dict(SHOWN, B1=dict(SHOWN["B1"], description="A steel bottle, perfect for daily office use."))
+    f = SlotFiller(shown, SCHEMA, "₹", {}, focus=["B1"])
+    assert f.check("You can wear it in the rain.")[0] is None
+    assert f.check("Haan, aap ise barish mein le ja sakte hain.")[0] is None
+    assert f.check("It is waterproof.")[0] is None
+    assert f.check("The listing says it is perfect for daily office use.")[0] is not None  # its own words
+    assert f.check_general("Steel bottles are fine for daily use.")[0] is not None  # general tips may judge
+
+
+def test_okay_to_wear_is_a_verdict():
+    f = SlotFiller(SHOWN, SCHEMA, "₹", {}, focus=["B1"])
+    assert f.check("It's probably okay to wear in light rain.")[0] is None
+
+
+def test_catalog_wide_values_and_listed_numbers():
+    shown = {"K1": {"id": "K1", "title": "Steel Kettle", "material": "Steel", "warranty": "6 months", "price": 999,
+                    "category": "Home > Kitchen > Kettles"}}
+    known = {"india": {"country_of_origin"}, "china": {"country_of_origin"}, "copper": {"material"}}
+    f = SlotFiller(shown, SCHEMA, "₹", {}, focus=["K1"], known_values=known)
+    assert f.check("It is made in India.")[0] is None  # origin not listed for this product
+    assert f.check("It has a 6 months warranty.")[0] is not None  # number from its own listing
+    assert f.check("It has a 12 months warranty.")[0] is None
+    assert f.check("The seller doesn't explicitly state a warranty.")[0] is not None  # no warranty field in SCHEMA
+    assert f.check("Haan, return ho jayega.")[0] is None
+    assert f.check("Ye roz use ke liye theek hai.")[0] is None
+
+
+def test_return_promises_need_a_listed_policy():
+    with_policy = {"R1": {"id": "R1", "title": "Steel Bottle", "material": "Steel", "return_policy": "10-day return"}}
+    without = {"R2": {"id": "R2", "title": "Steel Bottle", "material": "Steel"}}
+    assert SlotFiller(with_policy, SCHEMA, "₹", {}, focus=["R1"]).check("You can return it.")[0] is not None
+    assert SlotFiller(without, SCHEMA, "₹", {}, focus=["R2"]).check("Haan, return ho jayega.")[0] is None
+    assert SlotFiller(without, SCHEMA, "₹", {}, focus=["R2"]).check("Roz use ke liye to theek hai.")[0] is None
+
+
+def test_field_content_vs_missing_field():
+    docs = {"D1": {"id": "D1", "title": "Car Charger", "material": "Plastic",
+                   "description": "Perfect for long road trips."}}
+    f = SlotFiller(docs, SCHEMA, "₹", {}, focus=["D1"])
+    assert f.check("The description doesn't specifically mention rain.")[0] is not None
+    assert f.check("The description is not listed.")[0] is None
+    assert f.check("The seller hasn't listed the material.")[0] is None
+    assert f.check("It's best to check the box before use.")[0] is not None
+
+
+def test_replacement_is_not_a_return():
+    docs = {"E1": {"id": "E1", "title": "USB Cable", "material": "PVC", "return_policy": "10-day replacement"}}
+    f = SlotFiller(docs, SCHEMA, "₹", {}, focus=["E1"])
+    assert f.check("You can return it within 10 days if you don't like it.")[0] is None
+    assert f.check("The return policy is a 10-day replacement.")[0] is not None
+    assert SlotFiller({"G1": {"id": "G1", "title": "Garam Masala"}}, SCHEMA, "₹", {}, focus=["G1"]).check(
+        "Agar pasand nahin aaya to return karne ka option mil jayega.")[0] is None

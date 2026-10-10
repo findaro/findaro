@@ -50,6 +50,18 @@ GENERIC_LOW = re.compile(r"\b(lowest|cheapest|least expensive)\b")
 GENERIC_HIGH = re.compile(r"\b(highest|costliest|priciest|most expensive)\b")
 RATING_WORDS = re.compile(r"\b(rating|rated|ratings|review|reviews)\b")
 SIZE_WORDS = re.compile(r"\b(capacity|size|weight|length|volume|wattage|largest|smallest|biggest)\b")
+# yes/no suitability verdicts ("you can wear it in the rain", "pehen sakti hai", "waterproof"): never a listing fact
+SUITABILITY = re.compile(r"\b(can|could|may|should) (safely |easily |still )?(be )?(wear|worn|use|used)\b|"
+                         r"\b(suitable|ideal|perfect|good|great|fine|okay|ok|safe) "
+                         r"(for|to (wear|use|be worn|be used))\b|"
+                         r"\bwaterproof\b|\bke liye (to |toh )?(theek|thik|sahi|accha|achha|acha|perfect|badhiya)\b|"
+                         r"\bwater[- ]?(resistant|proof)\b|\b(pehen|pahen|use kar|istemaal kar|istemal kar|"
+                         r"le ja)\s*(sakt[aie]|sakte)\b|\bchal (jayega|jaayega|jayegi|jaayegi)\b")
+# return / refund / replacement / exchange: each one the sentence names must be one the listing names
+# ("10-day replacement" doesn't mean "you can return it")
+AFTER_SALE = re.compile(r"\b(return|refund|replac|exchang)\w*")
+IDIOMS = re.compile(r"\b(it'?s |it is )?best (to|if|way|practice)\b|\ball the best\b|\bat best\b")
+DEICTIC = re.compile(r"\b(this|these|that one|it is|it's|its|yeh|ye|iska|iski|iske|isme|ise|isse|the product)\b")
 UNIVERSAL = re.compile(r"\b(all|every|each|sabhi|sab|saare|saari|sare|sari)\b")
 DUAL = re.compile(r"\b(both|dono)\b")
 IN_STOCK = re.compile(r"\bin stock\b|\bstock (mein|me|main) (hai|hain|available)\b|\bavailable\b|\buplabdh\b")
@@ -63,8 +75,12 @@ NUMBER_WORDS = re.compile(r"\b(two|three|four|five|six|seven|eight|nine|ten|elev
 ORDINALS = {"first": 0, "1st": 0, "pehla": 0, "pehli": 0, "pehle": 0, "second": 1, "2nd": 1, "dusra": 1,
             "dusri": 1, "doosra": 1, "dusre": 1, "third": 2, "3rd": 2, "teesra": 2, "teesri": 2, "tisra": 2,
             "fourth": 3, "4th": 3, "chautha": 3, "fifth": 4, "5th": 4}
-NOT_AVAILABLE = re.compile(r"\b(not (shown|listed|available|mentioned|given|provided)|unknown|no information|"
-                           r"nahi (diya|di|hai|mila|mili)|pata nahi)\b")
+NOT_AVAILABLE = re.compile(r"\b(not (shown|listed|available|mentioned|given|provided|specified|stated)|unknown|"
+                           r"(hasn't|has not|haven't|have not|isn't|is not|doesn't|does not|didn't|did not) "
+                           r"(explicitly |specifically |clearly |actually )?(been )?"
+                           r"(list|listed|mention|mentioned|say|said|specify|specified|state|stated|provide|"
+                           r"provided|include|included)|no (information|mention|details?)|"
+                           r"nahi (diya|di|hai|mila|mili|bataya|likha)|pata nahi)\b")
 
 
 def _key(text: str) -> str:
@@ -75,10 +91,16 @@ def _key(text: str) -> str:
 
 class SlotFiller:
     def __init__(self, docs: dict[str, dict[str, Any]], schema: Schema, currency_symbol: str = "",
-                 facts: dict[str, str] | None = None, order: list[str] | None = None):
+                 facts: dict[str, str] | None = None, order: list[str] | None = None,
+                 focus: list[str] | None = None, known_values: dict[str, set[str]] | None = None):
         """`facts`: {"low_price": id, "high_price": id, "top_rating": id} computed in code.
         `order`: product ids in the order the user sees them, so "the second one" counts as citing it."""
         self.order = order or list(docs)
+        # product conversation: with one product in focus, a sentence without [ID] is about that product
+        self.focus = [f for f in (focus or []) if f in docs]
+        # value key -> fields, for every value this catalog uses (so "made in India" is recognised as an origin
+        # claim even when no product on screen is from India)
+        self.known_values = known_values or {}
         self.docs = docs
         self.schema = schema
         self.symbol = currency_symbol
@@ -112,6 +134,35 @@ class SlotFiller:
         # leading title word of each product, usually its brand ("Kosmo Copper Water Bottle" -> "kosmo")
         self._brand = {did: (t.split() or [""])[0] for did, t in self._title_key.items()}
 
+    _NUM = re.compile(r"\d[\d,]*(?:\.\d+)?")
+
+    def _numbers_listed(self, text: str, cited: list[str]) -> bool:
+        """Every number in `text` appears in a cited product's own fields (e.g. "6 months" from its warranty)."""
+        if not cited:
+            return False
+        listed: set[str] = set()
+        for did in cited:
+            for v in self.docs.get(did, {}).values():
+                for x in v if isinstance(v, list) else [v]:
+                    if isinstance(x, bool) or x is None:
+                        continue
+                    for n in self._NUM.findall(str(x)):
+                        n = n.replace(",", "")
+                        listed.add(n.rstrip("0").rstrip(".") if "." in n else n)
+        for n in self._NUM.findall(text):
+            n = n.replace(",", "").rstrip(".,")
+            if (n.rstrip("0").rstrip(".") if "." in n else n) not in listed:
+                return False
+        return True
+
+    def _text_key(self, did: str) -> str:
+        """All of a product's text (title, description, care, Q&A...) as one match key, cached."""
+        cache = self.__dict__.setdefault("_text_cache", {})
+        if did not in cache:
+            cache[did] = " " + _key(" ".join(str(v) for v in self.docs.get(did, {}).values()
+                                             if isinstance(v, str))) + " "
+        return cache[did]
+
     def _mentions(self, text: str) -> set[tuple[str, str]]:
         t = " " + _key(text) + " "
         return {(f, k) for k, fields in self.value_fields.items() if f" {k} " in t for f in fields}
@@ -120,13 +171,15 @@ class SlotFiller:
         """'' if the model's own words make only checkable, true claims; else the reason to drop."""
         mentions = self._mentions(low)
         stock_claim = bool(IN_STOCK.search(low))
-        if cited and NOT_AVAILABLE.search(low):  # "rating is not shown" when the product has a rating
-            t = " " + _key(low) + " "
+        if cited and (na := NOT_AVAILABLE.search(low)):  # "rating is not shown" when the product has a rating
+            # "the description doesn't mention rain" talks about the field's content, it doesn't call it missing
+            active = re.match(r"(doesn't|does not|didn't|did not|no) ", na.group(0)) is not None
             for f in self.schema.fields:
-                names = {_key(f.name), _key(f.name.replace("_", " "))}
-                if any(f" {n} " in t for n in names if n) and any(
-                        self.docs.get(d, {}).get(f.name) not in (None, "", []) for d in cited):
-                    return f"says {f.name} is missing but it is shown"
+                if not any(self.docs.get(d, {}).get(f.name) not in (None, "", []) for d in cited):
+                    continue
+                for m in re.finditer(rf"\b{re.escape(f.name.replace('_', ' ').lower())}s?\b", low.replace("_", " ")):
+                    if m.start() > na.start() or not active:
+                        return f"says {f.name} is missing but it is shown"
         t = " " + _key(low) + " "
         cited_brands = {self._brand.get(d, "") for d in cited}
         words = t.split()
@@ -161,6 +214,14 @@ class SlotFiller:
                 if f != "__type__" and not any(k in self._doc_vals.get(d, {}).get(f, set()) or
                                                f" {k} " in self._title_key.get(d, "") for d in cited):
                     return f"attribute '{k}' doesn't belong to the cited product"
+            # values the catalog uses for some field (an origin, colour, material...), named for a product that
+            # neither lists that value nor uses it anywhere in its own text
+            t = " " + _key(low) + " "
+            for k, fields in self.known_values.items():
+                if f" {k} " in t and not any(
+                        any(k in vals for vals in self._doc_vals.get(d, {}).values()) or f" {k} " in self._text_key(d)
+                        for d in cited):
+                    return f"names a {sorted(fields)[0]} value the listing doesn't give ({k})"
         return ""
 
     def _field(self, name: str):
@@ -195,6 +256,8 @@ class SlotFiller:
     def check(self, sentence: str) -> tuple[str | None, str]:
         """Return (filled sentence, "") or (None, reason it was dropped)."""
         cited = CITE.findall(sentence)
+        if not cited and len(self.focus) == 1:
+            cited = list(self.focus)
         for word, pos in ORDINALS.items():  # "the second one" refers to a shown product
             if re.search(rf"\b{word}\b", sentence.lower()) and pos < len(self.order):
                 cited.append(self.order[pos])
@@ -202,7 +265,7 @@ class SlotFiller:
             if cid not in self.docs:
                 return None, f"cites unknown product {cid}"
         stripped = SLOT.sub(" ", CITE.sub(" ", sentence))
-        if DIGIT.search(stripped):
+        if DIGIT.search(stripped) and not self._numbers_listed(stripped, cited):
             return None, "number written by the model"
         if "{" in stripped or "}" in stripped:
             return None, "malformed slot"
@@ -214,6 +277,7 @@ class SlotFiller:
             return None, "masked number copied"
         if NUMBER_WORDS.search(low):
             return None, "count written by the model"
+        low = IDIOMS.sub(" ", low)  # "it's best to check" is advice, not a ranking
         kinds = {fact for words, fact in ((LOW_PRICE, "low_price"), (HIGH_PRICE, "high_price"),
                                           (TOP_RATING, "top_rating"), (MAX_SIZE, "max_size"), (MIN_SIZE, "min_size"))
                  if _has_any(low, words)}
@@ -235,6 +299,13 @@ class SlotFiller:
         reason = self._claims_ok(low, cited)
         if reason:
             return None, reason
+        if self.focus and SUITABILITY.search(low) and not self._quotes_listing(low, cited):
+            return None, "suitability verdict the listing doesn't give"
+        if cited and not NOT_AVAILABLE.search(low):
+            said = {m.group(1) for m in AFTER_SALE.finditer(re.sub(r"\breturn polic(y|ies)\b", " ", low))}
+            listed = " ".join(self._text_key(d) for d in cited)
+            if missing := sorted(w for w in said if not re.search(rf"\b{w}", listed)):
+                return None, f"after-sale promise the listing doesn't give ({missing[0]})"
         bad = False
 
         def sub(m: re.Match) -> str:
@@ -266,6 +337,79 @@ class SlotFiller:
             if last.isalpha():
                 out = re.sub(rf"{re.escape(v)}\s+{re.escape(last)}\b", v, out)
         return out, ""
+
+    def _quotes_listing(self, low: str, cited: list[str]) -> bool:
+        """True when the verdict is the listing's own words (e.g. "perfect for daily wear" from the description)."""
+        for did in cited:
+            listing = " ".join(re.findall(r"[a-z]+", " ".join(
+                str(v) for v in self.docs.get(did, {}).values() if isinstance(v, str)).lower()))
+            for m in SUITABILITY.finditer(low):
+                phrase = re.findall(r"[a-z]+", low[m.start():m.end() + 25])[:5]
+                if len(phrase) >= 3 and " ".join(phrase) in listing:
+                    return True
+        return False
+
+    def check_general(self, sentence: str) -> tuple[str | None, str]:
+        """General know-how ("suede doesn't like water"): no numbers, slots, citations or product names, and any
+        claim about "this one" must hold for the focused product."""
+        if CITE.search(sentence) or SLOT.search(sentence) or "{" in sentence:
+            return None, "general part refers to a product"
+        if DIGIT.search(sentence) or "#" in sentence or NUMBER_WORDS.search(sentence.lower()):
+            return None, "number in general part"
+        low = sentence.lower()
+        t = " " + _key(low) + " "
+        if any(len(b) >= 4 and (f" {b} " in t) for b in self._brand.values()):
+            return None, "general part names a product"
+        if _has_any(low, LOW_PRICE + HIGH_PRICE + TOP_RATING + MAX_SIZE + MIN_SIZE) or GENERIC_LOW.search(low) \
+                or GENERIC_HIGH.search(low):
+            return None, "comparison in general part"
+        if DEICTIC.search(low):  # "this one is leather", "yeh India mein bana hai": must be true of the focus
+            reason = self._claims_ok(low, list(self.focus)) if self.focus else "general part refers to a product"
+            if reason:
+                return None, reason
+        return sentence, ""
+
+    async def stream_parts(self, chunks: AsyncIterator[str] | Iterable[str],
+                           marker: str = "General:") -> AsyncIterator[tuple[str, str]]:
+        """Like stream(), but splits the answer at `marker`: yields ("answer", text) then ("general", text)."""
+        mode, buf, mk = "answer", "", marker.lower()
+
+        async def source():
+            if hasattr(chunks, "__aiter__"):
+                async for c in chunks:  # type: ignore[union-attr]
+                    yield c
+            else:
+                for c in chunks:  # type: ignore[union-attr]
+                    yield c
+
+        def emit(sentence: str, part: str) -> str | None:
+            if not sentence.strip():
+                return sentence
+            out, reason = self.check(sentence) if part == "answer" else self.check_general(sentence)
+            if out is None:
+                self.dropped.append((sentence.strip(), reason))
+            return out
+
+        label = re.compile(r"\bpart\s*[12]\s*[:.)-]\s*", re.I)
+        async for chunk in source():
+            buf += chunk
+            # small models sometimes label the parts themselves: "Part 1: …", "Part 2: …"
+            buf = re.sub(r"\bpart\s*2\s*[:.)-]", marker, buf, flags=re.I)
+            buf = label.sub("", buf) if not re.search(r"part\s*\d?\s*$", buf, re.I) else buf
+            if mode == "answer" and (idx := buf.lower().find(mk)) >= 0:
+                head, buf, mode = buf[:idx], buf[idx + len(mk):], "general"
+                while (cut := self._boundary(head)) is not None:
+                    sentence, head = head[:cut], head[cut:]
+                    if (out := emit(sentence, "answer")):
+                        yield "answer", out
+                if (out := emit(head, "answer")):
+                    yield "answer", out
+            while (cut := self._boundary(buf)) is not None:
+                sentence, buf = buf[:cut], buf[cut:]
+                if (out := emit(sentence, mode)):
+                    yield mode, out
+        if buf and (out := emit(buf, mode)):
+            yield mode, out
 
     async def stream(self, chunks: AsyncIterator[str] | Iterable[str]) -> AsyncIterator[str]:
         buf = ""

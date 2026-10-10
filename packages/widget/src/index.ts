@@ -42,6 +42,7 @@ interface View {
 interface Msg {
   role: "user" | "assistant";
   text: string;
+  general?: string; // labeled general know-how (product conversation)
   clarify?: ClarifyEvent | null;
   pending?: boolean;
   error?: boolean;
@@ -427,7 +428,13 @@ export class ZerchSearch extends HTMLElement {
       return;
     }
     const list = h("ul", { class: "grid", role: "list" });
-    for (const hit of v.hits) list.append(h("li", {}, this.#card(hit, v)));
+    for (const hit of v.hits) {
+      const doc = hit.document as Record<string, unknown>;
+      const title = String((v.display.title && doc[v.display.title]) ?? hit.id);
+      list.append(h("li", { class: "cell" }, this.#card(hit, v),
+        h("button", { type: "button", class: "ask", "data-ask": hit.id, "aria-label": fmt(s.askAbout, { title }),
+                      onclick: (e: Event) => this.#openDrawer(hit, e.currentTarget as HTMLElement) }, s.askShort)));
+    }
     box.append(list);
   }
 
@@ -507,6 +514,147 @@ export class ZerchSearch extends HTMLElement {
     return h("button", { type: "button", class: "mini", "data-id": id, onclick: (e: Event) => this.#click(hit, e) },
       this.#image(d.image ? doc[d.image] : null, title),
       h("span", {}, title + (price != null ? ` · ${this.#formatPrice(price)}` : "")));
+  }
+
+  // --- product drawer (M5): a conversation about one product -------------------------------------------------
+
+  #drawer: { hit: Hit; msgs: Msg[]; opener: HTMLElement | null } | null = null;
+  #drawerSessions = new Map<string, string>();
+
+  #openDrawer(hit: Hit, opener: HTMLElement | null = null) {
+    this.#drawer = { hit, msgs: [], opener };
+    if (!this.#els.drawer) {
+      this.#els.scrim = h("div", { class: "scrim", onclick: () => this.#closeDrawer() });
+      this.#els.drawer = h("div", { class: "drawer", role: "dialog", "aria-modal": "true",
+                                    "aria-labelledby": "zd-title",
+                                    onkeydown: (e: KeyboardEvent) => e.key === "Escape" && this.#closeDrawer() });
+      this.#root.append(this.#els.scrim, this.#els.drawer);
+    }
+    this.#els.scrim.hidden = false;
+    this.#els.drawer.hidden = false;
+    this.#renderDrawer();
+    (this.#els.drawer.querySelector("input") as HTMLInputElement | null)?.focus();
+  }
+
+  #closeDrawer() {
+    if (!this.#drawer) return;
+    const opener = this.#drawer.opener;
+    this.#drawer = null;
+    this.#els.drawer.hidden = true;
+    this.#els.scrim.hidden = true;
+    opener?.focus();
+  }
+
+  #details(doc: Record<string, unknown>, d: Display): [string, string][] {
+    const skip = new Set([d.id, d.title, d.price, d.compare_at_price, d.image, d.url, d.rating, d.rating_count,
+                          d.in_stock, d.currency].filter(Boolean) as string[]);
+    const out: [string, string][] = [];
+    for (const [k, v] of Object.entries(doc)) {
+      if (skip.has(k) || v == null || v === "" || typeof v === "object" && !Array.isArray(v)) continue;
+      if (d.currency && v === d.currency) continue; // "Currency: INR" adds nothing next to the price
+      const label = k.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+      const text = Array.isArray(v) ? v.join(", ") : String(v);
+      out.push([label, text.includes(" > ") ? text.split(" > ").pop()! : text]);
+    }
+    return out;
+  }
+
+  #renderDrawer() {
+    const dr = this.#drawer;
+    if (!dr) return;
+    const s = this.#s;
+    const d = this.#view?.display ?? EMPTY_DISPLAY;
+    const doc = dr.hit.document as Record<string, unknown>;
+    const title = String((d.title && doc[d.title]) ?? dr.hit.id);
+    const price = d.price ? doc[d.price] : undefined;
+    const rating = d.rating ? doc[d.rating] : undefined;
+    const stock = d.in_stock ? doc[d.in_stock] : undefined;
+    const url = safeUrl(d.url ? doc[d.url] : null);
+
+    const thread = h("div", { class: "thread", role: "log", "aria-live": "polite" });
+    for (const m of dr.msgs) {
+      const text = h("div", { class: `text${m.pending ? " typing" : ""}` },
+        m.role === "assistant" && m.pending && !m.text ? s.thinking : m.text.replace(/\[[^\]\s]+\]/g, "").trim());
+      const msg = h("div", { class: `msg ${m.role}` }, h("span", { class: "who" }, m.role === "user" ? s.you : s.assistant),
+        text);
+      if (m.general?.trim()) msg.append(h("div", { class: "general" }, h("span", { class: "who" }, s.generalLabel),
+        m.general.trim()));
+      thread.append(msg);
+    }
+    const sugg = h("div", { class: "row suggestions", role: "group", "aria-label": s.suggestions });
+    if (!dr.msgs.length) {
+      const asked = new Set<string>();
+      for (const [field, q] of Object.entries(s.suggest)) {
+        if ((field === "*" || doc[field] != null) && !asked.has(q)) {
+          asked.add(q);
+          sugg.append(h("button", { type: "button", class: "pill", onclick: () => this.#askProduct(q) }, q));
+        }
+      }
+    }
+    const input = h("input", { type: "text", "aria-label": s.drawerPlaceholder, placeholder: s.drawerPlaceholder,
+                               autocomplete: "off" });
+    const form = h("form", { class: "box", onsubmit: (e: Event) => {
+      e.preventDefault();
+      const q = (input as HTMLInputElement).value.trim();
+      if (q) this.#askProduct(q);
+    } }, input, h("button", { class: "go", type: "submit" }, s.send));
+
+    this.#els.drawer.replaceChildren(
+      h("div", { class: "dhead" },
+        h("h2", { id: "zd-title" }, title),
+        h("button", { type: "button", class: "close", "aria-label": s.closeDrawer, onclick: () => this.#closeDrawer() },
+          "×")),
+      h("div", { class: "dbody" },
+        h("div", { class: "summary" }, this.#image(d.image ? doc[d.image] : null, title),
+          h("div", {},
+            price != null ? h("div", { class: "price" }, this.#formatPrice(price)) : null,
+            h("div", { class: "meta" }, rating != null ? h("span", {}, `★ ${rating}`) : null,
+              stock === false ? h("span", {}, s.outOfStock) : null),
+            url ? h("a", { href: url, target: "_blank", rel: "noopener", class: "link" }, s.viewProduct) : null)),
+        this.#factsBlock(this.#details(doc, d)),
+        thread, sugg),
+      h("div", { class: "dfoot" }, form));
+    thread.lastElementChild?.scrollIntoView({ block: "nearest" });
+  }
+
+  /** Up to 6 short facts up front; long text (description, care, Q&A) and the rest behind "All details". */
+  #factsBlock(facts: [string, string][]): HTMLElement {
+    const short = facts.filter(([, v]) => v.length <= 40).slice(0, 6);
+    const rest = facts.filter((f) => !short.includes(f));
+    const dl = (items: [string, string][]) =>
+      h("dl", { class: "facts" }, ...items.flatMap(([k, v]) => [h("dt", {}, k), h("dd", {}, v)]));
+    return h("div", { class: "factsbox" }, short.length ? dl(short) : null,
+      rest.length ? h("details", {}, h("summary", {}, this.#s.allDetails), dl(rest)) : null);
+  }
+
+  async #askProduct(q: string) {
+    const dr = this.#drawer;
+    if (!dr) return;
+    const id = dr.hit.id;
+    const bot: Msg = { role: "assistant", text: "", general: "", pending: true };
+    dr.msgs.push({ role: "user", text: q }, bot);
+    this.#renderDrawer();
+    try {
+      const stream = this.#client().chat(q, { sessionId: this.#drawerSessions.get(id) ?? null, productIds: [id],
+                                             cancelPrevious: false });
+      for await (const ev of stream as AsyncIterable<ChatEvent>) {
+        if (ev.type === "session") this.#drawerSessions.set(id, ev.data.session_id);
+        else if (ev.type === "text") {
+          if (ev.data.part === "general") bot.general += ev.data.delta;
+          else bot.text += ev.data.delta;
+        } else if (ev.type === "done") bot.pending = false;
+        if (this.#drawer === dr) this.#renderDrawer();
+      }
+    } catch (e) {
+      bot.text = this.#s.error;
+      this.#fail(e);
+    } finally {
+      bot.pending = false;
+      if (this.#drawer === dr) {
+        this.#renderDrawer();
+        (this.#els.drawer.querySelector("input") as HTMLInputElement | null)?.focus();
+      }
+    }
   }
 
   #renderPanel() {

@@ -779,6 +779,21 @@
       ],
       "title": "Patch"
      },
+     "product_ids": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array",
+        "maxItems": 3
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Ids"
+     },
      "size": {
       "type": "integer",
       "maximum": 50.0,
@@ -1624,6 +1639,7 @@
        "new",
        "refine",
        "question",
+       "product",
        "chitchat"
       ],
       "title": "Turn Type",
@@ -1660,6 +1676,7 @@
        "new",
        "refine",
        "question",
+       "product",
        "chitchat"
       ],
       "title": "Turn Type",
@@ -1826,6 +1843,15 @@
     "properties": {
      "delta": {
       "title": "Delta",
+      "type": "string"
+     },
+     "part": {
+      "default": "answer",
+      "enum": [
+       "answer",
+       "general"
+      ],
+      "title": "Part",
       "type": "string"
      }
     },

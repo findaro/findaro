@@ -23,6 +23,16 @@ export interface Strings {
   assistant: string;
   conversation: string;
   products: string;
+  askShort: string;
+  askAbout: string; // {title}
+  drawerPlaceholder: string;
+  generalLabel: string;
+  suggestions: string;
+  viewProduct: string;
+  closeDrawer: string;
+  allDetails: string;
+  /** suggested questions by document field ("*" = always) */
+  suggest: Record<string, string>;
 }
 
 export const STRINGS: Record<string, Strings> = {
@@ -50,6 +60,17 @@ export const STRINGS: Record<string, Strings> = {
     assistant: "Assistant",
     conversation: "Conversation",
     products: "Products",
+    askShort: "Ask",
+    askAbout: "Ask about {title}",
+    drawerPlaceholder: "Ask anything about this product…",
+    generalLabel: "General tip · not from the seller",
+    suggestions: "Suggested questions",
+    viewProduct: "View product",
+    closeDrawer: "Close",
+    allDetails: "All details",
+    suggest: { material: "What is it made of?", country_of_origin: "Where is it made?",
+               warranty: "Is there a warranty?", care: "How do I take care of it?",
+               return_policy: "Can I return it?", "*": "Tell me more about it" },
   },
   "hi-en": {
     placeholder: "Products dhoondhiye…",
@@ -75,6 +96,17 @@ export const STRINGS: Record<string, Strings> = {
     assistant: "Assistant",
     conversation: "Baatcheet",
     products: "Products",
+    askShort: "Poochho",
+    askAbout: "{title} ke baare mein poochho",
+    drawerPlaceholder: "Is product ke baare mein kuch bhi poochhiye…",
+    generalLabel: "General tip · seller ki taraf se nahi",
+    suggestions: "Sujhaye gaye sawal",
+    viewProduct: "Product dekhein",
+    closeDrawer: "Band karein",
+    allDetails: "Saari details",
+    suggest: { material: "Ye kis cheez se bana hai?", country_of_origin: "Kahan bana hai?",
+               warranty: "Warranty hai kya?", care: "Iski dekhbhal kaise karein?",
+               return_policy: "Return ho sakta hai?", "*": "Iske baare mein aur bataiye" },
   },
 };
 

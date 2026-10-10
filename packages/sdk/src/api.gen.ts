@@ -242,6 +242,8 @@ export interface components {
             } | null;
             /** Patch */
             patch?: components["schemas"]["PatchOp"][] | null;
+            /** Product Ids */
+            product_ids?: string[] | null;
             /**
              * Size
              * @default 10
@@ -577,7 +579,7 @@ export interface components {
              * Turn Type
              * @enum {string}
              */
-            turn_type: "new" | "refine" | "question" | "chitchat";
+            turn_type: "new" | "refine" | "question" | "product" | "chitchat";
             /**
              * Reason
              * @default
@@ -596,7 +598,7 @@ export interface components {
              * Turn Type
              * @enum {string}
              */
-            turn_type: "new" | "refine" | "question" | "chitchat";
+            turn_type: "new" | "refine" | "question" | "product" | "chitchat";
             /** Added */
             added?: string[];
             /** Removed */
@@ -649,6 +651,12 @@ export interface components {
         TextEvent: {
             /** Delta */
             delta: string;
+            /**
+             * Part
+             * @default answer
+             * @enum {string}
+             */
+            part: "answer" | "general";
         };
     };
     responses: never;

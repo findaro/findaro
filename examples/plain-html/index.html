@@ -15,6 +15,13 @@
        id and *search* key (python scripts/demo_setup.py writes demo.html with real values). -->
   <script src="./zerch-widget.js" data-project="YOUR_PROJECT_ID" data-key="YOUR_SEARCH_KEY"
           data-base-url="http://localhost:8000" defer></script>
+  <script>
+    // Local demo convenience: this template still has placeholder keys; scripts/demo_setup.py writes demo.html
+    // with real ones. If that exists, go there. (The key name is split so demo_setup's replace leaves it alone.)
+    if (document.querySelector('script[data-key="YOUR_' + 'SEARCH_KEY"]')) {
+      fetch("demo.html", { method: "HEAD" }).then((r) => { if (r.ok) location.replace("demo.html"); });
+    }
+  </script>
 </head>
 <body>
   <main>

@@ -145,7 +145,9 @@ export class ZerchSearch extends HTMLElement {
   #client(): ZerchClient {
     if (!this.client) {
       const key = this.#attr("key");
-      if (!key) throw new Error("zerch-search: missing search key (data-key on the script tag, or key=…)");
+      if (!key || /^YOUR_/i.test(key)) {
+        throw new Error("zerch-search: set data-key on the script tag (or key=…) to your project's search key");
+      }
       this.client = createClient({ projectId: this.#attr("project") || "", searchKey: key,
                                    baseUrl: this.#attr("base-url") || undefined });
     }
@@ -271,7 +273,11 @@ export class ZerchSearch extends HTMLElement {
   }
 
   #fail(e: unknown) {
-    this.#error = this.#s.error;
+    const msg = e instanceof Error ? e.message : "";
+    // setup problems are shown as-is so the page owner sees what to fix; everything else gets the friendly string
+    this.#error = msg.startsWith("zerch-search:") || (e as { status?: number })?.status === 401
+      ? (msg.startsWith("zerch-search:") ? msg : "zerch-search: invalid search key (check data-key)")
+      : this.#s.error;
     this.dispatchEvent(new CustomEvent("zerch:error", { detail: e, bubbles: true, composed: true }));
   }
 

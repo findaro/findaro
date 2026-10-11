@@ -104,6 +104,26 @@ def is_hinglish(message: str) -> bool:
     return _has(tokenize(message), list(hi.cheap) + list(hi.max_after))
 
 
+# "increase it for 2000", "make it 1500", "2000 tak", "budget badha do 3000": a new price cap for the current search
+PRICE_MOVE = {"increase", "raise", "extend", "stretch", "upto", "till", "around", "budget", "badha", "badhao",
+              "badhaa", "badhado", "make", "for", "to", "tak", "max", "limit", "within", "under", "below"}
+
+
+def bare_price(toks: list[str], parsed: QueryPlan) -> float | None:
+    """A lone number (no unit) in a refinement, with a price-moving word or on its own: the new price cap."""
+    nums = [t for t in toks if re.fullmatch(r"\d{2,7}", t)]
+    if len(nums) != 1 or float(nums[0]) < 50:
+        return None
+    for f in parsed.filters:  # already read as something else ("size 10", "2000 mah")
+        if f.origin != "price" and nums[0] in str(f.value):
+            return None
+    if any(nums[0] in (b.text or "") for b in parsed.boosts):
+        return None
+    if len(toks) == 1 or any(t in PRICE_MOVE for t in toks):
+        return float(nums[0])
+    return None
+
+
 def shown_category(schema: Schema, docs: list[dict[str, Any]]) -> str | None:
     """Deepest category path shared by all shown products (None when they share nothing)."""
     from zerch.index.normalize import category_paths
@@ -152,6 +172,8 @@ def classify(message: str, has_plan: bool, has_results: bool, parsed: QueryPlan,
             return "question", "superlative question about shown results"
     if not has_plan:
         return "new", "no current search"
+    if bare_price(toks, parsed) is not None and not _category_mentioned(parsed):
+        return "refine", "new price cap"
     constraint = bool(parsed.filters or parsed.sort or parsed.boosts) or any(
         t in BIGGER or t in SMALLER for t in toks) or _has(toks, CHEAPER + COSTLIER) or any(
         t in NEG_BEFORE or t in NEG_AFTER or t in ONLY for t in toks)
@@ -311,6 +333,8 @@ def refine(message: str, plan: QueryPlan, parsed: QueryPlan, schema: Schema, lex
     # cheaper / costlier
     shown_prices = [float(p) for p in (doc.get(price_field) for doc in last_docs) if price_field and
                     isinstance(p, int | float)]
+    if price_field and not delta.price and (cap := bare_price(toks, parsed)) is not None:
+        delta.price = {"lte": cap}
     if price_field and not delta.price:
         if _has(toks, CHEAPER) or (parsed.sort and parsed.sort.order == "asc"):
             cur = _price_cap(plan, price_field)

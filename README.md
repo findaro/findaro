@@ -377,11 +377,21 @@ Sessions live in Redis for 30 minutes. If a patch arrives after its session expi
 - **New search:** runs the M2 planner on the message.
 - **Refinement:** changes the current plan. Examples: "cheaper" / "aur sasta" lowers the price ceiling and
   sorts cheapest first; "under 500" / "500 ke andar" sets the price range; "only black" / "sirf cotton" adds a
-  filter; "not plastic" / "black nahi" excludes; "bigger" / "chhota" moves along a size attribute such as
+  filter; "not plastic" / "black nahi" / "not slippers" excludes; "increase it to 2000" / "2000 tak" sets a new
+  price cap; "bigger" / "chhota" moves along a size attribute such as
   "5 L" or "1 kg".
 - **Question about shown products** ("is the second one lace-up?", "sabse sasta kaunsa?"): answered only from
   those products' fields. If the field isn't there, the answer says it doesn't know.
-- **Chit-chat:** one line that steers back to searching.
+- **Greetings and thanks** ("hi", "shukriya"): an instant one-line reply (no LLM). With nothing on screen it comes
+  with suggestion chips for the catalog's main categories.
+- **Small talk or a need in the shopper's own words** ("going to Goa next week, kuch suggest karo", "how's your
+  day?", "gift for my dad"): when the words name nothing in the catalog and their search finds no good match, the
+  chat model replies like a shop assistant (one JSON call, `ZERCH_CHAT_CONVERSE_TIMEOUT_MS`, default 8 s). If the
+  catalog can help, it also suggests a search in the catalog's own words, which runs and fills the results
+  (`done.reason` = `conversation`). If not, the results on screen stay, and suggestion chips are offered. The reply
+  can't see products, so a sentence with a number, citation, price, stock, offer or delivery claim is dropped.
+  The model chooses what to look at, but attribute filters (gender, colour, budget) in its search are kept only
+  if the shopper used those words. Plain searches never take this path.
 
 **Clarifying questions** are asked at most once per turn, and only:
 - when a price cap leaves fewer than 3 exact matches (chip: "Show slightly over budget");
@@ -389,6 +399,9 @@ Sessions live in Redis for 30 minutes. If a patch arrives after its session expi
 - when the results span several product categories.
 
 Attribute choices such as colour or size are passive facet pills (`results.pills`), not questions.
+
+**Suggestion chips** use the same `clarify` event with `reason: "suggest"` and an empty `patch`: send the chip's
+label as the next `message` (an empty `patch` is not treated as a plan edit).
 
 They are never asked right after the user answered one, or when the user says "just show" / "bas dikha do".
 
@@ -498,6 +511,23 @@ uv run python -m zerch.worker                 # ingest worker
 ```
 
 Run a single worker. Jobs for a project run in order.
+
+### Query log
+
+With `ZERCH_QUERY_LOG` set to a file path, every submitted search and every chat turn is appended as one JSON line:
+the query or message, the understood chips, match quality, total, top 10 results (id and title), and for chat the
+turn type, clarifier, answer, general tip, dropped sentences and timings. Search-as-you-type keystrokes are not
+logged. `docker compose` turns it on, writing to `./logs/queries.jsonl` (gitignored); set `ZERCH_QUERY_LOG=` to
+turn it off. Read it with:
+
+```bash
+uv run python scripts/queries.py            # last 20 entries, readable
+uv run python scripts/queries.py -f --chat  # follow chat turns as they happen
+uv run python scripts/queries.py --json | jq .
+```
+
+Queries are end-user data: it is off by default outside compose; decide on retention before enabling it in a
+real deployment.
 
 ### Demo data and evaluation
 

@@ -86,6 +86,16 @@ def decide(plan: QueryPlan, resp: SearchResponse, schema: Schema, *, hinglish: b
             ClarifyChip(label="Show slightly over budget", plan_patch={"price": {"lte": new_cap}},
                         patch=[{"op": "set_price_range", "lte": new_cap}]),
             ClarifyChip(label=f"Keep under {symbol}{int(cap):,}", plan_patch={}, patch=[])])
+    if cap is not None and quality in ("weak", "none"):
+        # nothing really fits under the budget: the budget is the likeliest reason, so offer to lift it
+        new_cap = float(math.ceil(cap * 1.5 / 100) * 100)
+        q = (f"₹{int(cap):,} ke andar sahi match nahi mila. Budget badhaun?" if hinglish and symbol == "₹"
+             else f"Nothing matches well under {symbol}{int(cap):,}. Raise the budget?")
+        return Clarify(question=q, reason="budget", field=price_field, chips=[
+            ClarifyChip(label=f"Up to {symbol}{int(new_cap):,}", plan_patch={"price": {"lte": new_cap}},
+                        patch=[{"op": "set_price_range", "lte": new_cap}]),
+            ClarifyChip(label="Any price", plan_patch={"remove_fields": [price_field]},
+                        patch=[{"op": "set_price_range"}])])
 
     cat = next((f for f in schema.by_role(Role.category)), None)
     cat_facet = resp.facets.get(cat.name) if cat else None
@@ -96,12 +106,20 @@ def decide(plan: QueryPlan, resp: SearchResponse, schema: Schema, *, hinglish: b
     # 2. weak / no match: offer the categories the results actually fall in, or dropping a constraint
     if quality in ("weak", "none"):
         chips: list[ClarifyChip] = []
-        if cat_facet and resp.total:
-            _, kids = _category_children(cat_facet.get("values", []), resp.total)
-            for v in sorted(kids, key=lambda v: -v["count"])[:4]:
-                chips.append(ClarifyChip(label=v["value"].split(" > ")[-1], count=v["count"], plan_patch={
-                    "add_filters": [{"field": cat.name, "op": "eq", "value": v["value"]}]},
-                    patch=[{"op": "add_filter", "field": cat.name, "value": v["value"]}]))
+        if cat is not None and resp.hits:
+            # the categories of the closest results themselves (not of the long tail a weak query also matches)
+            seen: dict[str, int] = {}
+            for h in resp.hits[:10]:
+                path = h.document.get(cat.name)
+                path = path[0] if isinstance(path, list) and path else path
+                if isinstance(path, str) and path:
+                    seen[path] = seen.get(path, 0) + 1
+            for path, _ in sorted(seen.items(), key=lambda kv: -kv[1])[:4]:
+                if len(seen) < 2:
+                    break
+                chips.append(ClarifyChip(label=path.split(cat.separator or " > ")[-1].strip(), plan_patch={
+                    "add_filters": [{"field": cat.name, "op": "eq", "value": path}]},
+                    patch=[{"op": "add_filter", "field": cat.name, "value": path}]))
         if not chips:
             for f in plan.filters[:3]:
                 if f.op == "not":

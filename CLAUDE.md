@@ -33,6 +33,9 @@ a chat-style refinement mode, a headless SDK and a drop-in widget. Open source (
 - `/v1/chat` SSE event sequence (session, plan, results, clarify?, text*, done); `text.part` is `answer` (facts
   from the listing) or `general` (labeled know-how, never a claim about the product) and the `PatchOp` list
   (`patch`) used by chips, pills and clarifier chips. `plan_patch`/`apply` is the older form, kept working.
+- Chat small talk (`done.reason` = `conversation`): one chat-LLM call, only for turns whose words name nothing in the
+  catalog and whose search found no good match; its suggested search runs through the normal planner. Suggestion
+  chips are `clarify` events with `reason: "suggest"` and an empty `patch` (send the label as the message).
 - Chat answers must stay grounded: the model only sees products on screen, numbers come from server-filled
   slots, comparisons are computed in code, and every sentence is checked (`zerch.chat.slots`) before it streams.
 - `eval/` is the gate: changes must not regress `eval/report.md` against `eval/baselines/m1.json`.
@@ -70,6 +73,8 @@ a chat-style refinement mode, a headless SDK and a drop-in widget. Open source (
   `chat/`)
 - `packs/locales/` — language packs for query understanding (en, hi-en)
 - `src/zerch/worker.py` — ingest job worker (separate compose service)
+- `src/zerch/querylog.py` — optional JSONL query log (`ZERCH_QUERY_LOG`; compose writes `logs/queries.jsonl`, read
+  with `scripts/queries.py`)
 - `scripts/` — demo setup (`demo_setup.py`), chat CLI, OpenAPI export, demo catalog generator, benchmark
 - `data/` — generated demo catalog (committed)
 - `eval/` — queries, conversations, runners, report (see `eval/README.md`)

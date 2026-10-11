@@ -560,7 +560,7 @@ export interface components {
              * Reason
              * @enum {string}
              */
-            reason: "budget" | "weak_match" | "entropy";
+            reason: "budget" | "weak_match" | "entropy" | "suggest";
             /**
              * Field
              * @default null

@@ -679,7 +679,7 @@ export class ZerchSearch extends HTMLElement {
         const chips = h("div", { class: "row", role: "group", "aria-label": c.question });
         for (const chip of c.chips) {
           chips.append(h("button", { type: "button", class: "pill", "data-clarify": "",
-                                     onclick: () => this.#ask(chip.label, chip.patch) },
+                                     onclick: () => this.#ask(chip.label, chip.patch?.length ? chip.patch : undefined) },
             chip.label, chip.count != null ? h("small", { "aria-hidden": "true" }, String(chip.count)) : null));
         }
         msg.append(h("div", { class: "clarify" }, h("p", {}, c.question), chips));

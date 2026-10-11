@@ -261,6 +261,9 @@ class SlotFiller:
         for word, pos in ORDINALS.items():  # "the second one" refers to a shown product
             if re.search(rf"\b{word}\b", sentence.lower()) and pos < len(self.order):
                 cited.append(self.order[pos])
+        if not cited:  # a product named by its full title instead of [ID]
+            s_key = " " + _key(sentence) + " "
+            cited = [did for did, tk in self._title_key.items() if len(tk.strip()) >= 12 and tk in s_key]
         for cid in cited:
             if cid not in self.docs:
                 return None, f"cites unknown product {cid}"

@@ -15,6 +15,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, ValidationError
 
+from zerch import querylog
 from zerch.chat import answer, clarify
 from zerch.chat import session as sess_mod
 from zerch.chat.slots import AFTER_SALE, SlotFiller
@@ -130,6 +131,32 @@ def _delta_from_llm(out: dict[str, Any], schema: Schema) -> PlanDelta:
     return delta
 
 
+def _talks_catalog(plan: QueryPlan | None) -> bool:
+    """The plan names something the catalog has (a filter, a category, a price, a sort)."""
+    return plan is not None and bool(plan.filters or plan.sort or any(b.origin == "category" for b in plan.boosts))
+
+
+async def _converse(llm: Any, msg: str, schema: Schema, d: Any, sess: Any, hinglish: bool,
+                    timeout_s: float) -> dict[str, Any] | None:
+    """Small talk or a need in the shopper's own words: a short reply, plus a search in the catalog's words (or
+    None). Returns None when the model fails or times out (the turn is then handled as a plain search)."""
+    history = [(t.role, t.text) for t in sess.history]
+    prompt = answer.converse_prompt(msg, answer.store_categories(schema, d), history,
+                                    sess.plan.semantic_text if sess.plan else None, hinglish)
+    try:
+        raw = await asyncio.wait_for(llm.complete(prompt, system=answer.SYSTEM_CONVERSE, temperature=0.3,
+                                                  max_tokens=160, json_mode=True), timeout=timeout_s)
+        out = parse_json(raw)
+    except (TimeoutError, LLMError, ValueError) as e:
+        log.info("chat converse fallback: %s", e)
+        return None
+    if not isinstance(out, dict) or not isinstance(out.get("reply"), str) or not out["reply"].strip():
+        return None
+    q = out.get("search")
+    q = q.strip()[:120] if isinstance(q, str) and q.strip() and q.strip().lower() not in ("null", "none") else None
+    return {"reply": out["reply"].strip()[:400], "search": q}
+
+
 async def _stream_text(llm: Any, prompt: str, system: str) -> AsyncIterator[str]:
     if hasattr(llm, "stream"):
         async for chunk in llm.stream(prompt, system=system, max_tokens=180):
@@ -178,7 +205,7 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
     turn: str | None = None
 
     # structured patch (chip removal, pill, clarifier chip): no classification needed
-    if req.patch is not None and old_plan is not None:
+    if req.patch and old_plan is not None:
         turn, reason = "refine", "patch"
 
     # product conversation: the client says which products this is about
@@ -240,11 +267,43 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
             plan, _ = await understand(state, pid, project, schema, msg)
     mark("plan")
 
+    # Small talk or a need in the shopper's words ("going to Goa next week", "how are you"): reply like a shop
+    # assistant and, when the catalog can help, run the search it suggests. Plain searches never get here: only
+    # turns whose words name nothing in the catalog and whose search found no good match.
+    conv: dict[str, Any] | None = None
+    if state.chat_llm is not None and msg and not focus_docs and not req.patch:
+        talk = turn == "chitchat" and (reason == "llm" or not answer.SIMPLE_TALK.match(msg))
+        if turn == "new" and plan is not None and not _talks_catalog(plan):
+            sreq = SearchRequest(query=msg, size=req.size, highlight=False)
+            resp = await search(state, pid, project, schema, sreq, use_cache=False, plan_override=plan)
+            mark("search")
+            talk = (resp.understood.match_quality if resp.understood else "good") != "good"
+        if talk:
+            conv = await _converse(state.chat_llm, msg, schema, d, sess, hinglish, s.chat_converse_timeout_ms / 1000)
+            mark("converse")
+        if conv and conv["search"]:
+            turn, reason, resp = "new", "conversation", None
+            plan, _ = await understand(state, pid, project, schema, conv["search"])
+            # the model picks what to look at; attribute values (gender, colour, budget...) only come from the shopper
+            said = " ".join([msg, *(t.text for t in sess.history if t.role == "user")]).lower()
+            plan.filters = [f for f in plan.filters
+                            if f.text and all(w in said for w in str(f.text).lower().split())]
+        elif conv:
+            reason = "conversation"
+            if sess.last_docs or resp is None:  # nothing to search: keep what's on screen
+                turn, resp, plan = "chitchat", None, old_plan
+            else:  # nothing on screen yet: show no cards (the words' own search found nothing good)
+                resp = resp.model_copy(update={"hits": [], "total": 0, "facets": {}, "pills": []})
+        elif talk and turn == "chitchat":
+            reason = "llm; converse failed"
+
     symbol = CURRENCY_SYMBOLS.get(str(getattr(d, "currency", "") or "").upper(), "")
     if turn in ("new", "refine") and plan is not None:
-        sreq = SearchRequest(query=msg or plan.semantic_text, size=req.size, highlight=False)
-        resp = await search(state, pid, project, schema, sreq, use_cache=False, plan_override=plan)
-        mark("search")
+        if resp is None:
+            sreq = SearchRequest(query=(conv or {}).get("search") or msg or plan.semantic_text, size=req.size,
+                                 highlight=False)
+            resp = await search(state, pid, project, schema, sreq, use_cache=False, plan_override=plan)
+            mark("search")
         new_chips = _chips(resp)
         yield sse("plan", {"understood": resp.understood.model_dump(mode="json") if resp.understood else None,
                            "delta": _delta_view(old_resp_chips, new_chips, old_text, plan.semantic_text, turn)})
@@ -270,7 +329,15 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
 
     # clarifying question
     clar = None
-    if resp is not None and plan is not None:
+    suggest = (conv is not None and not conv["search"]) or (turn == "chitchat" and not sess.last_docs and not conv)
+    if suggest and (labels := answer.top_categories(schema, d)):
+        # suggestion chips: an empty patch means "send the label as the next message"
+        clar = clarify.Clarify(question="Kuch categories:" if hinglish else "Popular categories:",
+                                 reason="suggest", field=None,
+                                 chips=[clarify.ClarifyChip(label=lb, patch=[], plan_patch={}) for lb in labels])
+        yield sse("clarify", {"question": clar.question, "field": None, "reason": "suggest",
+                              "chips": [c.model_dump() for c in clar.chips]})
+    elif resp is not None and plan is not None:
         clar = clarify.decide(plan, resp, schema, hinglish=hinglish, just_show=wants_just_show(msg),
                               answered_clarifier=sess.clarified and turn == "refine", symbol=symbol,
                               new_search=turn == "new")
@@ -283,11 +350,25 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
     # answer text
     title_field = next((f.name for f in schema.by_role(Role.title)), None)
     text_parts: list[str] = []
+    general_parts: list[str] = []
+    dropped: list[tuple[str, str]] = []
     first = None
     answer_source = "template"  # model | fallback (model output all dropped) | error (LLM call failed) | template
     try:
-        if turn == "chitchat":
-            text = answer.chitchat_reply(msg, hinglish)
+        if conv is not None:
+            text, dropped = answer.converse_sentences(conv["reply"])
+            quality = resp.understood.match_quality if resp and resp.understood else "good"
+            if conv["search"] and resp is not None and quality != "good":
+                docs = [(h.id, answer.doc_view(h.document, schema), False) for h in resp.hits[:5]]
+                text = (text + " " + answer.fallback_search_text(resp.total, quality, docs, hinglish,
+                                                                 title_field)).strip()
+            text = text or answer.chitchat_reply(msg, hinglish, bool(sess.last_docs))
+            answer_source = "model" if not dropped else "fallback"
+            yield sse("text", {"delta": text})
+            text_parts.append(text)
+            first = time.perf_counter()
+        elif turn == "chitchat":
+            text = answer.chitchat_reply(msg, hinglish, bool(sess.last_docs))
             yield sse("text", {"delta": text})
             text_parts.append(text)
             first = time.perf_counter()
@@ -352,8 +433,7 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
                     chunk, held = "".join(held), []
                 if first is None:
                     first = time.perf_counter()
-                if part == "answer":
-                    text_parts.append(chunk)
+                (text_parts if part == "answer" else general_parts).append(chunk)
                 yield sse("text", {"delta": chunk, "part": part})
             # one retry when the model claimed a listed detail was missing and nothing else survived
             missed = [r.split()[1] for _, r in filler.dropped if r.startswith("says ") and "missing" in r]
@@ -367,6 +447,7 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
                     first = first or time.perf_counter()
                     text_parts.append(chunk)
                     yield sse("text", {"delta": chunk, "part": part})
+            dropped = filler.dropped
             timings["dropped_sentences"] = len(filler.dropped)
             answer_source = "model"
             if filler.dropped:
@@ -403,6 +484,21 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
     sess.remember("user", msg, turn)
     sess.remember("assistant", "".join(text_parts), turn)
     await sess_mod.save(state.redis, pid, sess)
+    if s.query_log:
+        und = resp.understood if resp else None
+        querylog.record(s.query_log, {
+            "kind": "chat", "project": pid, "session": sess.session_id, "turn": sess.turn, "message": msg,
+            "product_ids": req.product_ids or None,
+            "patch": [op.model_dump(exclude_none=True) for op in req.patch] if req.patch else None,
+            "turn_type": turn, "reason": reason, "chips": [c.label for c in und.chips] if und else None,
+            "match_quality": und.match_quality if und else None, "total": resp.total if resp else None,
+            "top": querylog.top_hits([(h.id, h.document) for h in resp.hits] if resp else
+                                     list(zip(sess.last_ids, sess.last_docs, strict=False)), title_field),
+            "results_changed": resp is not None,
+            "clarify": {"question": clar.question, "chips": [c.label for c in clar.chips]} if clar else None,
+            "answer": "".join(text_parts).strip(), "general": "".join(general_parts).strip() or None,
+            "answer_source": answer_source, "dropped": [{"sentence": t, "why": w} for t, w in dropped] or None,
+            "timings": timings})
     yield sse("done", {"timings": timings, "turn_type": turn, "reason": reason, "answer_source": answer_source})
 
 

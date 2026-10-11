@@ -7,6 +7,7 @@ compiled in memory per data_version. This is what lets the query parser recognis
 
 from __future__ import annotations
 
+import re
 import time
 import zlib
 from collections import Counter, defaultdict
@@ -18,6 +19,8 @@ from opensearchpy import AsyncOpenSearch, NotFoundError
 
 from zerch.schema.model import Role, Schema
 from zerch.understand.lexicon import Lexicon, singular, tokenize
+
+SEGMENT_PARTS = re.compile(r"\s*(?:&|,|/|\+|\band\b)\s*")
 
 MAX_VALUES_PER_FIELD = 2000
 MAX_VOCAB = 100_000
@@ -166,6 +169,7 @@ def compile_payload(payload: dict[str, Any], schema: Schema, lex: Lexicon) -> Co
                 continue
             values[k].append((fname, v, c))
     segments: dict[str, list[tuple[str, str, int]]] = defaultdict(list)
+    heads: dict[str, list[tuple[str, str, int]]] = defaultdict(list)
     for fname, pairs in payload.get("paths", {}).items():
         top[fname] = [(p, c) for p, c in pairs]
         for p, c in pairs:
@@ -174,6 +178,22 @@ def compile_payload(payload: dict[str, Any], schema: Schema, lex: Lexicon) -> Co
             k = value_key(seg, lex)
             if len(k) >= 3 and k not in lex.function_words:
                 segments[k].append((fname, p, c))
+            # the parts and head words of a compound segment name it too: "Flip Flops & Slippers" -> "flip flops",
+            # "slippers"; "Running Shoes" -> "shoes" (shared by every "... Shoes" leaf, so it boosts all of them)
+            extra = set()
+            for part in SEGMENT_PARTS.split(seg):
+                pk = value_key(part, lex)
+                if pk and pk != k:
+                    extra.add(pk)
+                head = pk.split()[-1] if pk else ""
+                if head and head != k:
+                    extra.add(head)
+            for ek in extra:
+                if len(ek) >= 4 and ek not in lex.function_words:
+                    heads[ek].append((fname, p, c))
+    for hk, rows in heads.items():  # a whole segment or a facet value with the same words wins
+        if hk not in segments and hk not in values:
+            segments[hk] = rows
     single: dict[str, list[str]] = defaultdict(list)
     for k in values:
         if " " not in k and len(k) >= 5 and k.isalpha():

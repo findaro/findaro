@@ -233,6 +233,8 @@ def build_understood(query: str, plan: QueryPlan | None, schema: Schema, symbol:
     seen = set()
     for b in plan.boosts:
         label = _value_label(b.value)
+        if isinstance(b.value, list) and len(b.value) > 2 and b.origin == "category" and b.text:
+            label = b.text.strip().capitalize()  # "shoes" boosts every "... Shoes" leaf: label it as asked
         if (b.field, label) in seen or b.origin == "fuzzy":
             continue
         seen.add((b.field, label))

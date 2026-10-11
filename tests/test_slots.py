@@ -244,3 +244,11 @@ def test_replacement_is_not_a_return():
     assert f.check("The return policy is a 10-day replacement.")[0] is not None
     assert SlotFiller({"G1": {"id": "G1", "title": "Garam Masala"}}, SCHEMA, "₹", {}, focus=["G1"]).check(
         "Agar pasand nahin aaya to return karne ka option mil jayega.")[0] is None
+
+
+def test_full_title_counts_as_a_citation():
+    docs = {"S1": {"id": "S1", "title": "Raghini Blue Men's EVA Slippers (UK 7, UK 8)", "material": "EVA"}}
+    f = SlotFiller(docs, SCHEMA, "₹", {}, order=["S1"])
+    out, why = f.check("The Raghini Blue Men's EVA Slippers (UK 7, UK 8) is made of EVA.")
+    assert out is not None, why
+    assert f.check("The Raghini Blue Men's EVA Slippers (UK 7, UK 8) comes in UK 11.")[0] is None

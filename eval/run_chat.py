@@ -258,7 +258,9 @@ def write_section(rows, judged, neg, args) -> None:
                                           for c in r["judge"]["unsupported"])]
     model_first = [r["server"].get("first_model_token") for r in rows if r["server"].get("first_model_token")]
     grounded = [r for r in judged if not r["judge"]["unsupported"]]
-    rules_rows = [r for r in rows if r["type_got"] in ("new", "refine") and r["reason"] != "llm"]
+    # LLM-dependent turns (unclear-turn classification, small talk) are reported apart from the rules path
+    rules_rows = [r for r in rows if r["type_got"] in ("new", "refine") and r["reason"] not in ("llm", "conversation")]
+    conv_rows = [r for r in rows if r["reason"] == "conversation"]
     res_p95 = pct([r["results_ms"] for r in rules_rows if r["results_ms"] is not None], .95)
     first = [r["first_ms"] for r in rows if r["first_ms"] is not None and r["type_got"] != "chitchat"]
     first_p95 = pct(first, .95)
@@ -275,6 +277,8 @@ def write_section(rows, judged, neg, args) -> None:
          "| Target / metric | Result | |", "|---|---|---|",
          f"| results event p95 ≤ {TARGET_RESULTS_P95:.0f} ms (rules path, client-measured) | {res_p95:.0f} ms "
          f"(n={len(rules_rows)}) | {v(res_p95 <= TARGET_RESULTS_P95)} |",
+         f"| small-talk turns answered conversationally (results wait for one chat-LLM call) | {len(conv_rows)} "
+         f"(results p50 {pct([r['results_ms'] or 0 for r in conv_rows], .5) if conv_rows else 0:.0f} ms) | |",
          f"| first text token p95 ≤ {TARGET_FIRST_TOKEN_P95:.0f} ms | {first_p95:.0f} ms (p50 {pct(first, .5):.0f}, "
          f"n={len(first)}) | {v(first_p95 <= TARGET_FIRST_TOKEN_P95)} |",
          f"| first *model* token p95, server-side (before sentence checking) | "

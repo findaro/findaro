@@ -63,12 +63,17 @@ class Settings(BaseSettings):
     chat_model: str | None = None  # default: gpt-4.1-mini (openai) / claude-haiku-4-5 (anthropic)
     chat_reasoning_effort: str | None = "none"  # openai reasoning models: keep first-token latency low
     chat_classify_timeout_ms: int = 1500  # LLM turn classification, only when the rules can't tell
+    # small talk / a need in the shopper's words: one JSON call for a reply and a suggested search
+    chat_converse_timeout_ms: int = 8000
 
     # Ingest
     max_upload_mb: int = 50
     max_documents_per_request: int = 10_000
     bulk_batch_size: int = 256
     worker_poll_interval: float = 0.5
+
+    # Query log (JSONL, one line per search / chat turn). Off when unset; queries are end-user data.
+    query_log: str | None = None
 
     # Rate limit (per key, fixed 1s window); 0 disables
     rate_limit_per_second: int = 50

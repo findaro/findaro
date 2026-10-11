@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, File, Query, Request, Response, UploadFi
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, ValidationError
 
-from zerch import store
+from zerch import querylog, store
 from zerch.auth import Principal, authenticate, cached_project, check_bootstrap, forget_project, require_admin
 from zerch.chat.service import ChatRequest, chat_turn
 from zerch.errors import ApiError
@@ -248,6 +248,15 @@ async def search(body: SearchRequest, request: Request, p: Principal = Depends(p
                             use_plan_cache=not bypass_plans)
     if resp.debug and p.kind != "admin":  # browser-visible: no raw provider error text
         (resp.debug.get("llm") or {}).pop("llm_error", None)
+    if state.settings.query_log and body.llm is not False:  # search-as-you-type keystrokes aren't logged
+        und = resp.understood
+        querylog.record(state.settings.query_log, {
+            "kind": "search", "project": p.project_id, "key": p.kind, "query": body.query,
+            "patch": [op.model_dump(exclude_none=True) for op in body.patch or []],
+            "chips": [c.label for c in und.chips] if und else [], "match_quality": und.match_quality if und else None,
+            "total": resp.total, "took_ms": resp.took_ms,
+            "top": querylog.top_hits([(h.id, h.document) for h in resp.hits],
+                                     resp.display.title if resp.display else None)})
     return resp
 
 

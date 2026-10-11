@@ -195,9 +195,12 @@ class FakeChatLLM:
 
     def __init__(self):
         self.prompts = []
+        self.converse = {"reply": "Sounds like fun!", "search": None}
 
     async def complete(self, prompt, **kw):
         self.prompts.append(prompt)
+        if "shopping assistant" in (kw.get("system") or ""):
+            return json.dumps(self.converse)
         return json.dumps({"type": "refine", "semantic_text": None, "add_filters": [], "exclude": []})
 
     async def stream(self, prompt, system=None, **kw):
@@ -376,3 +379,47 @@ async def test_product_conversation(loaded, chat_llm, catalog):
     assert '"turn_type": "chitchat"' in r.text
     r = await loaded.client.post("/v1/chat", json={"message": "hi", "product_ids": ["NOPE"]}, headers=loaded.searcher)
     assert r.status_code == 200 and '"turn_type": "product"' not in r.text
+
+
+async def test_greeting_offers_category_chips(loaded, chat_llm):
+    n = len(chat_llm.prompts)
+    ev = await chat(loaded, "hi")
+    assert first(ev, "done")["turn_type"] == "chitchat"
+    assert len(chat_llm.prompts) == n  # instant, no LLM
+    c = first(ev, "clarify")
+    assert c["reason"] == "suggest" and {"Footwear", "Home"} <= {ch["label"] for ch in c["chips"]}
+    assert all(ch["patch"] == [] for ch in c["chips"])
+    # tapping a chip sends its label as a message (an empty patch is not a plan edit)
+    sid = first(ev, "session")["session_id"]
+    r = await loaded.client.post("/v1/chat", json={"message": "Footwear", "session_id": sid, "patch": []},
+                                 headers=loaded.searcher)
+    assert "event: results" in r.text and '"turn_type": "new"' in r.text
+
+
+async def test_small_talk_leads_to_a_search(loaded, chat_llm):
+    chat_llm.converse = {"reply": "A Goa trip sounds great! Here are some chappals, from just 199.",
+                         "search": "kolhapuri chappal"}
+    ev = await chat(loaded, "going to goa next week, kuch suggest karo yaar")
+    done = first(ev, "done")
+    assert done["turn_type"] == "new" and done["reason"] == "conversation", done
+    items = first(ev, "results")["items"]
+    assert items and "Chappal" in items[0]["document"]["title"]
+    text = "".join(d["delta"] for e, d in ev if e == "text")
+    assert "Goa" in text and "199" not in text  # the sentence with a number it can't see is dropped
+
+
+async def test_small_talk_keeps_results_on_screen(loaded, chat_llm):
+    ev = await chat(loaded, "running shoes")
+    sid = first(ev, "session")["session_id"]
+    chat_llm.converse = {"reply": "I'm doing well, thanks for asking! Want to narrow these down?", "search": None}
+    ev = await chat(loaded, "how is your day going mate", sid)
+    assert first(ev, "results").get("unchanged") is True
+    assert "doing well" in "".join(d["delta"] for e, d in ev if e == "text")
+
+
+async def test_small_talk_on_an_empty_screen_shows_no_cards(loaded, chat_llm):
+    chat_llm.converse = {"reply": "I'm good, thanks! What are you shopping for?", "search": None}
+    ev = await chat(loaded, "how is your day going mate")
+    assert first(ev, "results")["items"] == []
+    assert first(ev, "clarify")["reason"] == "suggest"
+

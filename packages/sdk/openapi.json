@@ -1592,7 +1592,8 @@
       "enum": [
        "budget",
        "weak_match",
-       "entropy"
+       "entropy",
+       "suggest"
       ],
       "title": "Reason",
       "type": "string"

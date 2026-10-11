@@ -16,6 +16,9 @@ x-app-env: &app-env
   OPENAI_API_KEY: ${OPENAI_API_KEY:-}
   ZERCH_CHAT_PROVIDER: ${ZERCH_CHAT_PROVIDER:-ollama}
   ZERCH_CHAT_MODEL: ${ZERCH_CHAT_MODEL:-llama3.1:8b}
+  # Query log for development: every search / chat turn as a JSON line in ./logs/queries.jsonl.
+  # Set ZERCH_QUERY_LOG= (empty) to turn it off. Read it with: uv run python scripts/queries.py
+  ZERCH_QUERY_LOG: ${ZERCH_QUERY_LOG-/logs/queries.jsonl}
 
 services:
   api:
@@ -24,6 +27,7 @@ services:
     image: zerch:dev
     environment: *app-env
     ports: ["8000:8000"]
+    volumes: ["./logs:/logs"]
     depends_on:
       postgres: {condition: service_healthy}
       opensearch: {condition: service_healthy}

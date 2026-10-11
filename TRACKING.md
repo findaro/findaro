@@ -76,3 +76,18 @@ catalog-wide values, listed-but-called-missing with one retry). `eval/run_produc
 (`eval/product_chat_review_m5.md`): 0/48 false product claims, first token p95 886 ms on local Ollama.
 Search gate holds (nDCG@10 0.966 vs M1 0.808; small drift from 0.967 after the new text fields). Chat eval: no
 regression (nDCG 0.958, clarifier recall 100%). No paid calls.
+
+## Conversational chat + query log (2026-10-11)
+
+From reviewing Rohit's own demo session ("blue shoes under 500" → "mens bluw" → "what is it made from?" →
+"but its not slippers, its shoes" → "fine, lets increase it for 2000"), fixed:
+- product-type words inside compound categories are recognised ("slippers" → Flip Flops & Slippers, "shoes" →
+  every "... Shoes" leaf), so "not slippers" excludes them; search eval nDCG@10 0.966 → 0.970 (nl 1.000)
+- a lone number with a price word in a refinement ("increase it for 2000") sets the price cap instead of a new search
+- weak match under a price cap asks to raise the budget; weak-match category chips come from the top results only
+- a product named by its full title counts as a citation (titles with sizes no longer drop true sentences)
+Added: small talk / needs in the shopper's words answered by the chat model with a suggested search, suggestion
+chips (`clarify.reason = "suggest"`), and the JSONL query log (`logs/queries.jsonl`, `scripts/queries.py`).
+Chat eval: rules-path results p95 59 ms, nDCG 0.969, turn type 97% (69/71: "masala chai wali" now reads as a new
+search). Note: Docker builds of the base layer failed to download the embedding model from Hugging Face (network);
+the API was rebuilt on top of the existing image instead.

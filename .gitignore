@@ -8,6 +8,7 @@ __pycache__/
 dist/
 .cache/
 eval/results/
+logs/
 data/.gen_cache/
 .DS_Store
 node_modules/

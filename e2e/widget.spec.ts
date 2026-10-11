@@ -85,6 +85,16 @@ test("clarifier chip: slightly over budget", async ({ page }) => {
   await expect(w(page).locator("[data-clarify]")).toHaveCount(0); // never two questions in a row
 });
 
+test("ask AI: greeting offers category chips that search", async ({ page }) => {
+  await w(page).getByRole("radio", { name: /ask ai/i }).click();
+  await ask(page, "hi");
+  const chip = w(page).locator("[data-clarify]", { hasText: "Footwear" });
+  await expect(chip).toBeVisible();
+  await chip.click();
+  await expect(w(page).locator(".msg.user .text").last()).toHaveText("Footwear");
+  await expect(cards(page).first()).toBeVisible({ timeout: 20_000 });
+});
+
 test("no-match state", async ({ page }) => {
   await search(page, "guitar strings");
   const empty = w(page).locator("[data-state=no-match]");

@@ -182,10 +182,94 @@ def question_prompt(message: str, docs: list[tuple[str, dict]], hinglish: bool,
     return "\n".join(lines)
 
 
-def chitchat_reply(message: str, hinglish: bool) -> str:
-    if hinglish:
-        return "Main products dhoondhne mein madad karta hoon. Jaise likhiye: 'black running shoes sasta wala'."
-    return "I can help you find products. Try something like 'black running shoes for men'."
+# greetings / thanks / acknowledgements get the instant template; other small talk ("who are you?") goes to the model
+SIMPLE_TALK = re.compile(r"^\W*(hi+|hello|hey|namaste|namaskar|thanks?|thank ?you|thx|ty|shukriya|dhanyava?a?d|"
+                         r"dhanyawad|ok|okay|cool|great|nice|bye|goodbye|good (morning|night|evening)|lol|hmm+|"
+                         r"ji|bhai|sir|yaar)(\W+(hi+|hello|hey|there|ji|bhai|sir|yaar|so much|a lot|everyone))*\W*$",
+                         re.I)
+THANKS = re.compile(r"\b(thanks?|thank you|thx|ty|shukriya|dhanyavaad|dhanyavad|dhanyawad)\b", re.I)
+
+
+def chitchat_reply(message: str, hinglish: bool, has_results: bool = False) -> str:
+    """Instant reply to a greeting or thanks (no LLM); suggestion chips come with it when nothing is on screen."""
+    if THANKS.search(message) and has_results:
+        return ("Khushi hui! Inhe aur refine karein, ya kuch aur dhoondhein?" if hinglish else
+                "Happy to help! Want to refine these, or look for something else?")
+    if THANKS.search(message):
+        return "Khushi hui! Aur kya dhoondh rahe hain?" if hinglish else "Happy to help! What else are you looking for?"
+    if has_results:
+        return ("Hi! Inhe refine karna hai ya kuch naya dhoondhna hai?" if hinglish else
+                "Hi! Want to refine these results, or look for something new?")
+    return ("Namaste! Aaj kya dhoondh rahe hain? Neeche se shuru karein, ya apne shabdon mein bataiye." if hinglish else
+            "Hi! What are you shopping for today? Pick a category below, or just tell me what you need.")
+
+
+SYSTEM_CONVERSE = (
+    "You are the friendly shopping assistant of an online store. The shopper wrote something that isn't a plain "
+    "product search: small talk, a situation, a question about you, or a need in their own words. Reply in 1 or "
+    "2 short, warm sentences, like a helpful shop assistant, and steer the conversation towards what the store "
+    "sells. Rules: you can't see any products in this step, so never name a specific product, brand, price, "
+    "discount, stock or delivery promise, and don't write numbers. If the message points to a need one of the "
+    "store's categories can meet, set \"search\" to a short search of 2 to 6 words in the store's own words "
+    "(a category, plus an attribute the shopper gave), and say what you'll show. If they ask for something the "
+    "store doesn't sell, say so kindly and mention what it does sell, with \"search\": null. For pure small talk, "
+    "answer it briefly and ask what they're shopping for, with \"search\": null. Don't call yourself an AI model. "
+    "Return only JSON: {\"reply\": \"...\", \"search\": \"...\" or null}"
+)
+
+
+def store_categories(schema: Schema, d: Any, limit: int = 60) -> list[str]:
+    """Leaf category paths the catalog actually has, most common first (from the per-project dictionary)."""
+    spec = next(iter(schema.by_role(Role.category)), None)
+    if spec is None or d is None:
+        return []
+    paths = [p for p, _ in d.top_values.get(spec.name, [])]
+    return [p for p in paths if not any(o != p and o.startswith(p + " > ") for o in paths)][:limit]
+
+
+def top_categories(schema: Schema, d: Any, n: int = 6) -> list[str]:
+    """First level of the category tree by product count: labels for suggestion chips."""
+    spec = next(iter(schema.by_role(Role.category)), None)
+    if spec is None or d is None:
+        return []
+    counts: dict[str, int] = {}
+    for p, c in d.top_values.get(spec.name, []):
+        head = p.split(" > ")[0].strip()
+        if head:
+            counts[head] = counts.get(head, 0) + c
+    return [k for k, _ in sorted(counts.items(), key=lambda kv: -kv[1])[:n]]
+
+
+# a conversational reply can't see products: no numbers, citations, prices, stock, offers or delivery promises
+CONVERSE_BLOCK = re.compile(r"\d|\[|\{|#|\b(in stock|out of stock|stock|discount|offer|sale|deal|cheapest|"
+                            r"lowest price|free delivery|delivery|deliver|ships?|shipping|sasta|sasti|sabse)\b", re.I)
+
+
+def converse_sentences(reply: str) -> tuple[str, list[tuple[str, str]]]:
+    """Keeps the reply's sentences that make no claim it can't back; returns (kept text, dropped)."""
+    kept, dropped = [], []
+    for sent in re.split(r"(?<=[.!?])\s+", reply.strip()):
+        if not sent:
+            continue
+        if CONVERSE_BLOCK.search(sent):
+            dropped.append((sent, "conversation reply makes a claim it can't see"))
+        else:
+            kept.append(sent)
+    return " ".join(kept), dropped
+
+
+def converse_prompt(message: str, categories: list[str], history: list[tuple[str, str]],
+                    current: str | None, hinglish: bool) -> str:
+    lines = ["The store's categories: " + ("; ".join(categories) if categories else "(not known)")]
+    if current:
+        lines.append(f"Current search on screen: {json.dumps(current, ensure_ascii=False)}")
+    if history:
+        lines.append("Conversation so far:")
+        lines += [f"{'Shopper' if role == 'user' else 'Assistant'}: {text}" for role, text in history[-4:]]
+    lines.append(f"Shopper's latest message: {json.dumps(message, ensure_ascii=False)}")
+    lines.append("Reply to the latest message only; earlier turns are just context. If it names a product, "
+                 "answer about that product. " + language_rule(hinglish) + " The search itself is always in English.")
+    return "\n".join(lines)
 
 
 def fallback_search_text(total: int, quality: str, docs: list[tuple[str, dict, bool]], hinglish: bool,

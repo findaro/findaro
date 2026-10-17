@@ -52,6 +52,10 @@ def create():
     with open(STATE, "w") as f:
         json.dump(p, f)
     os.umask(old)
+    return p
+
+
+def load_catalog(p):
     docs = [json.loads(line) for line in open(f"{FINDARO}/app/data/demo_catalog.jsonl") if line.strip()]
     job = call("POST", f"/v1/projects/{p['project_id']}/documents", p["admin_key"], docs)
     deadline = time.time() + 1800
@@ -60,14 +64,15 @@ def create():
             sys.exit("demo import didn't finish in 30 minutes; check `docker compose logs worker`")
         time.sleep(5)
     if st["status"] != "succeeded":
-        sys.exit(f"demo import failed: {st.get('status')} {st.get('error')}")
+        sys.exit(f"demo import failed: {st.get('status')} {st.get('message')}")
     print(f"imported {st.get('succeeded')} documents into {p['project_id']}")
-    return p
 
 
 wait_for_api()
 p = json.load(open(STATE)) if os.path.exists(STATE) else None
 if not (p and still_works(p)):
     p = create()
+if not call("GET", f"/v1/projects/{p['project_id']}", p["admin_key"])["document_count"]:
+    load_catalog(p)
 call("PUT", f"/v1/projects/{p['project_id']}/settings", p["admin_key"], {"allowed_origins": [DEMO]})
 print(f"demo project {p['project_id']}, allowed origin {DEMO}")

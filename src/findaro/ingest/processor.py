@@ -7,6 +7,7 @@ import logging
 from typing import Any
 
 import numpy as np
+from opensearchpy import ConnectionError as OSConnectionError
 from opensearchpy import TransportError
 from sqlalchemy import select, text, update
 
@@ -90,6 +91,9 @@ async def run_pending(state: State, limit: int | None = None) -> int:
     return n
 
 
+MAX_ATTEMPTS = 5  # job runs when the search cluster can't be reached, before the job fails
+
+
 async def run_job(state: State, job: dict[str, Any]) -> None:
     jid, pid, kind = job["id"], job["project_id"], job["kind"]
     log.info("job %s (%s) for %s started", jid, kind, pid)
@@ -130,6 +134,19 @@ async def run_job(state: State, job: dict[str, Any]) -> None:
     except (JobFailed, SchemaError) as e:
         await progress.flush(status="failed", message=str(e), finished_at=store.now())
         log.warning("job %s failed: %s", jid, e)
+    except OSConnectionError as e:  # search cluster unreachable: not the data's fault, so retry the whole job
+        attempts = int((job.get("params") or {}).get("attempts", 0)) + 1
+        if attempts > MAX_ATTEMPTS:
+            await progress.flush(status="failed", message=f"search cluster unreachable after {MAX_ATTEMPTS} attempts",
+                                 finished_at=store.now())
+            log.error("job %s failed: search cluster unreachable (%s)", jid, e)
+            return
+        async with state.db.begin() as conn:  # upserts are by id, so running it again is safe
+            await conn.execute(update(jobs).where(jobs.c.id == jid).values(
+                status="queued", processed=0, succeeded=0, failed=0, errors=None,
+                params={**(job.get("params") or {}), "attempts": attempts}))
+        log.warning("job %s: search cluster unreachable, retry %d/%d", jid, attempts, MAX_ATTEMPTS)
+        await asyncio.sleep(min(30, 2 ** attempts))
     except Exception as e:  # noqa: BLE001 - job must always reach a terminal state
         log.exception("job %s crashed", jid)
         await progress.flush(status="failed", message=f"internal error: {type(e).__name__}: {e}"[:1000],

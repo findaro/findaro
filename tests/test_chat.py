@@ -519,3 +519,14 @@ async def test_failed_llm_answer_falls_back_to_grounded_template(state, loaded):
     text = "".join(d["delta"] for e, d in ev if e == "text")
     assert first(ev, "done")["answer_source"] == "error"
     assert f"[{first(ev, 'results')['items'][0]['id']}]" in text, text
+
+
+async def test_compare_question_without_llm_ranks_by_rating(loaded):
+    ev = await chat(loaded, "water bottle")
+    sid = first(ev, "session")["session_id"]
+    shown = first(ev, "results")["items"][:3]
+    ev2 = await chat(loaded, "how do these 3 compare in quality?", session_id=sid)
+    assert first(ev2, "done")["turn_type"] == "question"
+    text = "".join(d["delta"] for e, d in ev2 if e == "text")
+    order = sorted(shown, key=lambda h: (-h["document"]["rating"]))
+    assert "can't answer" not in text and text.index(f"[{order[0]['id']}]") < text.index(f"[{order[-1]['id']}]"), text

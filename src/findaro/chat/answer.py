@@ -313,6 +313,56 @@ def fallback_product_text(focus: dict[str, dict[str, Any]], schema: Schema, hing
     return head
 
 
+COMPARE_Q = re.compile(r"\b(compare|comparison|vs|versus|better|best|which (one|is)|quality|difference|differ|"
+                       r"kaun ?sa|kaunsa|behtar|accha|achha)\b", re.I)
+_HOW_MANY = re.compile(r"\b(?:these|those|top|first|pehle|in)\s+(\d)\b", re.I)
+
+
+def fallback_question_text(message: str, shown: list[tuple[str, dict[str, Any]]], schema: Schema, hinglish: bool,
+                           symbol: str) -> str:
+    """No chat LLM, a question about the products on screen. Comparison questions are answered from the
+    listings' own rating, review count and price, ranked in code; anything else gets an honest 'can't'."""
+    cant = ("Is sawal ka jawab abhi nahi de sakta." if hinglish
+            else "I can't answer questions about products right now.")
+    if not COMPARE_Q.search(message) or len(shown) < 2:
+        return cant
+    m = _HOW_MANY.search(message)
+    docs = shown[: int(m.group(1))] if m and 2 <= int(m.group(1)) <= len(shown) else shown[:3]
+    nums = [f.name for f in schema.by_role(Role.numeric)]
+    rating = next((n for n in nums if "rating" in n.lower() and "count" not in n.lower()), None)
+    count = next((n for n in nums if "rating" in n.lower() and "count" in n.lower()), None)
+    from findaro.understand.plan import primary_price_field
+
+    price = primary_price_field(schema)
+
+    def money(v: Any) -> str:
+        return f"{symbol}{float(v):,.0f}" if isinstance(v, int | float) else ""
+
+    def part(did: str, doc: dict[str, Any]) -> str:
+        bits = []
+        if rating and isinstance(doc.get(rating), int | float):
+            bits.append(f"{doc[rating]:g}★" + (f" from {int(doc[count]):,} reviews"
+                                               if count and isinstance(doc.get(count), int | float) else ""))
+        if price and isinstance(doc.get(price), int | float):
+            bits.append(money(doc[price]))
+        return f"[{did}] " + ", ".join(bits) if bits else f"[{did}]"
+
+    rated = [(did, doc) for did, doc in docs if rating and isinstance(doc.get(rating), int | float)]
+    if len(rated) == len(docs):
+        ranked = sorted(docs, key=lambda x: (-float(x[1][rating]), -float((x[1].get(count) or 0)
+                                                                         if count else 0)))
+        head = ("Rating hi yahan quality ka sabse kareeb signal hai. Rating ke hisaab se:" if hinglish
+                else "Ratings are the closest thing to a quality signal in these listings. By rating:")
+    elif price:
+        ranked = sorted(docs, key=lambda x: float(x[1].get(price) or 0))
+        head = "Price ke hisaab se:" if hinglish else "There are no ratings to compare, so by price:"
+    else:
+        return cant
+    tail = (" Side-by-side table ke liye products select karke Compare dabaiye." if hinglish
+            else " Select them and press Compare for a side-by-side table.")
+    return head + " " + "; ".join(part(did, doc) for did, doc in ranked) + "." + tail
+
+
 # --- product conversation (M5) ------------------------------------------------------------------------------
 
 GENERAL_MARKER = "General:"

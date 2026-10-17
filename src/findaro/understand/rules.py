@@ -279,7 +279,16 @@ class RulesParser:
                     continue
                 n, key = hit
                 words = " ".join(w for w, _ in terms[j : j + n])
-                if key in d.values:
+                if key in d.head_keys:
+                    # "steel" for "Stainless Steel": a head word alone is too weak to filter on ("wash" would
+                    # filter on "Hand Wash"), so it ranks every value of the field ending in that word first
+                    vals_by_field: dict[str, list[str]] = {}
+                    for fld, val, _ in d.values[key]:
+                        vals_by_field.setdefault(fld, []).append(val)
+                    for fld, vals in vals_by_field.items():
+                        boosts.append(PlanBoost(field=fld, value=vals[0] if len(vals) == 1 else vals, weight=1.0,
+                                                origin="facet_head", text=words))
+                elif key in d.values:
                     by_field: dict[str, tuple[str, int]] = {}
                     for fld, val, cnt in d.values[key]:
                         if fld not in by_field or cnt > by_field[fld][1]:

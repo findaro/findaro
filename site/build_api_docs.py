@@ -23,12 +23,13 @@ SPEC = SITE.parent / "packages" / "sdk" / "openapi.json"
 TEMPLATE = SITE / "public" / "docs" / "index.html"
 OUT = SITE / "public" / "docs" / "api.html"
 
-TITLE = "API reference · zerch docs"
-DESC = "zerch HTTP API reference: projects, documents, import jobs, schema, search and chat (Server-Sent Events)."
+TITLE = "API reference · findaro docs"
+DESC = "findaro HTTP API reference: projects, documents, import jobs, schema, search and chat (Server-Sent Events)."
 
 # Endpoint groups, in page order: (anchor, title, path predicate)
 GROUPS = [
-    ("projects", "Projects", lambda p: p == "/v1/projects" or re.fullmatch(r"/v1/projects/\{project_id\}(/settings)?", p)),
+    ("projects", "Projects",
+     lambda p: p == "/v1/projects" or re.fullmatch(r"/v1/projects/\{project_id\}(/settings)?", p)),
     ("documents", "Documents and import", lambda p: "/documents" in p or p.endswith("/import")),
     ("jobs", "Jobs", lambda p: "/jobs" in p),
     ("schema-ep", "Schema", lambda p: p.endswith("/schema")),
@@ -39,7 +40,7 @@ GROUPS = [
 # What the spec can't say on its own: which key each endpoint takes, and bodies/responses FastAPI leaves untyped.
 NOTES: dict[tuple[str, str], dict[str, str]] = {
     ("post", "/v1/projects"): {
-        "auth": "Bootstrap token, if the server sets <code>ZERCH_BOOTSTRAP_TOKEN</code> (self-hosted). On the hosted "
+        "auth": "Bootstrap token, if the server sets <code>FINDARO_BOOTSTRAP_TOKEN</code> (self-hosted). On the hosted "
                 "beta we create projects for you.",
         "returns": '<code>{"project_id", "admin_key", "search_key", "name"}</code>. The keys are shown only once.',
     },
@@ -76,8 +77,9 @@ NOTES: dict[tuple[str, str], dict[str, str]] = {
                    "overridden field roles.",
     },
     ("put", "/v1/projects/{project_id}/schema"): {
-        "body": "The same <code>fields</code> list GET returns. Each entry can set <code>role</code>, <code>weight</code>, "
-                "<code>searchable</code>, <code>filterable</code>, <code>facet</code> and <code>sortable</code>.",
+        "body": "The same <code>fields</code> list GET returns. Each entry can set <code>role</code>, "
+                "<code>weight</code>, <code>searchable</code>, <code>filterable</code>, <code>facet</code> and "
+                "<code>sortable</code>.",
         "returns": "Starts a background reindex into a new index followed by an atomic alias swap. Search keeps "
                    "working throughout.",
     },
@@ -233,7 +235,7 @@ def render(spec: dict) -> str:
              '<h2 id="basics">Basics</h2><ul>',
              "<li><strong>Base URL:</strong> <code>__API_URL__</code> (hosted beta), or your own server.</li>",
              "<li><strong>Auth:</strong> <code>Authorization: Bearer &lt;key&gt;</code> or "
-             "<code>X-Zerch-Key: &lt;key&gt;</code>.</li>",
+             "<code>X-Findaro-Key: &lt;key&gt;</code>.</li>",
              "<li><strong>Keys:</strong> the <em>admin key</em> manages data and is refused from browsers; the "
              "<em>search key</em> can only call search and chat, and browser requests are accepted only from the "
              "project's <code>allowed_origins</code>.</li>",

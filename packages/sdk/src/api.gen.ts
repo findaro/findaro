@@ -249,7 +249,7 @@ export interface paths {
         get?: never;
         /**
          * Put Limits
-         * @description Replace a project's limits (see zerch.usage). Needs the bootstrap token; an empty body removes all limits.
+         * @description Replace a project's limits (see findaro.usage). Needs the bootstrap token; an empty body removes all limits.
          */
         put: operations["put_limits_v1_operator_projects__project_id__limits_put"];
         post?: never;

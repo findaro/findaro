@@ -1,6 +1,6 @@
-"""zerch website server: static pages from SITE_PUBLIC_DIR plus POST /api/request-access.
+"""findaro website server: static pages from SITE_PUBLIC_DIR plus POST /api/request-access.
 
-Runs from the zerch image without loading the search engine:
+Runs from the findaro image without loading the search engine:
 
     uvicorn app:app --app-dir site/server
 
@@ -26,7 +26,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ValidationError
 
-log = logging.getLogger("zerch.site")
+log = logging.getLogger("findaro.site")
 
 PUBLIC = Path(os.environ.get("SITE_PUBLIC_DIR", Path(__file__).resolve().parent.parent / "public"))
 PER_IP_PER_HOUR = 5
@@ -94,7 +94,7 @@ async def _notify(lead: Lead) -> None:
     url = os.environ.get("SITE_NOTIFY_WEBHOOK")
     if not url:
         return
-    text = f"New zerch access request: {lead.name} ({lead.company}), plan {lead.plan or '-'}, " \
+    text = f"New findaro access request: {lead.name} ({lead.company}), plan {lead.plan or '-'}, " \
            f"catalog {lead.catalog_size or '-'}"
     try:
         async with httpx.AsyncClient(timeout=5) as c:

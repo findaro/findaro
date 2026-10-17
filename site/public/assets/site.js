@@ -1,4 +1,4 @@
-/* zerch site — small progressive enhancements. Every page works without this file. */
+/* findaro site — small progressive enhancements. Every page works without this file. */
 (function () {
   "use strict";
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
@@ -31,7 +31,7 @@
   }
 
   /* ---------- currency toggle (INR default) ---------- */
-  var CUR_KEY = "zerch-currency";
+  var CUR_KEY = "findaro-currency";
   function setCurrency(cur) {
     $$(".currency button").forEach(function (b) {
       b.setAttribute("aria-pressed", b.getAttribute("data-currency") === cur ? "true" : "false");
@@ -103,10 +103,10 @@
   }
 
   /* ---------- live demo ---------- */
-  var demo = $("zerch-search#demo-widget");
+  var demo = $("findaro-search#demo-widget");
   $$(".try button[data-q]").forEach(function (b) {
     b.addEventListener("click", function () {
-      var el = $("zerch-search#demo-widget");
+      var el = $("findaro-search#demo-widget");
       if (!el || typeof el.search !== "function") {
         var fb = $("#demo-fallback");
         if (fb) fb.classList.add("show");
@@ -120,7 +120,7 @@
   if (demo) {
     window.addEventListener("load", function () {
       setTimeout(function () {
-        if (!window.customElements || !window.customElements.get("zerch-search")) {
+        if (!window.customElements || !window.customElements.get("findaro-search")) {
           var fb = $("#demo-fallback");
           if (fb) fb.classList.add("show");
         }

@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Widget · zerch docs</title>
-<meta name="description" content="The <zerch-search> widget: attributes, properties, events and theming.">
+<title>Widget · findaro docs</title>
+<meta name="description" content="The <findaro-search> widget: attributes, properties, events and theming.">
 <link rel="canonical" href="__SITE_URL__/docs/widget.html">
 <meta name="theme-color" content="#f5f2ea" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#11100d" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="zerch">
-<meta property="og:title" content="Widget · zerch docs">
-<meta property="og:description" content="The <zerch-search> widget: attributes, properties, events and theming.">
+<meta property="og:site_name" content="findaro">
+<meta property="og:title" content="Widget · findaro docs">
+<meta property="og:description" content="The <findaro-search> widget: attributes, properties, events and theming.">
 <meta property="og:url" content="__SITE_URL__/docs/widget.html">
 <meta property="og:image" content="__SITE_URL__/assets/og.png">
 <meta property="og:image:width" content="1200">
@@ -28,7 +28,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="/" aria-label="zerch home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M10 10.5h12L10 21.5h12" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>zerch<span class="beta">beta</span></a>
+    <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro<span class="beta">beta</span></a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
@@ -68,17 +68,17 @@
 <!-- content:start -->
 <span class="eyebrow">Integrate</span>
 <h1>Widget</h1>
-<p class="lede"><code>&lt;zerch-search&gt;</code> is a Web Component (Shadow DOM, no framework, no dependencies, about
+<p class="lede"><code>&lt;findaro-search&gt;</code> is a Web Component (Shadow DOM, no framework, no dependencies, about
 10 KB gzipped with the SDK included). It works in any page: plain HTML, React, Vue, a CMS template.</p>
 
 <h2 id="install">Install</h2>
-<pre><code>&lt;script src="__SITE_URL__/zerch-widget.js" data-project="prj_…" data-key="zk_search_…"
+<pre><code>&lt;script src="__SITE_URL__/findaro-widget.js" data-project="prj_…" data-key="fdr_search_…"
         data-base-url="__API_URL__" defer&gt;&lt;/script&gt;
-&lt;zerch-search&gt;&lt;/zerch-search&gt;</code></pre>
+&lt;findaro-search&gt;&lt;/findaro-search&gt;</code></pre>
 <p>Settings on the script tag (<code>data-project</code>, <code>data-key</code>, <code>data-base-url</code>,
-<code>data-locale</code>, <code>data-mode</code>) apply to every <code>&lt;zerch-search&gt;</code> on the page.
+<code>data-locale</code>, <code>data-mode</code>) apply to every <code>&lt;findaro-search&gt;</code> on the page.
 Attributes on an element override them. Self-hosting? Build the file with <code>npm install &amp;&amp; npm run build</code>;
-it's at <code>packages/widget/dist/zerch-widget.js</code>. Serve it from your own domain.</p>
+it's at <code>packages/widget/dist/findaro-widget.js</code>. Serve it from your own domain.</p>
 
 <h2 id="what">What it renders</h2>
 <ul>
@@ -98,7 +98,7 @@ it's at <code>packages/widget/dist/zerch-widget.js</code>. Serve it from your ow
   <thead><tr><th>Attribute</th><th>Values</th><th>Default</th><th>What it does</th></tr></thead>
   <tbody>
     <tr><td><code>project</code></td><td><code>prj_…</code></td><td>script tag</td><td>Project id.</td></tr>
-    <tr><td><code>key</code></td><td><code>zk_search_…</code></td><td>script tag</td><td>The <em>search</em> key.</td></tr>
+    <tr><td><code>key</code></td><td><code>fdr_search_…</code></td><td>script tag</td><td>The <em>search</em> key.</td></tr>
     <tr><td><code>base-url</code></td><td>URL</td><td>script tag</td><td>API base URL, e.g. <code>__API_URL__</code>.</td></tr>
     <tr><td><code>mode</code></td><td><code>search</code> | <code>ai</code></td><td><code>search</code></td><td>Which mode the toggle starts in. Changing it later switches modes.</td></tr>
     <tr><td><code>locale</code></td><td><code>en</code> | <code>hi-en</code></td><td><code>en</code></td><td>UI language. <code>hi-en</code> uses Hinglish strings.</td></tr>
@@ -120,7 +120,7 @@ it's at <code>packages/widget/dist/zerch-widget.js</code>. Serve it from your ow
   </tbody>
 </table>
 <pre><code>&lt;script&gt;
-  const el = document.querySelector("zerch-search");
+  const el = document.querySelector("findaro-search");
   el.onProductClick = (hit) =&gt; location.assign(`/p/${hit.id}`);
   el.renderProduct = (hit, { display, formatPrice }) =&gt; {
     const card = document.createElement("div");
@@ -137,13 +137,13 @@ it's at <code>packages/widget/dist/zerch-widget.js</code>. Serve it from your ow
 <table>
   <thead><tr><th>Event</th><th><code>detail</code></th><th>When</th></tr></thead>
   <tbody>
-    <tr><td><code>zerch:results</code></td><td>the search response (<code>total</code>, <code>hits</code>, <code>understood</code>, …)</td><td>After each search returns.</td></tr>
-    <tr><td><code>zerch:product-click</code></td><td><code>{ hit }</code></td><td>A product was clicked. Cancelable: <code>preventDefault()</code> stops navigation to the product URL.</td></tr>
-    <tr><td><code>zerch:error</code></td><td>the error</td><td>A request failed.</td></tr>
+    <tr><td><code>findaro:results</code></td><td>the search response (<code>total</code>, <code>hits</code>, <code>understood</code>, …)</td><td>After each search returns.</td></tr>
+    <tr><td><code>findaro:product-click</code></td><td><code>{ hit }</code></td><td>A product was clicked. Cancelable: <code>preventDefault()</code> stops navigation to the product URL.</td></tr>
+    <tr><td><code>findaro:error</code></td><td>the error</td><td>A request failed.</td></tr>
   </tbody>
 </table>
-<pre><code>el.addEventListener("zerch:results", (e) =&gt; console.log(e.detail.total));
-el.addEventListener("zerch:product-click", (e) =&gt; {
+<pre><code>el.addEventListener("findaro:results", (e) =&gt; console.log(e.detail.total));
+el.addEventListener("findaro:product-click", (e) =&gt; {
   e.preventDefault();
   openQuickView(e.detail.hit);
 });</code></pre>
@@ -151,27 +151,27 @@ el.addEventListener("zerch:product-click", (e) =&gt; {
 <h2 id="theming">Theming</h2>
 <p>Set CSS custom properties on the element. Styles from your page win over the widget's defaults, in both light and
 dark mode.</p>
-<pre><code>zerch-search {
-  --zerch-accent: #2563eb;
-  --zerch-radius: 6px;
-  --zerch-font: Inter, sans-serif;
-  --zerch-card-min: 180px;
+<pre><code>findaro-search {
+  --findaro-accent: #2563eb;
+  --findaro-radius: 6px;
+  --findaro-font: Inter, sans-serif;
+  --findaro-card-min: 180px;
 }</code></pre>
 <table>
   <thead><tr><th>Variable</th><th>Controls</th></tr></thead>
   <tbody>
-    <tr><td><code>--zerch-accent</code></td><td>Buttons, active toggle, links.</td></tr>
-    <tr><td><code>--zerch-accent-ink</code></td><td>Text on the accent colour.</td></tr>
-    <tr><td><code>--zerch-bg</code></td><td>Widget background.</td></tr>
-    <tr><td><code>--zerch-surface</code></td><td>Cards and panels.</td></tr>
-    <tr><td><code>--zerch-fg</code></td><td>Main text.</td></tr>
-    <tr><td><code>--zerch-muted</code></td><td>Secondary text.</td></tr>
-    <tr><td><code>--zerch-border</code></td><td>Borders.</td></tr>
-    <tr><td><code>--zerch-chip-bg</code>, <code>--zerch-chip-fg</code></td><td>Chips and pills.</td></tr>
-    <tr><td><code>--zerch-warn</code></td><td>“Close match” and weak-match notes.</td></tr>
-    <tr><td><code>--zerch-radius</code></td><td>Corner radius.</td></tr>
-    <tr><td><code>--zerch-font</code></td><td>Font stack.</td></tr>
-    <tr><td><code>--zerch-card-min</code></td><td>Minimum product card width in the grid.</td></tr>
+    <tr><td><code>--findaro-accent</code></td><td>Buttons, active toggle, links.</td></tr>
+    <tr><td><code>--findaro-accent-ink</code></td><td>Text on the accent colour.</td></tr>
+    <tr><td><code>--findaro-bg</code></td><td>Widget background.</td></tr>
+    <tr><td><code>--findaro-surface</code></td><td>Cards and panels.</td></tr>
+    <tr><td><code>--findaro-fg</code></td><td>Main text.</td></tr>
+    <tr><td><code>--findaro-muted</code></td><td>Secondary text.</td></tr>
+    <tr><td><code>--findaro-border</code></td><td>Borders.</td></tr>
+    <tr><td><code>--findaro-chip-bg</code>, <code>--findaro-chip-fg</code></td><td>Chips and pills.</td></tr>
+    <tr><td><code>--findaro-warn</code></td><td>“Close match” and weak-match notes.</td></tr>
+    <tr><td><code>--findaro-radius</code></td><td>Corner radius.</td></tr>
+    <tr><td><code>--findaro-font</code></td><td>Font stack.</td></tr>
+    <tr><td><code>--findaro-card-min</code></td><td>Minimum product card width in the grid.</td></tr>
   </tbody>
 </table>
 
@@ -190,7 +190,7 @@ dark mode.</p>
 <footer class="site-footer">
   <div class="wrap">
     <div class="about">
-      <a class="brand" href="/" aria-label="zerch home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M10 10.5h12L10 21.5h12" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>zerch</a>
+      <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro</a>
       <p>AI search for product catalogs: natural language, Indian English and Hinglish, grounded chat. Open source under Apache-2.0.</p>
     </div>
     <div>
@@ -221,7 +221,7 @@ dark mode.</p>
       </ul>
     </div>
     <div class="legal">
-      <span>© <span data-year>2026</span> __COMPANY_NAME__. zerch is open source.</span>
+      <span>© <span data-year>2026</span> __COMPANY_NAME__. findaro is open source.</span>
       <span>Hosted beta · Oracle Cloud, Mumbai region</span>
     </div>
   </div>

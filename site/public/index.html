@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>zerch · AI search for Indian e-commerce catalogs</title>
+<title>findaro · AI search for Indian e-commerce catalogs</title>
 <meta name="description" content="AI search API and drop-in widget: natural-language queries in English and Hinglish, filters inferred from the query, grounded AI chat. Open source, hosted beta.">
 <link rel="canonical" href="__SITE_URL__/">
 <meta name="theme-color" content="#f5f2ea" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#11100d" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="zerch">
-<meta property="og:title" content="zerch · AI search for Indian e-commerce catalogs">
+<meta property="og:site_name" content="findaro">
+<meta property="og:title" content="findaro · AI search for Indian e-commerce catalogs">
 <meta property="og:description" content="AI search API and drop-in widget: natural-language queries in English and Hinglish, filters inferred from the query, grounded AI chat. Open source, hosted beta.">
 <meta property="og:url" content="__SITE_URL__/">
 <meta property="og:image" content="__SITE_URL__/assets/og.png">
@@ -25,17 +25,17 @@
 <script src="/assets/site.js" defer></script>
 <style>
   /* map the widget's theme onto the site's tokens (outer styles win over :host defaults, both themes) */
-  zerch-search#demo-widget { --zerch-bg: var(--surface); --zerch-surface: var(--bg); --zerch-fg: var(--ink);
-    --zerch-muted: var(--muted); --zerch-border: var(--line); --zerch-chip-bg: var(--accent-soft);
-    --zerch-chip-fg: var(--accent-text); --zerch-accent-ink: var(--accent-ink); }
+  findaro-search#demo-widget { --findaro-bg: var(--surface); --findaro-surface: var(--bg); --findaro-fg: var(--ink);
+    --findaro-muted: var(--muted); --findaro-border: var(--line); --findaro-chip-bg: var(--accent-soft);
+    --findaro-chip-fg: var(--accent-text); --findaro-accent-ink: var(--accent-ink); }
 </style>
-<script src="/zerch-widget.js" data-project="__DEMO_PROJECT__" data-key="__DEMO_SEARCH_KEY__" data-base-url="__API_URL__" defer onerror="document.documentElement.classList.add('no-widget')"></script>
+<script src="/findaro-widget.js" data-project="__DEMO_PROJECT__" data-key="__DEMO_SEARCH_KEY__" data-base-url="__API_URL__" defer onerror="document.documentElement.classList.add('no-widget')"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="/" aria-label="zerch home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M10 10.5h12L10 21.5h12" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>zerch<span class="beta">beta</span></a>
+    <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro<span class="beta">beta</span></a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
@@ -55,7 +55,7 @@
     <div>
       <span class="eyebrow">AI search API · Hosted beta · Open source</span>
       <h1>Search that understands how India <em>actually</em> types.</h1>
-      <p class="lede">zerch turns your product catalog into natural-language search: English, Indian English, Hinglish
+      <p class="lede">findaro turns your product catalog into natural-language search: English, Indian English, Hinglish
       and typos. Send us a JSON or CSV file, add one script tag, and shoppers find things in their own words.</p>
       <div class="cta-row">
         <a class="btn btn-primary" href="/request-access.html">Request access</a>
@@ -65,10 +65,10 @@
       <p class="hero-note"><span>Apache-2.0</span><span>No schema to write</span><span>Widget ~10 KB gzipped</span></p>
     </div>
 
-    <div class="qcard" aria-label="Example: how zerch reads a query">
+    <div class="qcard" aria-label="Example: how findaro reads a query">
       <div class="qcard-label"><span>Shopper types</span><span id="qlang">Hinglish</span></div>
       <div class="qinput"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="qtext" id="qtext">kaale joote 1000 ke andar</span><span class="caret" aria-hidden="true"></span></div>
-      <div class="qarrow">zerch understands</div>
+      <div class="qarrow">findaro understands</div>
       <div class="chips" id="qchips" aria-live="polite">
         <span class="chip">Under ₹1,000 <span class="x" aria-hidden="true">×</span></span>
         <span class="chip">Black <span class="x" aria-hidden="true">×</span></span>
@@ -105,7 +105,7 @@
       <div class="demo-body">
         <p class="demo-fallback" id="demo-fallback" role="status">The live demo couldn't load right now. You can still
         run the same demo locally: it ships with the <a href="__GITHUB_URL__" rel="noopener">open-source repo</a>.</p>
-        <zerch-search id="demo-widget" placeholder="Search the demo store… try “sasta pressure cooker”"></zerch-search>
+        <findaro-search id="demo-widget" placeholder="Search the demo store… try “sasta pressure cooker”"></findaro-search>
       </div>
     </div>
     <p class="fine" style="margin-top:1rem">In Ask AI, try a follow-up such as “only black” or “is the second one
@@ -122,7 +122,7 @@
     <ol class="steps" style="list-style:none;padding:0;margin:0">
       <li class="step">
         <h3>Send your catalog</h3>
-        <p>Upload JSON, JSONL or CSV, or push documents over the API. zerch works out which field is the title, the
+        <p>Upload JSON, JSONL or CSV, or push documents over the API. findaro works out which field is the title, the
         price, the colour or the category from the data itself. You can override any of it.</p>
 <pre class="no-copy"><code>POST /v1/projects/<span class="k">{id}</span>/import
 file=@catalog.jsonl</code></pre>
@@ -131,12 +131,12 @@ file=@catalog.jsonl</code></pre>
         <h3>Drop in the widget or call the API</h3>
         <p>One script tag gives you a complete search UI. Prefer your own UI? Use the headless TypeScript SDK or plain
         HTTP. The browser key can only search.</p>
-<pre class="no-copy"><code><span class="k">&lt;zerch-search&gt;</span><span class="k">&lt;/zerch-search&gt;</span></code></pre>
+<pre class="no-copy"><code><span class="k">&lt;findaro-search&gt;</span><span class="k">&lt;/findaro-search&gt;</span></code></pre>
       </li>
       <li class="step">
         <h3>Shoppers search in their own words</h3>
         <p>Prices, colours, sizes and categories come out of the query and show up as chips they can remove. When
-        nothing matches exactly, zerch says so and shows the closest options.</p>
+        nothing matches exactly, findaro says so and shows the closest options.</p>
 <pre class="no-copy"><code><span class="s">"500 ke andar steel bottle"</span></code></pre>
       </li>
     </ol>
@@ -148,7 +148,7 @@ file=@catalog.jsonl</code></pre>
     <div class="section-head">
       <span class="eyebrow">What you get</span>
       <h2 id="feat-h">Built for real catalogs and the way real people type.</h2>
-      <p>Keyword search fails on “joote under 1k”. Pure vector search shows confident nonsense. zerch does both kinds
+      <p>Keyword search fails on “joote under 1k”. Pure vector search shows confident nonsense. findaro does both kinds
       of retrieval and reads the query first.</p>
     </div>
     <div class="features">
@@ -157,7 +157,7 @@ file=@catalog.jsonl</code></pre>
         <h3>Reads the query, not just the words</h3>
         <p>Price ranges (“under 500”, “1000 se kam”, “₹500-₹1000”, “1.5k”), colours, materials, sizes, brands,
         audience and categories are pulled out of the query using only the values in <em>your</em> catalog. Units such as
-        “5 L” or “65W” are never mistaken for prices. Everything zerch applied comes back as chips your UI can remove.</p>
+        “5 L” or “65W” are never mistaken for prices. Everything findaro applied comes back as chips your UI can remove.</p>
         <div class="demo-line">“500 ke andar kaale joote” → <b>Under ₹500</b> · <b>Black</b> · searching “black shoes”</div>
       </div>
       <div class="feature">
@@ -175,7 +175,7 @@ file=@catalog.jsonl</code></pre>
       <div class="feature">
         <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></div>
         <h3>Honest when nothing matches</h3>
-        <p>Every response says whether the match is good, weak or none. If a filter leaves nothing, zerch relaxes it
+        <p>Every response says whether the match is good, weak or none. If a filter leaves nothing, findaro relaxes it
         and tells you which one. Exact matches come first, close matches after, clearly marked.</p>
       </div>
       <div class="feature">
@@ -187,14 +187,14 @@ file=@catalog.jsonl</code></pre>
       <div class="feature half">
         <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7l8-4 8 4v10l-8 4-8-4V7Z"/><path d="m4 7 8 4 8-4M12 11v10"/></svg></div>
         <h3>Drop-in widget</h3>
-        <p><code>&lt;zerch-search&gt;</code> is one Web Component: search box with a Search / Ask AI toggle, removable
+        <p><code>&lt;findaro-search&gt;</code> is one Web Component: search box with a Search / Ask AI toggle, removable
         chips, filter pills, product grid, AI panel and a product drawer. Shadow DOM, mobile-first, keyboard
         accessible, themeable with CSS variables, about 10 KB gzipped with no dependencies.</p>
       </div>
       <div class="feature half">
         <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 8-4 4 4 4m8-8 4 4-4 4m-6 3 4-14"/></svg></div>
         <h3>Headless SDK and plain HTTP</h3>
-        <p><code>@zerch/sdk</code> is a typed TypeScript client with zero dependencies, about 1.5 KB gzipped: search,
+        <p><code>@findaro/sdk</code> is a typed TypeScript client with zero dependencies, about 1.5 KB gzipped: search,
         streaming chat, cancellation and retries. Or call the JSON API from any language.</p>
       </div>
       <div class="feature wide">
@@ -256,13 +256,13 @@ file=@catalog.jsonl</code></pre>
     </div>
     <div class="tabpanel" role="tabpanel" id="p-widget" aria-labelledby="t-widget">
 <pre><code><span class="c">&lt;!-- one script tag + one element; the search key is browser-safe --&gt;</span>
-<span class="k">&lt;script</span> src=<span class="s">"__SITE_URL__/zerch-widget.js"</span>
-        data-project=<span class="s">"prj_…"</span> data-key=<span class="s">"zk_search_…"</span>
+<span class="k">&lt;script</span> src=<span class="s">"__SITE_URL__/findaro-widget.js"</span>
+        data-project=<span class="s">"prj_…"</span> data-key=<span class="s">"fdr_search_…"</span>
         data-base-url=<span class="s">"__API_URL__"</span> defer<span class="k">&gt;&lt;/script&gt;</span>
 
-<span class="k">&lt;zerch-search</span> locale=<span class="s">"hi-en"</span><span class="k">&gt;&lt;/zerch-search&gt;</span>
+<span class="k">&lt;findaro-search</span> locale=<span class="s">"hi-en"</span><span class="k">&gt;&lt;/findaro-search&gt;</span>
 
-<span class="k">&lt;style&gt;</span> zerch-search { --zerch-accent: #c2410c; --zerch-radius: 10px; } <span class="k">&lt;/style&gt;</span></code></pre>
+<span class="k">&lt;style&gt;</span> findaro-search { --findaro-accent: #c2410c; --findaro-radius: 10px; } <span class="k">&lt;/style&gt;</span></code></pre>
     </div>
     <div class="tabpanel" role="tabpanel" id="p-curl" aria-labelledby="t-curl" hidden>
 <pre><code>curl -X POST __API_URL__/v1/search \
@@ -275,13 +275,13 @@ file=@catalog.jsonl</code></pre>
 <span class="c">#   "match_quality": "good", ... }</span></code></pre>
     </div>
     <div class="tabpanel" role="tabpanel" id="p-sdk" aria-labelledby="t-sdk" hidden>
-<pre><code><span class="k">import</span> { createClient } <span class="k">from</span> <span class="s">"@zerch/sdk"</span>;
+<pre><code><span class="k">import</span> { createClient } <span class="k">from</span> <span class="s">"@findaro/sdk"</span>;
 
-<span class="k">const</span> zerch = createClient({ projectId: <span class="s">"prj_…"</span>, searchKey: <span class="s">"zk_search_…"</span>, baseUrl: <span class="s">"__API_URL__"</span> });
+<span class="k">const</span> findaro = createClient({ projectId: <span class="s">"prj_…"</span>, searchKey: <span class="s">"fdr_search_…"</span>, baseUrl: <span class="s">"__API_URL__"</span> });
 
-<span class="k">const</span> res = <span class="k">await</span> zerch.search(<span class="s">"kaale joote 1000 ke andar"</span>);
+<span class="k">const</span> res = <span class="k">await</span> findaro.search(<span class="s">"kaale joote 1000 ke andar"</span>);
 <span class="c">// drop the "Black" chip without a new query</span>
-<span class="k">await</span> zerch.search({ query: res.query, patch: res.understood!.chips[1].remove });</code></pre>
+<span class="k">await</span> findaro.search({ query: res.query, patch: res.understood!.chips[1].remove });</code></pre>
     </div>
     <div class="tabpanel" role="tabpanel" id="p-chat" aria-labelledby="t-chat" hidden>
 <pre><code>curl -N -X POST __API_URL__/v1/chat -H <span class="s">"authorization: Bearer $SEARCH_KEY"</span> \
@@ -302,7 +302,7 @@ file=@catalog.jsonl</code></pre>
     <div class="section-head">
       <span class="eyebrow">Open source or hosted</span>
       <h2 id="oss-h">Same engine. You choose who runs it.</h2>
-      <p>zerch is Apache-2.0. There is no “enterprise edition” with the good parts held back.</p>
+      <p>findaro is Apache-2.0. There is no “enterprise edition” with the good parts held back.</p>
     </div>
     <div class="compare">
       <div class="card">
@@ -319,7 +319,7 @@ file=@catalog.jsonl</code></pre>
       </div>
       <div class="card dark">
         <h3>Hosted by us (beta)</h3>
-        <p>We run zerch for you in Oracle Cloud's Mumbai region. You get an API URL and two keys; we handle
+        <p>We run findaro for you in Oracle Cloud's Mumbai region. You get an API URL and two keys; we handle
         indexing, models, upgrades and keeping it up.</p>
         <ul class="checks">
           <li>No infrastructure to run</li>
@@ -442,7 +442,7 @@ file=@catalog.jsonl</code></pre>
     </div>
     <div class="faq">
       <details>
-        <summary>Which languages does zerch understand?</summary>
+        <summary>Which languages does findaro understand?</summary>
         <div><p>English, Indian English and Hinglish (Hindi written in Latin script, with its many spellings). Hindi in
         Devanagari is transliterated for matching. Query-understanding packs exist for English and Hinglish today.</p></div>
       </details>
@@ -460,7 +460,7 @@ file=@catalog.jsonl</code></pre>
       </details>
       <details>
         <summary>Do I need to describe my catalog's schema?</summary>
-        <div><p>No. zerch infers each field's role (title, price, colour, category, image…) from the data. You can
+        <div><p>No. findaro infers each field's role (title, price, colour, category, image…) from the data. You can
         review the inferred schema and override any field through the API.</p></div>
       </details>
       <details>
@@ -486,7 +486,7 @@ file=@catalog.jsonl</code></pre>
       </details>
       <details>
         <summary>Do you have autocomplete, analytics or recommendations?</summary>
-        <div><p>Not yet. Today zerch does search, query understanding and AI chat over your catalog. We'd rather tell
+        <div><p>Not yet. Today findaro does search, query understanding and AI chat over your catalog. We'd rather tell
         you plainly than promise dates.</p></div>
       </details>
     </div>
@@ -508,7 +508,7 @@ file=@catalog.jsonl</code></pre>
 <footer class="site-footer">
   <div class="wrap">
     <div class="about">
-      <a class="brand" href="/" aria-label="zerch home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M10 10.5h12L10 21.5h12" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>zerch</a>
+      <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro</a>
       <p>AI search for product catalogs: natural language, Indian English and Hinglish, grounded chat. Open source under Apache-2.0.</p>
     </div>
     <div>
@@ -539,7 +539,7 @@ file=@catalog.jsonl</code></pre>
       </ul>
     </div>
     <div class="legal">
-      <span>© <span data-year>2026</span> __COMPANY_NAME__. zerch is open source.</span>
+      <span>© <span data-year>2026</span> __COMPANY_NAME__. findaro is open source.</span>
       <span>Hosted beta · Oracle Cloud, Mumbai region</span>
     </div>
   </div>

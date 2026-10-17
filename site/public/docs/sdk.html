@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SDK · zerch docs</title>
-<meta name="description" content="@zerch/sdk: a typed, zero-dependency TypeScript client for zerch search and streaming chat.">
+<title>SDK · findaro docs</title>
+<meta name="description" content="@findaro/sdk: a typed, zero-dependency TypeScript client for findaro search and streaming chat.">
 <link rel="canonical" href="__SITE_URL__/docs/sdk.html">
 <meta name="theme-color" content="#f5f2ea" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#11100d" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="zerch">
-<meta property="og:title" content="SDK · zerch docs">
-<meta property="og:description" content="@zerch/sdk: a typed, zero-dependency TypeScript client for zerch search and streaming chat.">
+<meta property="og:site_name" content="findaro">
+<meta property="og:title" content="SDK · findaro docs">
+<meta property="og:description" content="@findaro/sdk: a typed, zero-dependency TypeScript client for findaro search and streaming chat.">
 <meta property="og:url" content="__SITE_URL__/docs/sdk.html">
 <meta property="og:image" content="__SITE_URL__/assets/og.png">
 <meta property="og:image:width" content="1200">
@@ -28,7 +28,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="/" aria-label="zerch home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M10 10.5h12L10 21.5h12" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>zerch<span class="beta">beta</span></a>
+    <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro<span class="beta">beta</span></a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
@@ -68,27 +68,27 @@
 <!-- content:start -->
 <span class="eyebrow">Integrate</span>
 <h1>SDK (TypeScript)</h1>
-<p class="lede"><code>@zerch/sdk</code> is a headless, typed client for search and streaming chat. Zero dependencies,
+<p class="lede"><code>@findaro/sdk</code> is a headless, typed client for search and streaming chat. Zero dependencies,
 ESM + UMD, about 1.5 KB gzipped. Use it when you want your own UI.</p>
 
 <h2 id="install">Install</h2>
 <p>The SDK isn't published to npm yet. Build it from the repository and use the files in
-<code>packages/sdk/dist/</code> (<code>zerch-sdk.mjs</code>, <code>zerch-sdk.umd.js</code> and type declarations):</p>
-<pre><code>git clone __GITHUB_URL__ zerch &amp;&amp; cd zerch
+<code>packages/sdk/dist/</code> (<code>findaro-sdk.mjs</code>, <code>findaro-sdk.umd.js</code> and type declarations):</p>
+<pre><code>git clone __GITHUB_URL__ findaro &amp;&amp; cd findaro
 npm install &amp;&amp; npm run build</code></pre>
-<p>In a monorepo you can depend on the package by path, e.g. <code>"@zerch/sdk": "file:../zerch/packages/sdk"</code>.</p>
+<p>In a monorepo you can depend on the package by path, e.g. <code>"@findaro/sdk": "file:../findaro/packages/sdk"</code>.</p>
 
 <h2 id="client">Create a client</h2>
-<pre><code>import { createClient, debounce } from "@zerch/sdk";
+<pre><code>import { createClient, debounce } from "@findaro/sdk";
 
-const zerch = createClient({
+const findaro = createClient({
   projectId: "prj_…",
-  searchKey: "zk_search_…",   // browser-safe; never an admin key
+  searchKey: "fdr_search_…",   // browser-safe; never an admin key
   baseUrl: "__API_URL__",
 });</code></pre>
 
 <h2 id="search">Search</h2>
-<pre><code>const res = await zerch.search("kaale joote 1000 ke andar");   // typed SearchResponse
+<pre><code>const res = await findaro.search("kaale joote 1000 ke andar");   // typed SearchResponse
 res.total;
 res.hits;                    // [{ id, score, document, highlights }]
 res.understood?.chips;       // [{ label: "Under ₹1,000", remove: [...] }, { label: "Black", remove: [...] }]
@@ -96,18 +96,18 @@ res.pills;                   // refinement choices for the current results
 res.display;                 // which fields hold title, price, image, rating, currency
 
 // remove a chip without a new natural-language query
-await zerch.search({ query: res.query, patch: res.understood!.chips[1].remove });
+await findaro.search({ query: res.query, patch: res.understood!.chips[1].remove });
 
 // explicit filters, sort, facets
-await zerch.search({ query: "kurta", filters: { price: { lte: 1500 } }, sort: "price:asc", facets: ["color"] });
+await findaro.search({ query: "kurta", filters: { price: { lte: 1500 } }, sort: "price:asc", facets: ["color"] });
 
 // search-as-you-type: debounce, and skip the LLM planner while typing
-const typeahead = debounce((q: string) =&gt; zerch.search({ query: q, llm: false }), 250);</code></pre>
+const typeahead = debounce((q: string) =&gt; findaro.search({ query: q, llm: false }), 250);</code></pre>
 
 <h2 id="chat">Chat</h2>
 <p><code>chat()</code> returns a stream you can iterate, attach callbacks to, or await as a whole.</p>
 <pre><code>// iterate events
-const turn = zerch.chat("saree under 1000", { sessionId });
+const turn = findaro.chat("saree under 1000", { sessionId });
 for await (const ev of turn) {
   if (ev.type === "results") showProducts(ev.data.items);
   if (ev.type === "text") appendText(ev.data.delta);
@@ -115,15 +115,15 @@ for await (const ev of turn) {
 const { sessionId: next, clarify } = await turn.result;
 
 // or callbacks
-zerch.chat("sasta wala", { sessionId: next, onText: (_, full) =&gt; render(full) });
+findaro.chat("sasta wala", { sessionId: next, onText: (_, full) =&gt; render(full) });
 
 // pick a clarifier chip: send its label as the message and its patch
-zerch.chat(chip.label, { sessionId: next, patch: chip.patch });</code></pre>
+findaro.chat(chip.label, { sessionId: next, patch: chip.patch });</code></pre>
 
 <h3 id="product">Ask about a product</h3>
 <p>Pass <code>productIds</code> (up to 3) and every turn is answered about those products, like a product page.
 Facts from the listing are in <code>text</code>; labeled general know-how is in <code>general</code>.</p>
-<pre><code>const about = await zerch.chat("Is this made in India?", { productIds: ["FW-00421"] }).result;
+<pre><code>const about = await findaro.chat("Is this made in India?", { productIds: ["FW-00421"] }).result;
 about.text;      // from the listing only
 about.general;   // optional general advice: show it labeled as such</code></pre>
 
@@ -145,7 +145,7 @@ about.general;   // optional general advice: show it labeled as such</code></pre
   <li><strong>Cancellation:</strong> a new <code>search()</code> (or <code>chat()</code>) cancels the client's previous
   in-flight one. Pass <code>{ cancelPrevious: false }</code> to keep it, or your own <code>signal</code>.</li>
   <li><strong>Retries:</strong> network errors are retried once.</li>
-  <li><strong>Errors:</strong> API errors throw a <code>ZerchError</code> with <code>status</code> and <code>code</code>.</li>
+  <li><strong>Errors:</strong> API errors throw a <code>FindaroError</code> with <code>status</code> and <code>code</code>.</li>
   <li><strong>Types:</strong> generated from the API's OpenAPI spec, so they match the <a href="/docs/api.html">API
   reference</a>.</li>
 </ul>
@@ -157,7 +157,7 @@ about.general;   // optional general advice: show it labeled as such</code></pre
 <footer class="site-footer">
   <div class="wrap">
     <div class="about">
-      <a class="brand" href="/" aria-label="zerch home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M10 10.5h12L10 21.5h12" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>zerch</a>
+      <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro</a>
       <p>AI search for product catalogs: natural language, Indian English and Hinglish, grounded chat. Open source under Apache-2.0.</p>
     </div>
     <div>
@@ -188,7 +188,7 @@ about.general;   // optional general advice: show it labeled as such</code></pre
       </ul>
     </div>
     <div class="legal">
-      <span>© <span data-year>2026</span> __COMPANY_NAME__. zerch is open source.</span>
+      <span>© <span data-year>2026</span> __COMPANY_NAME__. findaro is open source.</span>
       <span>Hosted beta · Oracle Cloud, Mumbai region</span>
     </div>
   </div>

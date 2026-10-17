@@ -1,6 +1,6 @@
 """Terminal client for /v1/chat (manual testing).
 
-    uv run python scripts/chat_cli.py --key zk_search_...        # interactive
+    uv run python scripts/chat_cli.py --key fdr_search_...        # interactive
     uv run python scripts/chat_cli.py --key ... "black shoes" "sasta wala" "is the second one leather?"
 
 Type a message; a clarifier's chips are numbered, type the number to pick one. Ctrl-D quits.

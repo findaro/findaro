@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quickstart · zerch docs</title>
-<meta name="description" content="Get keys, import a catalog, search and add the zerch widget in about five minutes.">
+<title>Quickstart · findaro docs</title>
+<meta name="description" content="Get keys, import a catalog, search and add the findaro widget in about five minutes.">
 <link rel="canonical" href="__SITE_URL__/docs/quickstart.html">
 <meta name="theme-color" content="#f5f2ea" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#11100d" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="zerch">
-<meta property="og:title" content="Quickstart · zerch docs">
-<meta property="og:description" content="Get keys, import a catalog, search and add the zerch widget in about five minutes.">
+<meta property="og:site_name" content="findaro">
+<meta property="og:title" content="Quickstart · findaro docs">
+<meta property="og:description" content="Get keys, import a catalog, search and add the findaro widget in about five minutes.">
 <meta property="og:url" content="__SITE_URL__/docs/quickstart.html">
 <meta property="og:image" content="__SITE_URL__/assets/og.png">
 <meta property="og:image:width" content="1200">
@@ -28,7 +28,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="/" aria-label="zerch home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M10 10.5h12L10 21.5h12" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>zerch<span class="beta">beta</span></a>
+    <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro<span class="beta">beta</span></a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
@@ -76,14 +76,14 @@ output, <code>jq</code>.</p>
 <p>We send you a project id and two keys when we set up your account. Put them in your shell:</p>
 <pre><code>export API=__API_URL__
 export PID=prj_…            # project id
-export ADMIN=zk_admin_…     # server-side only
-export SEARCH=zk_search_…   # browser-safe</code></pre>
+export ADMIN=fdr_admin_…     # server-side only
+export SEARCH=fdr_search_…   # browser-safe</code></pre>
 
 <h3>Self-hosted</h3>
-<p>Create the project yourself. If the API was started with <code>ZERCH_BOOTSTRAP_TOKEN</code> (it should be,
+<p>Create the project yourself. If the API was started with <code>FINDARO_BOOTSTRAP_TOKEN</code> (it should be,
 anywhere others can reach it), send that token:</p>
 <pre><code>export API=http://localhost:8000
-curl -s -X POST $API/v1/projects -H "authorization: Bearer $ZERCH_BOOTSTRAP_TOKEN" \
+curl -s -X POST $API/v1/projects -H "authorization: Bearer $FINDARO_BOOTSTRAP_TOKEN" \
   -H 'content-type: application/json' -d '{"name": "my-store"}' | tee project.json
 PID=$(jq -r .project_id project.json); ADMIN=$(jq -r .admin_key project.json); SEARCH=$(jq -r .search_key project.json)</code></pre>
 
@@ -127,10 +127,10 @@ reference</a>.</p>
 
 <h2 id="widget">6. Add the widget</h2>
 <p>One script tag and one element, anywhere on the page:</p>
-<pre><code>&lt;script src="__SITE_URL__/zerch-widget.js" data-project="prj_…" data-key="zk_search_…"
+<pre><code>&lt;script src="__SITE_URL__/findaro-widget.js" data-project="prj_…" data-key="fdr_search_…"
         data-base-url="__API_URL__" defer&gt;&lt;/script&gt;
 
-&lt;zerch-search&gt;&lt;/zerch-search&gt;</code></pre>
+&lt;findaro-search&gt;&lt;/findaro-search&gt;</code></pre>
 <p>That's it: a search box with a Search / Ask AI toggle, removable chips, filter pills, a product grid and a product
 drawer. Customise it in the <a href="/docs/widget.html">widget guide</a>, or build your own UI with the
 <a href="/docs/sdk.html">SDK</a>.</p>
@@ -145,7 +145,7 @@ but treat it like a password.</p></div>
 <footer class="site-footer">
   <div class="wrap">
     <div class="about">
-      <a class="brand" href="/" aria-label="zerch home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M10 10.5h12L10 21.5h12" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>zerch</a>
+      <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro</a>
       <p>AI search for product catalogs: natural language, Indian English and Hinglish, grounded chat. Open source under Apache-2.0.</p>
     </div>
     <div>
@@ -176,7 +176,7 @@ but treat it like a password.</p></div>
       </ul>
     </div>
     <div class="legal">
-      <span>© <span data-year>2026</span> __COMPANY_NAME__. zerch is open source.</span>
+      <span>© <span data-year>2026</span> __COMPANY_NAME__. findaro is open source.</span>
       <span>Hosted beta · Oracle Cloud, Mumbai region</span>
     </div>
   </div>

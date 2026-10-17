@@ -4,15 +4,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>API reference · zerch docs</title>
-<meta name="description" content="zerch HTTP API reference: projects, documents, import jobs, schema, search and chat (Server-Sent Events).">
+<title>API reference · findaro docs</title>
+<meta name="description" content="findaro HTTP API reference: projects, documents, import jobs, schema, search and chat (Server-Sent Events).">
 <link rel="canonical" href="__SITE_URL__/docs/api.html">
 <meta name="theme-color" content="#f5f2ea" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#11100d" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="zerch">
-<meta property="og:title" content="API reference · zerch docs">
-<meta property="og:description" content="zerch HTTP API reference: projects, documents, import jobs, schema, search and chat (Server-Sent Events).">
+<meta property="og:site_name" content="findaro">
+<meta property="og:title" content="API reference · findaro docs">
+<meta property="og:description" content="findaro HTTP API reference: projects, documents, import jobs, schema, search and chat (Server-Sent Events).">
 <meta property="og:url" content="__SITE_URL__/docs/api.html">
 <meta property="og:image" content="__SITE_URL__/assets/og.png">
 <meta property="og:image:width" content="1200">
@@ -29,7 +29,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="/" aria-label="zerch home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M10 10.5h12L10 21.5h12" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>zerch<span class="beta">beta</span></a>
+    <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro<span class="beta">beta</span></a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
@@ -72,7 +72,7 @@
 <p class="lede">AI search as a service. Search keys are browser-safe; admin keys are not. Version 0.1.0. Generated from the OpenAPI spec (<code>packages/sdk/openapi.json</code>).</p>
 <h2 id="basics">Basics</h2><ul>
 <li><strong>Base URL:</strong> <code>__API_URL__</code> (hosted beta), or your own server.</li>
-<li><strong>Auth:</strong> <code>Authorization: Bearer &lt;key&gt;</code> or <code>X-Zerch-Key: &lt;key&gt;</code>.</li>
+<li><strong>Auth:</strong> <code>Authorization: Bearer &lt;key&gt;</code> or <code>X-Findaro-Key: &lt;key&gt;</code>.</li>
 <li><strong>Keys:</strong> the <em>admin key</em> manages data and is refused from browsers; the <em>search key</em> can only call search and chat, and browser requests are accepted only from the project's <code>allowed_origins</code>.</li>
 <li><strong>Errors:</strong> <code>{"error": {"code": "...", "message": "...", "details": ...}}</code>. Invalid requests are 422 with code <code>invalid_request</code>; 401 means a missing or wrong key; 429 means the per-key rate limit was hit.</li>
 <li><strong>Caching:</strong> search results are cached for 60 s per data version; send <code>Cache-Control: no-cache</code> to bypass.</li>
@@ -84,7 +84,7 @@
 <div class="endpoint" id="op-post-v1-projects">
 <h3><span class="method post">POST</span> /v1/projects</h3>
 <div class="meta">Create Project</div>
-<p><strong>Auth:</strong> Bootstrap token, if the server sets <code>ZERCH_BOOTSTRAP_TOKEN</code> (self-hosted). On the hosted beta we create projects for you.</p>
+<p><strong>Auth:</strong> Bootstrap token, if the server sets <code>FINDARO_BOOTSTRAP_TOKEN</code> (self-hosted). On the hosted beta we create projects for you.</p>
 <h4>Request body</h4>
 <p><code>application/json</code>: <a href="#schema-CreateProject"><code>CreateProject</code></a> | null</p>
 <h4>Responses</h4><ul>
@@ -253,7 +253,7 @@ count toward <code>searches_per_month</code>; search-as-you-type requests (<code
 <div class="endpoint" id="op-put-v1-operator-projects-project_id-limits">
 <h3><span class="method put">PUT</span> /v1/operator/projects/{project_id}/limits</h3>
 <div class="meta">Put Limits</div>
-<p class="desc-pre">Replace a project&#x27;s limits (see zerch.usage). Needs the bootstrap token; an empty body removes all limits.</p>
+<p class="desc-pre">Replace a project&#x27;s limits (see findaro.usage). Needs the bootstrap token; an empty body removes all limits.</p>
 <p><strong>Auth:</strong> Admin key (server-side only; refused from browsers).</p>
 <h4>Parameters</h4><table class="schema-table"><thead><tr><th>Name</th><th>In</th><th>Type</th><th></th></tr></thead><tbody><tr><td><code>project_id</code></td><td>path</td><td class="type">string</td><td>required</td></tr></tbody></table>
 <h4>Request body</h4>
@@ -362,7 +362,7 @@ count toward <code>searches_per_month</code>; search-as-you-type requests (<code
 <footer class="site-footer">
   <div class="wrap">
     <div class="about">
-      <a class="brand" href="/" aria-label="zerch home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M10 10.5h12L10 21.5h12" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>zerch</a>
+      <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro</a>
       <p>AI search for product catalogs: natural language, Indian English and Hinglish, grounded chat. Open source under Apache-2.0.</p>
     </div>
     <div>
@@ -393,7 +393,7 @@ count toward <code>searches_per_month</code>; search-as-you-type requests (<code
       </ul>
     </div>
     <div class="legal">
-      <span>© <span data-year>2026</span> __COMPANY_NAME__. zerch is open source.</span>
+      <span>© <span data-year>2026</span> __COMPANY_NAME__. findaro is open source.</span>
       <span>Hosted beta · Oracle Cloud, Mumbai region</span>
     </div>
   </div>

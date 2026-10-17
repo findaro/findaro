@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Overview · zerch docs</title>
-<meta name="description" content="How zerch works: projects and keys, catalog import and schema inference, query understanding, hybrid retrieval and grounded chat.">
+<title>Overview · findaro docs</title>
+<meta name="description" content="How findaro works: projects and keys, catalog import and schema inference, query understanding, hybrid retrieval and grounded chat.">
 <link rel="canonical" href="__SITE_URL__/docs/">
 <meta name="theme-color" content="#f5f2ea" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#11100d" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="zerch">
-<meta property="og:title" content="Overview · zerch docs">
-<meta property="og:description" content="How zerch works: projects and keys, catalog import and schema inference, query understanding, hybrid retrieval and grounded chat.">
+<meta property="og:site_name" content="findaro">
+<meta property="og:title" content="Overview · findaro docs">
+<meta property="og:description" content="How findaro works: projects and keys, catalog import and schema inference, query understanding, hybrid retrieval and grounded chat.">
 <meta property="og:url" content="__SITE_URL__/docs/">
 <meta property="og:image" content="__SITE_URL__/assets/og.png">
 <meta property="og:image:width" content="1200">
@@ -28,7 +28,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="/" aria-label="zerch home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M10 10.5h12L10 21.5h12" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>zerch<span class="beta">beta</span></a>
+    <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro<span class="beta">beta</span></a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
@@ -67,9 +67,9 @@
   <main id="main" class="docs-main">
 <!-- content:start -->
 <span class="eyebrow">Docs</span>
-<h1>zerch documentation</h1>
-<p class="lede">zerch is AI search for product catalogs. You send a catalog, call one search endpoint (or add the
-<code>&lt;zerch-search&gt;</code> widget), and shoppers can search in their own words, including Indian English and
+<h1>findaro documentation</h1>
+<p class="lede">findaro is AI search for product catalogs. You send a catalog, call one search endpoint (or add the
+<code>&lt;findaro-search&gt;</code> widget), and shoppers can search in their own words, including Indian English and
 Hinglish.</p>
 
 <div class="doc-cards">
@@ -83,17 +83,17 @@ Hinglish.</p>
 <h3 id="projects">Projects and keys</h3>
 <p>A <strong>project</strong> is one catalog plus its settings. Each project has two keys:</p>
 <ul>
-  <li><strong>Admin key</strong> (<code>zk_admin_…</code>): imports and deletes documents, reads and overrides the
+  <li><strong>Admin key</strong> (<code>fdr_admin_…</code>): imports and deletes documents, reads and overrides the
   schema, changes settings. Server-side only: requests from a browser (with an <code>Origin</code> header) are refused.</li>
-  <li><strong>Search key</strong> (<code>zk_search_…</code>): read-only, can only call <code>/v1/search</code> and
+  <li><strong>Search key</strong> (<code>fdr_search_…</code>): read-only, can only call <code>/v1/search</code> and
   <code>/v1/chat</code>. Safe to put in a web page. Browser requests are accepted only from the project's
   <code>allowed_origins</code>.</li>
 </ul>
-<p>Send either key as <code>Authorization: Bearer &lt;key&gt;</code> (or <code>X-Zerch-Key: &lt;key&gt;</code>).</p>
+<p>Send either key as <code>Authorization: Bearer &lt;key&gt;</code> (or <code>X-Findaro-Key: &lt;key&gt;</code>).</p>
 
 <h3 id="ingest">Catalog and schema</h3>
 <p>Import JSON, JSONL or CSV (up to 50 MB per file), or push up to 10,000 documents per request as JSON. Imports run
-as background jobs. On the first import zerch infers a <strong>role</strong> for every field (title, description,
+as background jobs. On the first import findaro infers a <strong>role</strong> for every field (title, description,
 price, facet, category, image URL…). You can review the inferred schema and override any field; overrides are applied
 by a background reindex while search keeps working.</p>
 
@@ -139,7 +139,7 @@ docker compose and create projects yourself: see <a href="/docs/self-hosting.htm
 <footer class="site-footer">
   <div class="wrap">
     <div class="about">
-      <a class="brand" href="/" aria-label="zerch home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M10 10.5h12L10 21.5h12" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>zerch</a>
+      <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro</a>
       <p>AI search for product catalogs: natural language, Indian English and Hinglish, grounded chat. Open source under Apache-2.0.</p>
     </div>
     <div>
@@ -170,7 +170,7 @@ docker compose and create projects yourself: see <a href="/docs/self-hosting.htm
       </ul>
     </div>
     <div class="legal">
-      <span>© <span data-year>2026</span> __COMPANY_NAME__. zerch is open source.</span>
+      <span>© <span data-year>2026</span> __COMPANY_NAME__. findaro is open source.</span>
       <span>Hosted beta · Oracle Cloud, Mumbai region</span>
     </div>
   </div>

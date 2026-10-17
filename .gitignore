@@ -15,7 +15,7 @@ node_modules/
 packages/*/dist/
 examples/react/dist/
 examples/plain-html/demo.html
-examples/plain-html/zerch-widget.js
+examples/plain-html/findaro-widget.js
 test-results/
 playwright-report/
 .demo-project.json

@@ -1,7 +1,7 @@
 {
  "openapi": "3.1.0",
  "info": {
-  "title": "zerch",
+  "title": "findaro",
   "description": "AI search as a service. Search keys are browser-safe; admin keys are not.",
   "version": "0.1.0"
  },
@@ -777,7 +777,7 @@
   "/v1/operator/projects/{project_id}/limits": {
    "put": {
     "summary": "Put Limits",
-    "description": "Replace a project's limits (see zerch.usage). Needs the bootstrap token; an empty body removes all limits.",
+    "description": "Replace a project's limits (see findaro.usage). Needs the bootstrap token; an empty body removes all limits.",
     "operationId": "put_limits_v1_operator_projects__project_id__limits_put",
     "parameters": [
      {

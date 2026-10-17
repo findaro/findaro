@@ -6,7 +6,7 @@
 import json
 from pathlib import Path
 
-from zerch.main import create_app
+from findaro.main import create_app
 
 out = Path(__file__).resolve().parent.parent / "packages" / "sdk" / "openapi.json"
 out.parent.mkdir(exist_ok=True)

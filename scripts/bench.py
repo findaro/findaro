@@ -1,7 +1,7 @@
 """Latency benchmark at ~10k documents. Writes eval/latency_10k.md.
 
 Run it with the per-key rate limit lifted, or throughput is capped at the limit:
-    ZERCH_RATE_LIMIT_PER_SECOND=0 docker compose up -d api
+    FINDARO_RATE_LIMIT_PER_SECOND=0 docker compose up -d api
 
 Builds a 10k-doc catalog by replicating data/demo_catalog.jsonl (new ids, jittered prices), imports
 it into a fresh project, then replays the eval queries uncached, sequentially and with concurrency.

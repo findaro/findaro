@@ -27,8 +27,8 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from zerch.llm import LLMError, get_llm
-from zerch.llm.base import parse_json
+from findaro.llm import LLMError, get_llm
+from findaro.llm.base import parse_json
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -563,7 +563,7 @@ async def main() -> None:
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--batch-size", type=int, default=8)
     ap.add_argument("--concurrency", type=int, default=4)
-    ap.add_argument("--provider", default=None, help="ollama | anthropic (default from ZERCH_LLM_PROVIDER)")
+    ap.add_argument("--provider", default=None, help="ollama | anthropic (default from FINDARO_LLM_PROVIDER)")
     ap.add_argument("--model", default=None)
     ap.add_argument("--limit-batches", type=int, default=None, help="only generate the first N batches (smoke test)")
     ap.add_argument("--assemble-only", action="store_true")

@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from zerch.chat.clarify import decide
-from zerch.chat.turns import (
+from findaro.chat.clarify import decide
+from findaro.chat.turns import (
     PlanDelta,
     apply_delta,
     classify,
@@ -14,9 +14,9 @@ from zerch.chat.turns import (
     shown_category,
     wants_just_show,
 )
-from zerch.search.models import SearchResponse, Understood
-from zerch.understand.plan import PlanFilter, validate_plan
-from zerch.understand.rules import RulesParser
+from findaro.search.models import SearchResponse, Understood
+from findaro.understand.plan import PlanFilter, validate_plan
+from findaro.understand.rules import RulesParser
 
 from .conftest import make_catalog
 from .test_understand_rules import DICT, LEX, SCHEMA
@@ -122,7 +122,7 @@ def test_asking_for_an_excluded_value_lifts_the_exclusion():
 
 
 def test_bigger_shifts_a_quantity_attribute():
-    from zerch.schema import infer_schema
+    from findaro.schema import infer_schema
 
     from .test_understand_rules import payload_from
 
@@ -141,7 +141,7 @@ def test_bigger_shifts_a_quantity_attribute():
 # --- clarifiers --------------------------------------------------------------------------------------------
 
 def resp(total, facets, hits=(), close=(), quality="good"):
-    from zerch.search.models import Hit
+    from findaro.search.models import Hit
 
     return SearchResponse(query="q", total=total, page=1, size=10, facets=facets, took_ms=1,
                           hits=[Hit(id=h, score=1, document={}) for h in hits],

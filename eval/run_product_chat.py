@@ -7,7 +7,7 @@ Picks 12 demo products (seeded, across categories, some with origin/warranty del
 - suitability questions: no yes/no verdict in the facts part
 Every answer is saved to eval/results/product-chat-*.json for manual review. Local models only; no paid calls.
 
-    uv run python eval/run_product_chat.py --search-key zk_search_...
+    uv run python eval/run_product_chat.py --search-key fdr_search_...
 """
 
 from __future__ import annotations

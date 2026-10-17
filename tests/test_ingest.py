@@ -165,4 +165,4 @@ async def test_delete_project(client, state):
     r = await client.delete(f"/v1/projects/{p.id}", headers=p.admin)
     assert r.status_code == 204
     assert (await client.post("/v1/search", json={"query": "x"}, headers=p.searcher)).status_code == 401
-    assert not await state.os.indices.exists(index=f"zerchtest-{p.id}-v1")
+    assert not await state.os.indices.exists(index=f"findarotest-{p.id}-v1")

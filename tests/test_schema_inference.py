@@ -1,9 +1,9 @@
 import pytest
 
-from zerch.index.normalize import category_paths, normalize
-from zerch.schema import Role, Schema, SchemaError, infer_fields, infer_schema
-from zerch.schema.infer import parse_bool, parse_number
-from zerch.schema.model import FieldSpec
+from findaro.index.normalize import category_paths, normalize
+from findaro.schema import Role, Schema, SchemaError, infer_fields, infer_schema
+from findaro.schema.infer import parse_bool, parse_number
+from findaro.schema.model import FieldSpec
 
 from .conftest import make_catalog
 

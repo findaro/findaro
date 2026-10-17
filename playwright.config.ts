@@ -15,7 +15,7 @@ export default defineConfig({
   ],
   // the React example (headless SDK) is built and served by vite preview
   webServer: {
-    command: "npm run build -w zerch-react-example && npm run preview -w zerch-react-example",
+    command: "npm run build -w findaro-react-example && npm run preview -w findaro-react-example",
     url: "http://localhost:4173",
     reuseExistingServer: true,
     timeout: 120_000,

@@ -24,12 +24,12 @@ jobs:
       postgres:
         image: postgres:17-alpine
         env:
-          POSTGRES_USER: zerch
-          POSTGRES_PASSWORD: zerch
-          POSTGRES_DB: zerch
+          POSTGRES_USER: findaro
+          POSTGRES_PASSWORD: findaro
+          POSTGRES_DB: findaro
         ports: ["54329:5432"]
         options: >-
-          --health-cmd "pg_isready -U zerch" --health-interval 3s --health-timeout 3s --health-retries 30
+          --health-cmd "pg_isready -U findaro" --health-interval 3s --health-timeout 3s --health-retries 30
       redis:
         image: redis:7-alpine
         ports: ["63799:6379"]
@@ -38,23 +38,23 @@ jobs:
     env:
       # Same ports as docker-compose.yml; tests/conftest.py reads these (and uses the hash embedder,
       # Redis DB 15 and its own index prefix, so no model download and no real LLM calls).
-      ZERCH_TEST_DATABASE_URL: postgresql+asyncpg://zerch:zerch@localhost:54329/zerch_test
-      ZERCH_TEST_OPENSEARCH_URL: http://localhost:19200
-      ZERCH_TEST_REDIS_URL: redis://localhost:63799/15
+      FINDARO_TEST_DATABASE_URL: postgresql+asyncpg://findaro:findaro@localhost:54329/findaro_test
+      FINDARO_TEST_OPENSEARCH_URL: http://localhost:19200
+      FINDARO_TEST_REDIS_URL: redis://localhost:63799/15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       # OpenSearch needs the analysis-icu plugin, so it can't be a plain service container: build the
       # repo's image (docker/opensearch) and run it.
       - name: Start OpenSearch (with analysis-icu)
         run: |
-          docker build -t zerch-opensearch:ci docker/opensearch
+          docker build -t findaro-opensearch:ci docker/opensearch
           docker run -d --name opensearch -p 19200:9200 \
             -e discovery.type=single-node \
             -e DISABLE_SECURITY_PLUGIN=true \
             -e DISABLE_INSTALL_DEMO_CONFIG=true \
             -e OPENSEARCH_JAVA_OPTS="-Xms1g -Xmx1g" \
             -e cluster.routing.allocation.disk.threshold_enabled=false \
-            zerch-opensearch:ci
+            findaro-opensearch:ci
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
         with:
           enable-cache: true
@@ -103,9 +103,9 @@ jobs:
     # not been confirmed green in CI yet; make it blocking once it is.
     continue-on-error: true
     env:
-      ZERCH_CHAT_PROVIDER: none
-      ZERCH_PLANNER_PROVIDER: none
-      ZERCH_QUERY_LOG: ""
+      FINDARO_CHAT_PROVIDER: none
+      FINDARO_PLANNER_PROVIDER: none
+      FINDARO_QUERY_LOG: ""
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Free disk space

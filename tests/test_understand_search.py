@@ -7,9 +7,9 @@ from dataclasses import replace
 import httpx
 import pytest
 
-from zerch.llm.base import LLMError
-from zerch.main import create_app
-from zerch.understand import service as understand_service
+from findaro.llm.base import LLMError
+from findaro.main import create_app
+from findaro.understand import service as understand_service
 
 from .conftest import make_settings
 
@@ -18,7 +18,7 @@ async def search_with(state, project, body, headers=None, **settings):
     """Search through an app whose settings differ from the shared test state."""
     st = replace(state, settings=make_settings(**settings)) if settings else state
     app = create_app(st.settings, state.embedder)
-    app.state.zerch = st
+    app.state.findaro = st
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
         r = await c.post("/v1/search", json=body, headers={**project.searcher, **(headers or {})})
     assert r.status_code == 200, r.text
@@ -277,7 +277,7 @@ async def test_plan_cache_bypass_is_admin_only_and_errors_hidden(state, loaded, 
 
     with_planner(Failing({}))
     r = await loaded.client.post("/v1/search", json={"query": "plorkish bottle", "debug": True},
-                                 headers={**loaded.searcher, "x-zerch-plan-cache": "bypass"})
+                                 headers={**loaded.searcher, "x-findaro-plan-cache": "bypass"})
     assert "llm_error" not in (r.json()["debug"]["llm"])
 
 

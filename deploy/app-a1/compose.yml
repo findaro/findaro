@@ -1,7 +1,7 @@
-# zerch on a shared single-box host behind a shared Caddy (see deploy/app-a1/README.md).
-# Only zerch-api and zerch-site join the shared `web` network; data services sit on a private network
+# findaro on a shared single-box host behind a shared Caddy (see deploy/app-a1/README.md).
+# Only findaro-api and findaro-site join the shared `web` network; data services sit on a private network
 # with no internet egress. Secrets come from .env next to this file (written by deploy.sh, chmod 600).
-name: zerch
+name: findaro
 
 x-hardened: &hardened
   restart: unless-stopped
@@ -12,18 +12,18 @@ x-hardened: &hardened
 
 x-app: &app
   <<: *hardened
-  image: zerch:${ZERCH_VERSION:-latest}
+  image: findaro:${FINDARO_VERSION:-latest}
   user: "10001:10001"
   read_only: true
   tmpfs: ["/tmp:size=64m"]
   cap_drop: [ALL]
   env_file: .env
   environment: &app-env
-    ZERCH_DATABASE_URL: postgresql+asyncpg://zerch:${POSTGRES_PASSWORD:?}@postgres:5432/zerch
-    ZERCH_OPENSEARCH_URL: http://opensearch:9200
-    ZERCH_REDIS_URL: redis://redis:6379/0
-    ZERCH_ALLOW_LOCALHOST_ORIGINS: "false"
-    ZERCH_QUERY_LOG: ""
+    FINDARO_DATABASE_URL: postgresql+asyncpg://findaro:${POSTGRES_PASSWORD:?}@postgres:5432/findaro
+    FINDARO_OPENSEARCH_URL: http://opensearch:9200
+    FINDARO_REDIS_URL: redis://redis:6379/0
+    FINDARO_ALLOW_LOCALHOST_ORIGINS: "false"
+    FINDARO_QUERY_LOG: ""
     OMP_NUM_THREADS: "1"
     MKL_NUM_THREADS: "1"
     HOME: /tmp
@@ -32,8 +32,8 @@ services:
   api:
     <<: *app
     build: ./app
-    container_name: zerch-api
-    command: ["uvicorn", "zerch.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+    container_name: findaro-api
+    command: ["uvicorn", "findaro.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
     expose: ["8000"]
     networks: [web, internal]
     mem_limit: 1280m
@@ -50,10 +50,10 @@ services:
 
   worker:
     <<: *app
-    command: ["python", "-m", "zerch.worker"]
+    command: ["python", "-m", "findaro.worker"]
     environment:
       <<: *app-env
-      ZERCH_EMBEDDING_BATCH_SIZE: "16"  # smaller activation peak; 64 OOMs under the worker's memory limit
+      FINDARO_EMBEDDING_BATCH_SIZE: "16"  # smaller activation peak; 64 OOMs under the worker's memory limit
     networks: [internal]
     mem_limit: 1280m
     cpus: 1.0
@@ -64,14 +64,14 @@ services:
     <<: *hardened
     image: postgres:17-alpine
     environment:
-      POSTGRES_USER: zerch
+      POSTGRES_USER: findaro
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
-      POSTGRES_DB: zerch
+      POSTGRES_DB: findaro
     volumes: [pgdata:/var/lib/postgresql/data]
     networks: [internal]
     mem_limit: 256m
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U zerch"]
+      test: ["CMD-SHELL", "pg_isready -U findaro"]
       interval: 5s
       timeout: 3s
       retries: 30
@@ -79,7 +79,7 @@ services:
   opensearch:
     <<: *hardened
     build: ./app/docker/opensearch
-    image: zerch-opensearch:3.5.0
+    image: findaro-opensearch:3.5.0
     environment:
       discovery.type: single-node
       # Security plugin off: the cluster is only reachable on the private `internal` network.
@@ -116,8 +116,8 @@ services:
   # Website (landing, pricing, docs) + POST /api/request-access. Same image, engine not loaded.
   site:
     <<: *hardened
-    image: zerch:${ZERCH_VERSION:-latest}
-    container_name: zerch-site
+    image: findaro:${FINDARO_VERSION:-latest}
+    container_name: findaro-site
     user: "10001:10001"
     read_only: true
     tmpfs: ["/tmp:size=16m"]
@@ -125,7 +125,7 @@ services:
     command: ["uvicorn", "app:app", "--app-dir", "/site/server", "--host", "0.0.0.0", "--port", "8080",
               "--proxy-headers", "--forwarded-allow-ips", "*"]
     environment:
-      SITE_DATABASE_URL: postgresql://zerch:${POSTGRES_PASSWORD:?}@postgres:5432/zerch
+      SITE_DATABASE_URL: postgresql://findaro:${POSTGRES_PASSWORD:?}@postgres:5432/findaro
       SITE_REDIS_URL: redis://redis:6379/1
       SITE_PUBLIC_DIR: /site/public
       SITE_NOTIFY_WEBHOOK: ${SITE_NOTIFY_WEBHOOK:-}

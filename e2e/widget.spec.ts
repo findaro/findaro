@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 // Locators pierce the widget's open shadow root.
-const w = (page: Page) => page.locator("zerch-search");
+const w = (page: Page) => page.locator("findaro-search");
 const input = (page: Page) => w(page).locator("input[type=search]");
 const chips = (page: Page) => w(page).locator(".chip");
 const cards = (page: Page) => w(page).locator(".grid .card");

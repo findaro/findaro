@@ -3,6 +3,6 @@ contact_links:
   - name: Report a security vulnerability
     url: https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability
     about: Please report security issues privately (Security tab → Report a vulnerability), not as a public issue. See SECURITY.md.
-  - name: Hosted zerch (managed beta)
-    url: https://zerch.130-210-49-63.sslip.io
+  - name: Hosted findaro (managed beta)
+    url: https://findaro.130-210-49-63.sslip.io
     about: Questions about the managed service or access to the beta.

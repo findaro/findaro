@@ -1,6 +1,6 @@
 # Project history
 
-A short record of how zerch was built, milestone by milestone. Numbers come from `eval/report.md` (and the files
+A short record of how findaro was built, milestone by milestone. Numbers come from `eval/report.md` (and the files
 it links); see `eval/README.md` for how they are measured. All measurements below were taken on local models
 (Ollama) unless stated otherwise.
 
@@ -9,7 +9,7 @@ it links); see `eval/README.md` for how they are measured. All measurements belo
 | M1 | Core | Projects and keys, async ingestion, schema inference, hybrid search (BM25 + k-NN, RRF), synthetic demo catalog (3,000 products), eval baseline |
 | M2 | Query understanding | Prices, attributes, categories and Hinglish inferred from the query; LLM planner as a timeout-bounded fallback |
 | M3 | Chat search | `/v1/chat` over SSE: conversational refinement on top of the M2 plan, clarifying chips |
-| M4 | SDK and widget | `@zerch/sdk`, `<zerch-search>`, allowed origins, plan patches, OpenAPI with chat events, Playwright e2e |
+| M4 | SDK and widget | `@findaro/sdk`, `<findaro-search>`, allowed origins, plan patches, OpenAPI with chat events, Playwright e2e |
 | M5 | Product conversation | `product_ids` on `/v1/chat`, labeled general know-how, product drawer in the widget |
 
 ## M1: core (2026-10-08)
@@ -36,7 +36,7 @@ conversations (`eval/conversations.jsonl`) are still marked `needs_review`.
 ## M4: SDK, widget and grounded answers (2026-10-08)
 
 Number slots filled by the server, scoped negation, a tighter clarifier policy, allowed origins, plan patches,
-OpenAPI with chat events, `@zerch/sdk`, `<zerch-search>`, plain-HTML and React examples, Playwright e2e and
+OpenAPI with chat events, `@findaro/sdk`, `<findaro-search>`, plain-HTML and React examples, Playwright e2e and
 bundle-size budgets. Re-measured on local `llama3.1:8b` with no paid calls: groundedness 66/68 = 97.1%, 0 numeric
 errors, clarifiers on 8/71 turns (hand review in `eval/chat_review_m4.md`). The first-token target was missed on
 the local 8B model.

@@ -54,7 +54,7 @@ def main() -> None:
     ap.add_argument("--file", type=Path, default=LOG)
     args = ap.parse_args()
     if not args.file.exists():
-        raise SystemExit(f"no log at {args.file} (is ZERCH_QUERY_LOG set? `docker compose up -d api` sets it)")
+        raise SystemExit(f"no log at {args.file} (is FINDARO_QUERY_LOG set? `docker compose up -d api` sets it)")
 
     def keep(e: dict) -> bool:
         return not (args.chat and e.get("kind") != "chat") and not (args.search and e.get("kind") != "search")

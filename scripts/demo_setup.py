@@ -38,7 +38,7 @@ def wait_for_api(timeout_s: int = 600) -> None:
 def create() -> dict:
     import os
 
-    token = os.environ.get("ZERCH_BOOTSTRAP_TOKEN")
+    token = os.environ.get("FINDARO_BOOTSTRAP_TOKEN")
     headers = {"authorization": f"Bearer {token}"} if token else {}
     with httpx.Client(base_url=API, timeout=60) as c:
         p = c.post("/v1/projects", json={"name": "demo"}, headers=headers).raise_for_status().json()
@@ -62,7 +62,7 @@ def warm_models() -> None:
     """Load the local chat and planner models now so the first demo question isn't slow."""
     import os
 
-    url = os.environ.get("ZERCH_OLLAMA_URL", "http://localhost:11434")
+    url = os.environ.get("FINDARO_OLLAMA_URL", "http://localhost:11434")
     for model in ("llama3.1:8b", "llama3.2:3b"):
         try:
             r = httpx.post(f"{url}/api/generate", json={"model": model, "prompt": "", "keep_alive": "30m"},
@@ -88,9 +88,9 @@ def main() -> None:
     html = (EXAMPLE / "index.html").read_text()
     html = html.replace("YOUR_PROJECT_ID", p["project_id"]).replace("YOUR_SEARCH_KEY", p["search_key"])
     (EXAMPLE / "demo.html").write_text(html)
-    widget = ROOT / "packages" / "widget" / "dist" / "zerch-widget.js"
+    widget = ROOT / "packages" / "widget" / "dist" / "findaro-widget.js"
     if widget.exists():
-        shutil.copy(widget, EXAMPLE / "zerch-widget.js")
+        shutil.copy(widget, EXAMPLE / "findaro-widget.js")
     else:
         print("warning: run `npm install && npm run build` to build the widget", file=sys.stderr)
     warm_models()

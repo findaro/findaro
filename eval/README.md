@@ -16,7 +16,7 @@
 | `product_chat_review_m5.md` | Hand review of every answer from the M5 run (0/48 false product claims). |
 | `chat_review_m4.md` | Hand review of every chat answer from the M4 run (groundedness 66/68). |
 | `gen_holdout.py` | Generates holdout queries with an LLM (local Ollama by default). |
-| `calibrate_floor.py` | Picks `ZERCH_MATCH_FLOOR` from `queries.jsonl` + `negatives.jsonl`. |
+| `calibrate_floor.py` | Picks `FINDARO_MATCH_FLOOR` from `queries.jsonl` + `negatives.jsonl`. |
 
 None of these scripts call a paid LLM API unless you pass a paid provider explicitly.
 

@@ -34,8 +34,8 @@ body:
         - Query understanding (filters, Hinglish)
         - Chat (/v1/chat)
         - Ingestion / schema inference
-        - Widget (<zerch-search>)
-        - SDK (@zerch/sdk)
+        - Widget (<findaro-search>)
+        - SDK (@findaro/sdk)
         - Docker / self-hosting
         - Docs
         - Other
@@ -45,7 +45,7 @@ body:
     id: env
     attributes:
       label: Environment
-      description: zerch commit or version, OS, Docker version, LLM provider/model if chat is involved, browser for widget issues.
+      description: findaro commit or version, OS, Docker version, LLM provider/model if chat is involved, browser for widget issues.
   - type: textarea
     id: logs
     attributes:

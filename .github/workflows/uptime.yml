@@ -1,5 +1,5 @@
 # Checks the hosted service every 15 minutes and keeps one open issue labelled `outage` while it's down.
-# Set repository variables ZERCH_SITE_URL / ZERCH_API_URL to change the targets.
+# Set repository variables FINDARO_SITE_URL / FINDARO_API_URL to change the targets.
 name: uptime
 
 on:
@@ -20,8 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      SITE: ${{ vars.ZERCH_SITE_URL || 'https://zerch.130-210-49-63.sslip.io' }}
-      API: ${{ vars.ZERCH_API_URL || 'https://api.zerch.130-210-49-63.sslip.io' }}
+      SITE: ${{ vars.FINDARO_SITE_URL || 'https://findaro.130-210-49-63.sslip.io' }}
+      API: ${{ vars.FINDARO_API_URL || 'https://api.findaro.130-210-49-63.sslip.io' }}
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:

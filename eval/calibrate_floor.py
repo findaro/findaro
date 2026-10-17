@@ -1,10 +1,10 @@
-"""Pick ZERCH_MATCH_FLOOR: the k-NN score below which a vector-only result set means "no match".
+"""Pick FINDARO_MATCH_FLOOR: the k-NN score below which a vector-only result set means "no match".
 
 Runs every query in queries.jsonl (all have relevant products) and negatives.jsonl (none do) with
 debug on, looks at queries with no lexical match, and picks the highest floor that keeps every in-catalog
 query above it. Uses the main eval set only; never the holdout.
 
-    uv run python eval/calibrate_floor.py --search-key zk_search_...
+    uv run python eval/calibrate_floor.py --search-key fdr_search_...
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ def main() -> None:
     floor = (vec_only_pos[0] - args.margin) if vec_only_pos else 0.0
     print(f"in-catalog queries with no lexical match: {len(vec_only_pos)}; lowest vector score "
           f"{vec_only_pos[0] if vec_only_pos else None}")
-    print(f"suggested ZERCH_MATCH_FLOOR={floor:.4f}\n")
+    print(f"suggested FINDARO_MATCH_FLOOR={floor:.4f}\n")
     for p, q, lex, vt in sorted(rows, key=lambda r: (r[0], r[3])):
         if lex == 0:
             verdict = ("none" if vt < floor else "weak")

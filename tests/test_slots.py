@@ -1,7 +1,7 @@
 import asyncio
 
-from zerch.chat.answer import computed_facts, slotted
-from zerch.chat.slots import SlotFiller
+from findaro.chat.answer import computed_facts, slotted
+from findaro.chat.slots import SlotFiller
 
 from .test_understand_rules import SCHEMA
 

@@ -16,8 +16,8 @@ import random
 from collections import Counter
 from pathlib import Path
 
-from zerch.llm import get_llm
-from zerch.llm.base import parse_json
+from findaro.llm import get_llm
+from findaro.llm.base import parse_json
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "eval" / "holdout.jsonl"

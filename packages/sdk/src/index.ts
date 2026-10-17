@@ -1,9 +1,9 @@
 /**
- * @zerch/sdk — headless client for the zerch search API. Zero runtime dependencies.
+ * @findaro/sdk — headless client for the findaro search API. Zero runtime dependencies.
  *
- *   const zerch = createClient({ projectId: "prj_…", searchKey: "zk_search_…", baseUrl: "https://…" });
- *   const res = await zerch.search("black shoes under 1000");
- *   for await (const ev of zerch.chat("sasta wala", { sessionId })) { … }
+ *   const findaro = createClient({ projectId: "prj_…", searchKey: "fdr_search_…", baseUrl: "https://…" });
+ *   const res = await findaro.search("black shoes under 1000");
+ *   for await (const ev of findaro.chat("sasta wala", { sessionId })) { … }
  */
 import type { components } from "./api.gen";
 
@@ -37,7 +37,7 @@ export type ChatEvent =
 export interface ClientOptions {
   /** Your project id (prj_…). Used to scope sessions; the search key already identifies the project. */
   projectId: string;
-  /** The browser-safe search key (zk_search_…). Never put an admin key in a browser. */
+  /** The browser-safe search key (fdr_search_…). Never put an admin key in a browser. */
   searchKey: string;
   /** API base URL, e.g. "https://api.example.com". Defaults to http://localhost:8000. */
   baseUrl?: string;
@@ -90,14 +90,14 @@ export interface ChatStream extends AsyncIterable<ChatEvent> {
   cancel(): void;
 }
 
-export class ZerchError extends Error {
+export class FindaroError extends Error {
   constructor(message: string, readonly status: number, readonly code: string) {
     super(message);
-    this.name = "ZerchError";
+    this.name = "FindaroError";
   }
 }
 
-export interface ZerchClient {
+export interface FindaroClient {
   readonly projectId: string;
   search(q: string | SearchParams, opts?: RequestOptions): Promise<SearchResponse>;
   chat(message: string, opts?: ChatOptions): ChatStream;
@@ -116,7 +116,7 @@ function linkSignals(outer?: AbortSignal): AbortController {
   return c;
 }
 
-export function createClient(options: ClientOptions): ZerchClient {
+export function createClient(options: ClientOptions): FindaroClient {
   const base = (options.baseUrl || "http://localhost:8000").replace(/\/+$/, "");
   const doFetch = options.fetch || globalThis.fetch.bind(globalThis);
   const inflight: Record<string, AbortController | undefined> = {};
@@ -152,7 +152,7 @@ export function createClient(options: ClientOptions): ZerchClient {
       } catch {
         /* not JSON */
       }
-      throw new ZerchError(message, res.status, code);
+      throw new FindaroError(message, res.status, code);
     }
     return res;
   }
@@ -199,7 +199,7 @@ export function createClient(options: ClientOptions): ZerchClient {
       if (opts.patch) body.patch = opts.patch;
       if (opts.productIds?.length) body.product_ids = opts.productIds;
       const res = await post("/v1/chat", body, c.signal, "text/event-stream");
-      if (!res.body) throw new ZerchError("streaming not supported by this fetch", 0, "no_stream");
+      if (!res.body) throw new FindaroError("streaming not supported by this fetch", 0, "no_stream");
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = "";
@@ -260,7 +260,7 @@ export function createClient(options: ClientOptions): ZerchClient {
   return { projectId: options.projectId, search, chat };
 }
 
-/** Debounce helper for search-as-you-type: `const run = debounce((q) => zerch.search(q), 250)`. */
+/** Debounce helper for search-as-you-type: `const run = debounce((q) => findaro.search(q), 250)`. */
 export function debounce<A extends unknown[], R>(fn: (...args: A) => R, ms = 250) {
   let t: ReturnType<typeof setTimeout> | undefined;
   const debounced = (...args: A): Promise<R> =>

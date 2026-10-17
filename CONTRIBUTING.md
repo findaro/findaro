@@ -1,4 +1,4 @@
-# Contributing to zerch
+# Contributing to findaro
 
 Thanks for your interest! Bug reports, docs fixes, language-pack improvements and code are all welcome. For
 anything larger than a small fix, please open an issue first so we can agree on the approach.
@@ -11,8 +11,8 @@ Node.js 20 or newer. [Ollama](https://ollama.com) is optional (only for chat ans
 ```bash
 uv sync                                          # Python deps, including dev tools (pytest, ruff)
 docker compose up -d postgres opensearch redis   # backing services for tests and local dev
-uv run uvicorn zerch.main:app --reload           # API on :8000 (ZERCH_* env vars, see src/zerch/config.py)
-uv run python -m zerch.worker                    # ingest worker
+uv run uvicorn findaro.main:app --reload           # API on :8000 (FINDARO_* env vars, see src/findaro/config.py)
+uv run python -m findaro.worker                    # ingest worker
 ```
 
 Or run everything in containers with `docker compose up -d --build` (API, worker, services and the demo page on
@@ -27,7 +27,7 @@ npm ci && npm run check    # JS: generate SDK types, typecheck, build, bundle-si
 npm run e2e                # Playwright (optional locally; needs the full stack: docker compose up -d --build)
 ```
 
-- Tests use their own database (`zerch_test`), Redis DB 15, a separate index prefix and a deterministic hash
+- Tests use their own database (`findaro_test`), Redis DB 15, a separate index prefix and a deterministic hash
   embedder, so they don't touch your dev data and don't download a model. They never call a real LLM.
 - **Bundle budgets** (`npm run size`): SDK ≤ 10 KB gzipped, widget including the SDK ≤ 40 KB gzipped. Zero runtime
   dependencies in both packages.
@@ -48,7 +48,7 @@ Search quality is measured, not eyeballed. `eval/` holds the query sets, runners
 
 ## Project rules
 
-- **The engine is domain-agnostic.** Nothing under `src/zerch/` may mention a specific vertical: no products,
+- **The engine is domain-agnostic.** Nothing under `src/findaro/` may mention a specific vertical: no products,
   shoes, INR prices or categories of any particular catalog. Field roles are inferred from data and can be
   overridden through the schema API. Vertical knowledge lives only in `scripts/`, `data/` and `eval/` (demo
   material). Language-level resources (stopwords, Hinglish spelling normalisation, `packs/locales/*.yaml`) are
@@ -62,7 +62,7 @@ Search quality is measured, not eyeballed. `eval/` holds the query sets, runners
   streams; see the Chat section of the README.
 - **No real scraped data.** Demo data is synthetic (`scripts/gen_demo_catalog.py`, `scripts/enrich_demo_catalog.py`)
   with invented brands. Don't commit real catalogs, customer data or query logs.
-- **Licensing.** zerch is Apache-2.0. Only add dependencies with compatible licenses (no GPL/AGPL), and keep the JS
+- **Licensing.** findaro is Apache-2.0. Only add dependencies with compatible licenses (no GPL/AGPL), and keep the JS
   packages free of runtime dependencies.
 
 ## Pull requests

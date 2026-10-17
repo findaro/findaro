@@ -2,8 +2,8 @@
 
     python3 demo_project.py <api_host> <site_host>
 
-Reuses /srv/zerch/demo-project.json (chmod 600; holds the admin key) while its search key still works.
-Reads the bootstrap token from /srv/zerch/.env. Prints nothing secret.
+Reuses /srv/findaro/demo-project.json (chmod 600; holds the admin key) while its search key still works.
+Reads the bootstrap token from /srv/findaro/.env. Prints nothing secret.
 """
 
 import json
@@ -13,14 +13,14 @@ import time
 import urllib.error
 import urllib.request
 
-ZERCH = "/srv/zerch"
-STATE = f"{ZERCH}/demo-project.json"
+FINDARO = "/srv/findaro"
+STATE = f"{FINDARO}/demo-project.json"
 API, DEMO = f"https://{sys.argv[1]}", f"https://{sys.argv[2]}"  # api host, site host (the demo runs there)
 
 
 def call(method, path, key=None, body=None):
     req = urllib.request.Request(API + path, method=method, data=None if body is None else json.dumps(body).encode(),
-                                 headers={"content-type": "application/json", "user-agent": "zerch-deploy",
+                                 headers={"content-type": "application/json", "user-agent": "findaro-deploy",
                                           **({"authorization": f"Bearer {key}"} if key else {})})
     with urllib.request.urlopen(req, timeout=120) as r:
         return json.loads(r.read() or b"null")
@@ -45,14 +45,14 @@ def still_works(p):
 
 
 def create():
-    env = dict(line.split("=", 1) for line in open(f"{ZERCH}/.env").read().splitlines() if "=" in line
+    env = dict(line.split("=", 1) for line in open(f"{FINDARO}/.env").read().splitlines() if "=" in line
                and not line.startswith("#"))
-    p = call("POST", "/v1/projects", env["ZERCH_BOOTSTRAP_TOKEN"], {"name": "demo"})
+    p = call("POST", "/v1/projects", env["FINDARO_BOOTSTRAP_TOKEN"], {"name": "demo"})
     old = os.umask(0o077)
     with open(STATE, "w") as f:
         json.dump(p, f)
     os.umask(old)
-    docs = [json.loads(line) for line in open(f"{ZERCH}/app/data/demo_catalog.jsonl") if line.strip()]
+    docs = [json.loads(line) for line in open(f"{FINDARO}/app/data/demo_catalog.jsonl") if line.strip()]
     job = call("POST", f"/v1/projects/{p['project_id']}/documents", p["admin_key"], docs)
     deadline = time.time() + 1800
     while (st := call("GET", job["status_url"], p["admin_key"]))["status"] in ("queued", "running"):

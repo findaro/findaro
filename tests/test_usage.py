@@ -1,7 +1,7 @@
 import httpx
 
-from zerch import usage
-from zerch.main import create_app
+from findaro import usage
+from findaro.main import create_app
 
 from .conftest import make_settings, new_project
 from .test_auth import _state_with
@@ -12,7 +12,7 @@ TOKEN = "op-s3cret"
 async def _operator_client(state):
     st = await _state_with(state, bootstrap_token=TOKEN)
     app = create_app(st.settings, state.embedder)
-    app.state.zerch = st
+    app.state.findaro = st
     return httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t"), st
 
 
@@ -70,7 +70,7 @@ async def test_quota_blocks_only_when_asked(client, state):
 
         await c.put(f"/v1/operator/projects/{p.id}/limits",
                     json={"searches_per_month": 5, "block_at_percent": 100}, headers=_op())
-        from zerch.auth import forget_project
+        from findaro.auth import forget_project
 
         forget_project(p.id)
         r = await c.post("/v1/search", json={"query": "x"}, headers=h)
@@ -87,7 +87,7 @@ async def test_document_limit(client, state):
     async with c:
         p = await new_project(client, state, "docs")
         await c.put(f"/v1/operator/projects/{p.id}/limits", json={"documents": 2}, headers=_op())
-        from zerch.auth import forget_project
+        from findaro.auth import forget_project
 
         forget_project(p.id)
         job = await p.ingest([{"id": "a", "title": "one"}, {"id": "b", "title": "two"}])
@@ -108,8 +108,8 @@ async def test_llm_off_for_project(client, state, loaded):
     st = replace(state, settings=make_settings(), planner=Boom(), chat_llm=Boom())
     project = {"limits": {"llm": False}, "schema_version": 1}
     assert not usage.llm_allowed(project) and usage.llm_allowed({"limits": {}}) and usage.llm_allowed(None)
-    from zerch import store
-    from zerch.understand.service import understand
+    from findaro import store
+    from findaro.understand.service import understand
 
     row = await store.get_project(st.db, loaded.id)
     row["limits"] = {"llm": False}

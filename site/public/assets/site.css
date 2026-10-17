@@ -1,4 +1,4 @@
-/* zerch site — shared styles. No build step; edit directly. */
+/* findaro site — shared styles. No build step; edit directly. */
 
 :root {
   --bg: #f5f2ea;
@@ -172,7 +172,7 @@ section { padding: 88px 0; }
 .demo-bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--line-2); display: inline-block; }
 .demo-bar span { margin-left: .5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .demo-body { padding: 20px; }
-zerch-search:not(:defined) { min-height: 140px; }
+findaro-search:not(:defined) { min-height: 140px; }
 @media (max-width: 520px) { .demo-body { padding: 12px; } }
 .try { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: 1.25rem; }
 .try-label { font: 600 .74rem/1 var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-right: .25rem; }
@@ -182,7 +182,7 @@ zerch-search:not(:defined) { min-height: 140px; }
 .try button[data-mode="ai"] .tag { color: var(--accent-text); }
 .demo-fallback { display: none; margin: 0 0 1rem; padding: .8rem 1rem; border-radius: 10px; background: var(--warn-soft); color: var(--ink-2); font-size: .92rem; }
 .demo-fallback.show, .no-widget .demo-fallback { display: block; }
-zerch-search { display: block; --zerch-accent: var(--accent); --zerch-font: var(--font-body); --zerch-radius: 10px; }
+findaro-search { display: block; --findaro-accent: var(--accent); --findaro-font: var(--font-body); --findaro-radius: 10px; }
 
 /* ---------- steps ---------- */
 .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; counter-reset: step; }

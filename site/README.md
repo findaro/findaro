@@ -1,6 +1,6 @@
-# zerch website
+# findaro website
 
-Marketing site and docs for zerch: plain static HTML, CSS and vanilla JS in `public/`. There's no build step and no
+Marketing site and docs for findaro: plain static HTML, CSS and vanilla JS in `public/`. There's no build step and no
 JS dependencies (fonts come from Google Fonts). Serve `public/` as the web root.
 
 ```bash
@@ -23,11 +23,11 @@ The deploy step replaces these strings in every file under `public/` (`.html`, `
 
 | Placeholder | Replaced with | Example |
 |---|---|---|
-| `__SITE_URL__` | Public site origin, no trailing slash (canonical/OG URLs, sitemap, widget URL in docs) | `https://zerch.example.com` |
-| `__API_URL__` | API base URL, no trailing slash (demo widget, docs snippets) | `https://api.zerch.example.com` |
+| `__SITE_URL__` | Public site origin, no trailing slash (canonical/OG URLs, sitemap, widget URL in docs) | `https://findaro.example.com` |
+| `__API_URL__` | API base URL, no trailing slash (demo widget, docs snippets) | `https://api.findaro.example.com` |
 | `__DEMO_PROJECT__` | Demo project id for the landing-page widget | `prj_…` |
-| `__DEMO_SEARCH_KEY__` | That project's **search** key (browser-safe; never an admin key) | `zk_search_…` |
-| `__GITHUB_URL__` | Repository URL, no trailing slash | `https://github.com/org/zerch` |
+| `__DEMO_SEARCH_KEY__` | That project's **search** key (browser-safe; never an admin key) | `fdr_search_…` |
+| `__GITHUB_URL__` | Repository URL, no trailing slash | `https://github.com/org/findaro` |
 | `__COMPANY_NAME__` | Legal name of the operator (footer, terms, privacy) | |
 
 For example:
@@ -41,9 +41,9 @@ grep -rl '__[A-Z_]*__' public && echo "unreplaced placeholders" && exit 1
 ```
 
 The deploy also has to:
-- copy the built widget (`packages/widget/dist/zerch-widget.js`, from `npm run build`) to `public/zerch-widget.js`.
-  The landing page loads it from `/zerch-widget.js`, and the docs tell customers to load it from
-  `__SITE_URL__/zerch-widget.js`;
+- copy the built widget (`packages/widget/dist/findaro-widget.js`, from `npm run build`) to `public/findaro-widget.js`.
+  The landing page loads it from `/findaro-widget.js`, and the docs tell customers to load it from
+  `__SITE_URL__/findaro-widget.js`;
 - add the site's origin to the demo project's `allowed_origins`;
 - route `POST /api/request-access` to the request-access handler. The form sends
   `{name, email, company, website, catalog_size, plan, message, company_url_hp}`. `company_url_hp` is a honeypot

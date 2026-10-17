@@ -1,6 +1,6 @@
 """M3 chat eval: scripted multi-turn conversations against /v1/chat. Writes the M3 section of eval/report.md.
 
-    uv run python eval/run_chat.py --search-key zk_search_... [--judge --judge-model gpt-4.1-mini]
+    uv run python eval/run_chat.py --search-key fdr_search_... [--judge --judge-model gpt-4.1-mini]
 
 Per turn: turn type, required/forbidden plan filters (from the `understood` chips), nDCG@10 against the turn's
 predicate, whether a clarifier appeared, groundedness of the answer text (LLM judge: every factual claim must
@@ -102,7 +102,7 @@ def chip_matches(chip: dict, want: dict) -> bool:
 
 
 async def judge_all(judge_llm, jobs: list[tuple[dict, str, str]], concurrency: int = 6) -> list[dict]:
-    from zerch.llm.base import parse_json
+    from findaro.llm.base import parse_json
 
     sem = asyncio.Semaphore(concurrency)
 
@@ -127,13 +127,13 @@ def main() -> None:
     ap.add_argument("--search-key", required=True)
     ap.add_argument("--judge-provider", default="ollama")
     ap.add_argument("--judge-model", default="llama3.1:8b")
-    ap.add_argument("--chat-model", default="see docker-compose.yml / ZERCH_CHAT_MODEL")
+    ap.add_argument("--chat-model", default="see docker-compose.yml / FINDARO_CHAT_MODEL")
     ap.add_argument("--judge", action="store_true",
                     help="LLM groundedness judge (paid API calls, ~68 per run). Off by default: the numeric check "
                          "runs for free, and answers are written to eval/results for manual review.")
     args = ap.parse_args()
 
-    from zerch.llm import get_llm
+    from findaro.llm import get_llm
 
     judge_llm = get_llm(args.judge_provider, args.judge_model) if args.judge else None
     docs = [json.loads(line) for line in (ROOT / "data" / "demo_catalog.jsonl").read_text().splitlines() if line]

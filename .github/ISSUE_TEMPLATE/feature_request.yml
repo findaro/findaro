@@ -13,7 +13,7 @@ body:
     id: proposal
     attributes:
       label: Proposal
-      description: What would you like zerch to do? API shapes, widget behaviour or examples welcome.
+      description: What would you like findaro to do? API shapes, widget behaviour or examples welcome.
     validations:
       required: true
   - type: textarea
@@ -25,4 +25,4 @@ body:
     attributes:
       label: Fit with the project
       options:
-        - label: The engine part of this works for any catalog (no vertical-specific logic in src/zerch/); vertical examples belong in scripts/, data/ or eval/.
+        - label: The engine part of this works for any catalog (no vertical-specific logic in src/findaro/); vertical examples belong in scripts/, data/ or eval/.

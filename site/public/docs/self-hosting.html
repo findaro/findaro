@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Self-hosting · zerch docs</title>
-<meta name="description" content="Run the open-source zerch stack yourself with docker compose.">
+<title>Self-hosting · findaro docs</title>
+<meta name="description" content="Run the open-source findaro stack yourself with docker compose.">
 <link rel="canonical" href="__SITE_URL__/docs/self-hosting.html">
 <meta name="theme-color" content="#f5f2ea" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#11100d" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="zerch">
-<meta property="og:title" content="Self-hosting · zerch docs">
-<meta property="og:description" content="Run the open-source zerch stack yourself with docker compose.">
+<meta property="og:site_name" content="findaro">
+<meta property="og:title" content="Self-hosting · findaro docs">
+<meta property="og:description" content="Run the open-source findaro stack yourself with docker compose.">
 <meta property="og:url" content="__SITE_URL__/docs/self-hosting.html">
 <meta property="og:image" content="__SITE_URL__/assets/og.png">
 <meta property="og:image:width" content="1200">
@@ -28,7 +28,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="/" aria-label="zerch home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M10 10.5h12L10 21.5h12" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>zerch<span class="beta">beta</span></a>
+    <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro<span class="beta">beta</span></a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
@@ -68,7 +68,7 @@
 <!-- content:start -->
 <span class="eyebrow">Run it yourself</span>
 <h1>Self-hosting</h1>
-<p class="lede">zerch is open source under Apache-2.0. The whole stack runs with docker compose: the API, an ingest
+<p class="lede">findaro is open source under Apache-2.0. The whole stack runs with docker compose: the API, an ingest
 worker, OpenSearch, Postgres and Redis. The repository's
 <a href="__GITHUB_URL__#readme">README</a> is the full reference; this page is the short version.</p>
 
@@ -81,8 +81,8 @@ worker, OpenSearch, Postgres and Redis. The repository's
 </ul>
 
 <h2 id="run">Run it</h2>
-<pre><code>git clone __GITHUB_URL__ zerch &amp;&amp; cd zerch
-export ZERCH_BOOTSTRAP_TOKEN=$(openssl rand -hex 24)   # required anywhere others can reach the API
+<pre><code>git clone __GITHUB_URL__ findaro &amp;&amp; cd findaro
+export FINDARO_BOOTSTRAP_TOKEN=$(openssl rand -hex 24)   # required anywhere others can reach the API
 docker compose up -d --build                            # API on :8000, worker, OpenSearch, Postgres, Redis
 curl -s localhost:8000/healthz                          # {"status":"ok"} once it's up
 
@@ -93,34 +93,34 @@ ollama pull llama3.1:8b    # chat answers</code></pre>
 catalog, run <code>uv run python scripts/demo_setup.py</code> and open the demo page on port 8080.</p>
 
 <h2 id="production">Production deployment</h2>
-<p>Deployment files for running zerch on a server live in the repository's
+<p>Deployment files for running findaro on a server live in the repository's
 <a href="__GITHUB_URL__/tree/main/deploy"><code>deploy/</code></a> directory. Whatever you use, check these:</p>
 <ul>
-  <li>Set <code>ZERCH_BOOTSTRAP_TOKEN</code>. Without it anyone who can reach the API can create projects.</li>
-  <li>Set <code>ZERCH_ALLOW_LOCALHOST_ORIGINS=false</code> so localhost origins aren't accepted for search keys.</li>
+  <li>Set <code>FINDARO_BOOTSTRAP_TOKEN</code>. Without it anyone who can reach the API can create projects.</li>
+  <li>Set <code>FINDARO_ALLOW_LOCALHOST_ORIGINS=false</code> so localhost origins aren't accepted for search keys.</li>
   <li>Put the API behind HTTPS.</li>
   <li>Run a single ingest worker; jobs for a project run in order.</li>
-  <li>The query log (<code>ZERCH_QUERY_LOG</code>) records end-user queries. It's on in the dev compose file; decide on
+  <li>The query log (<code>FINDARO_QUERY_LOG</code>) records end-user queries. It's on in the dev compose file; decide on
   retention or turn it off (set it empty).</li>
 </ul>
 
 <h2 id="config">Configuration</h2>
-<p>All settings are environment variables prefixed <code>ZERCH_</code>. The ones you're most likely to touch:</p>
+<p>All settings are environment variables prefixed <code>FINDARO_</code>. The ones you're most likely to touch:</p>
 <table>
   <thead><tr><th>Variable</th><th>Default</th><th>What it does</th></tr></thead>
   <tbody>
-    <tr><td><code>ZERCH_BOOTSTRAP_TOKEN</code></td><td>unset</td><td>Token required to create projects.</td></tr>
-    <tr><td><code>ZERCH_ALLOW_LOCALHOST_ORIGINS</code></td><td><code>true</code></td><td>Accept localhost origins for search keys (development).</td></tr>
-    <tr><td><code>ZERCH_RATE_LIMIT_PER_SECOND</code></td><td><code>50</code></td><td>Requests per second per key.</td></tr>
-    <tr><td><code>ZERCH_PLANNER_PROVIDER</code> / <code>ZERCH_PLANNER_MODEL</code></td><td><code>ollama</code> / <code>llama3.2:3b</code></td><td>LLM for the query planner. <code>anthropic</code> is supported (paid, needs a key).</td></tr>
-    <tr><td><code>ZERCH_PLANNER_TIMEOUT_MS</code></td><td><code>800</code></td><td>How long search waits for the planner before using the rules plan.</td></tr>
-    <tr><td><code>ZERCH_CHAT_PROVIDER</code> / <code>ZERCH_CHAT_MODEL</code></td><td><code>ollama</code> / <code>llama3.1:8b</code></td><td>LLM for chat answers. <code>openai</code>, <code>anthropic</code> (paid) or <code>none</code>.</td></tr>
-    <tr><td><code>ZERCH_LOCALE_PACKS</code></td><td><code>en,hi-en</code></td><td>Language packs for query understanding.</td></tr>
-    <tr><td><code>ZERCH_QUERY_LOG</code></td><td>unset (compose: on)</td><td>Path of a JSONL log of searches and chat turns.</td></tr>
+    <tr><td><code>FINDARO_BOOTSTRAP_TOKEN</code></td><td>unset</td><td>Token required to create projects.</td></tr>
+    <tr><td><code>FINDARO_ALLOW_LOCALHOST_ORIGINS</code></td><td><code>true</code></td><td>Accept localhost origins for search keys (development).</td></tr>
+    <tr><td><code>FINDARO_RATE_LIMIT_PER_SECOND</code></td><td><code>50</code></td><td>Requests per second per key.</td></tr>
+    <tr><td><code>FINDARO_PLANNER_PROVIDER</code> / <code>FINDARO_PLANNER_MODEL</code></td><td><code>ollama</code> / <code>llama3.2:3b</code></td><td>LLM for the query planner. <code>anthropic</code> is supported (paid, needs a key).</td></tr>
+    <tr><td><code>FINDARO_PLANNER_TIMEOUT_MS</code></td><td><code>800</code></td><td>How long search waits for the planner before using the rules plan.</td></tr>
+    <tr><td><code>FINDARO_CHAT_PROVIDER</code> / <code>FINDARO_CHAT_MODEL</code></td><td><code>ollama</code> / <code>llama3.1:8b</code></td><td>LLM for chat answers. <code>openai</code>, <code>anthropic</code> (paid) or <code>none</code>.</td></tr>
+    <tr><td><code>FINDARO_LOCALE_PACKS</code></td><td><code>en,hi-en</code></td><td>Language packs for query understanding.</td></tr>
+    <tr><td><code>FINDARO_QUERY_LOG</code></td><td>unset (compose: on)</td><td>Path of a JSONL log of searches and chat turns.</td></tr>
   </tbody>
 </table>
 <p>Paid LLM providers are never switched on by an API key alone: you have to set the provider explicitly. The full
-list of settings is in <code>src/zerch/config.py</code>.</p>
+list of settings is in <code>src/findaro/config.py</code>.</p>
 
 <h2 id="help">Getting help</h2>
 <p>Open an issue on <a href="__GITHUB_URL__/issues">GitHub</a>. If you'd like us to support your self-hosted
@@ -133,7 +133,7 @@ deployment, that's part of the <a href="/request-access.html?plan=enterprise">En
 <footer class="site-footer">
   <div class="wrap">
     <div class="about">
-      <a class="brand" href="/" aria-label="zerch home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M10 10.5h12L10 21.5h12" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>zerch</a>
+      <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro</a>
       <p>AI search for product catalogs: natural language, Indian English and Hinglish, grounded chat. Open source under Apache-2.0.</p>
     </div>
     <div>
@@ -164,7 +164,7 @@ deployment, that's part of the <a href="/request-access.html?plan=enterprise">En
       </ul>
     </div>
     <div class="legal">
-      <span>© <span data-year>2026</span> __COMPANY_NAME__. zerch is open source.</span>
+      <span>© <span data-year>2026</span> __COMPANY_NAME__. findaro is open source.</span>
       <span>Hosted beta · Oracle Cloud, Mumbai region</span>
     </div>
   </div>

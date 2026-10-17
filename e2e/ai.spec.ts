@@ -100,3 +100,28 @@ test("phone: the sidebar is a drawer; Escape closes it", async ({ page }) => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
 });
+
+test("desktop: the sidebar collapses, stays collapsed after reload, and opens again", async ({ page }) => {
+  await w(page).locator(".side .scol").click();
+  await expect(w(page).locator(".side")).toBeHidden();
+  await page.reload();
+  await expect(w(page).locator(".side")).toBeHidden();
+  await w(page).getByRole("button", { name: "Open chat history" }).click();
+  await expect(w(page).locator(".side")).toBeVisible();
+  await page.reload();
+  await expect(w(page).locator(".side")).toBeVisible();
+});
+
+test("empty state: starters under the composer; mode=search switches the page to the search view", async ({ page }) => {
+  await expect(w(page).locator(".thread-wrap.fresh .dock .composer + .starters .nrow")).toHaveCount(4);
+  const el = page.locator("findaro-search");
+  await el.evaluate((x) => x.setAttribute("mode", "search"));
+  const input = w(page).locator(".spage input[type=search]");
+  await expect(input).toBeVisible();
+  await expect(w(page).locator(".side")).toBeHidden();
+  await input.fill("steel water bottle");
+  await input.press("Enter");
+  await expect(w(page).locator(".spage .grid .card").first()).toBeVisible();
+  await el.evaluate((x) => x.setAttribute("mode", "ai"));
+  await expect(composer(page)).toBeVisible();
+});

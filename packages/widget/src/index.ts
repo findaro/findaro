@@ -5,10 +5,12 @@
  *   <findaro-search></findaro-search>
  *
  * Attributes (override the script tag): project, key, base-url, mode ("search" | "ai"), layout ("page": full-page
- * AI Mode with chat history), locale ("en" | "hi-en"), placeholder, size, theme ("light" | "dark"),
+ * AI Mode with chat history; with mode="search", a full-page search view), locale ("en" | "hi-en"), placeholder, size,
+ * theme ("light" | "dark"),
  * starters ("a|b|c"), badges ("field,field"), card-actions ("Add to cart,Save").
  * Properties: renderProduct, onProductClick, cardActions, strings, client.
  * Events: "findaro:product-click" (cancelable), "findaro:action" (cancelable), "findaro:results", "findaro:error".
+ * Slots (layout="page"): "sidebar-footer", shown at the bottom of the chat history sidebar.
  */
 import {
   createClient,
@@ -72,6 +74,7 @@ const SCRIPT_DEFAULTS: Record<string, string> = {};
 const EMPTY_DISPLAY: Display = {};
 const MAX_SELECT = 3; // the chat API answers about at most 3 products at once
 const FIRST_CARDS = 6;
+const SIDE_KEY = "findaro:side-collapsed"; // layout="page": the desktop sidebar's collapsed state, per browser
 const list = (v: string | null, sep: string) => (v || "").split(sep).map((t) => t.trim()).filter(Boolean);
 
 export class FindaroSearch extends HTMLElement {
@@ -112,7 +115,7 @@ export class FindaroSearch extends HTMLElement {
 
   connectedCallback() {
     this.#page = this.#attr("layout") === "page";
-    this.#mode = this.#page || this.#attr("mode") === "ai" ? "ai" : "search";
+    this.#mode = this.#wantMode();
     this.#build();
     this.#render();
   }
@@ -123,7 +126,7 @@ export class FindaroSearch extends HTMLElement {
       this.connectedCallback();
       return;
     }
-    if (name === "mode") this.#setMode(this.#attr("mode") === "ai" || this.#page ? "ai" : "search");
+    if (name === "mode") this.#setMode(this.#wantMode());
     else if (["project", "key", "base-url"].includes(name)) {
       this.client = null;
       this.#chats = null;
@@ -144,6 +147,12 @@ export class FindaroSearch extends HTMLElement {
   get #s(): Strings {
     const base = STRINGS[this.#attr("locale") || "en"] || STRINGS.en;
     return { ...base, ...this.strings };
+  }
+
+  /** layout="page" is AI Mode unless mode="search" is set explicitly; otherwise search unless mode="ai". */
+  #wantMode(): "search" | "ai" {
+    const m = this.#attr("mode");
+    return m === "ai" || this.#page && m !== "search" ? "ai" : "search";
   }
 
   #attr(name: string): string | null {
@@ -212,22 +221,33 @@ export class FindaroSearch extends HTMLElement {
     this.#els.notice = h("div", { class: "notice", "aria-live": "polite" });
     this.#els.jump = h("button", { class: "jump", type: "button", "aria-label": s.jumpLatest, title: s.jumpLatest,
                                    hidden: true, onclick: () => this.#toBottom(true) }, icon("down"));
+    this.#els.starters = h("div", { class: "starters", role: "group", "aria-label": s.tryAsking });
     this.#els.dock = h("div", { class: "dock" }, this.#els.jump, this.#els.notice, this.#els.selbar,
-      this.#els.composer);
+      this.#els.composer, this.#els.starters);
     this.#els.thread = h("div", { class: "thread-wrap" }, sc, this.#els.dock);
 
     if (this.#page) {
       this.#els.side = h("aside", { class: "side", id: "findaro-side", "aria-label": s.history });
       this.#els.menu = h("button", { class: "iconbtn", type: "button", "aria-label": s.openHistory,
-                                     "aria-controls": "findaro-side", "aria-expanded": "false",
-                                     onclick: () => this.#toggleSide(true) }, icon("menu"));
+                                     title: s.openHistory, "aria-controls": "findaro-side", "aria-expanded": "false",
+                                     onclick: () => this.#narrow() ? this.#toggleSide(true) : this.#collapse(false) },
+        icon("menu"));
       this.#els.sscrim = h("div", { class: "sscrim", hidden: true, onclick: () => this.#toggleSide(false) });
+      const slot = h("slot", { name: "sidebar-footer", onslotchange: () => {
+        this.#els.sfoot.hidden = !slot.assignedNodes().length;
+      } });
+      this.#els.sfoot = h("div", { class: "sfoot", hidden: true }, slot);
       const top = h("div", { class: "mtop" }, this.#els.menu, h("strong", {}, s.assistantName),
         h("button", { class: "iconbtn", type: "button", "aria-label": s.newChat, title: s.newChat,
                       onclick: () => this.#newChat() }, icon("plus")));
-      this.#root.append(h("div", { class: "root page", part: "root", onkeydown: (e: KeyboardEvent) => {
+      // mode="search" in a page: the search box, chips, filters and grid in one centered column
+      this.#els.spage = h("div", { class: "spage" }, h("div", { class: "sin" }, this.#els.form, this.#els.chips,
+        this.#els.pills, this.#els.searchView));
+      this.#els.root = h("div", { class: `root page${this.#collapsed ? " collapsed" : ""}`, part: "root",
+                                  onkeydown: (e: KeyboardEvent) => {
         if (e.key === "Escape" && this.#sideOpen) this.#toggleSide(false);
-      } }, this.#els.side, this.#els.sscrim, h("div", { class: "main" }, top, this.#els.thread)));
+      } }, this.#els.side, this.#els.sscrim, h("div", { class: "main" }, top, this.#els.thread, this.#els.spage));
+      this.#root.append(this.#els.root);
     } else {
       this.#els.layout = h("div", { class: "layout" }, this.#els.thread, this.#els.searchView);
       this.#root.append(h("div", { class: "root", part: "root" },
@@ -447,9 +467,13 @@ export class FindaroSearch extends HTMLElement {
     this.#els.form.classList.toggle("solo", ai);
     this.#els.thread.hidden = !ai;
     this.#els.searchView.hidden = ai;
+    if (this.#page) {
+      this.#els.spage.hidden = ai;
+      this.#els.root.classList.toggle("search", !ai);
+    }
     // the current understood chips: under the search box, or above the composer in AI Mode
     if (ai) this.#els.dock.insertBefore(this.#els.chips, this.#els.composer);
-    else if (!this.#page) this.#els.form.after(this.#els.chips);
+    else this.#els.form.after(this.#els.chips);
     this.#renderChips();
     this.#renderStatus();
     this.#renderResults();
@@ -827,17 +851,21 @@ export class FindaroSearch extends HTMLElement {
             ...vals.map((v) => h("td", {}, v)))))));
   }
 
+  /** Empty conversation: greeting, then the composer and starter cards, centered (they dock after the first turn). */
   #renderHello() {
     const s = this.#s;
     const el = this.#els.hello;
-    el.hidden = this.#msgs.length > 0;
-    if (el.hidden) return;
-    const starters = list(this.#attr("starters"), "|").slice(0, 4);
-    el.replaceChildren(h("span", { class: "avatar big" }, icon("spark")), h("h2", {}, s.greeting),
-      h("p", {}, s.greetingSub),
-      starters.length ? h("div", { class: "starters", role: "group", "aria-label": s.tryAsking },
-        ...starters.map((t) => h("button", { type: "button", class: "nrow", onclick: () => this.#ask(t) },
-          h("span", {}, t), icon("arrow")))) : "");
+    const fresh = !this.#msgs.length;
+    const starters = fresh ? list(this.#attr("starters"), "|").slice(0, 4) : [];
+    el.hidden = !fresh;
+    this.#els.thread.classList.toggle("fresh", fresh);
+    this.#els.starters.hidden = !starters.length;
+    this.#els.starters.setAttribute("aria-label", s.tryAsking);
+    this.#els.starters.replaceChildren(...starters.map((q) => h("button", { type: "button", class: "nrow",
+                                                                             onclick: () => this.#ask(q) },
+      h("span", {}, q), icon("arrow"))));
+    if (fresh) el.replaceChildren(h("span", { class: "avatar big" }, icon("spark")), h("h2", {}, s.greeting),
+      h("p", {}, s.greetingSub));
   }
 
   // scrolling: keep the newest turn in view (from the shopper's message down) until they scroll themselves
@@ -973,7 +1001,14 @@ export class FindaroSearch extends HTMLElement {
 
   #chats: Conv[] | null = null;
   #conv: string | null = null;
-  #sideOpen = false;
+  #sideOpen = false; // phone drawer
+  #collapsed = (() => { // desktop sidebar
+    try {
+      return localStorage.getItem(SIDE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  })();
   #confirm: string | null = null;
 
   get #pid(): string {
@@ -1057,6 +1092,23 @@ export class FindaroSearch extends HTMLElement {
     else this.#els.menu.focus();
   }
 
+  /** The sidebar is a drawer when the widget is phone-width (same breakpoint as the CSS container query). */
+  #narrow(): boolean {
+    return this.getBoundingClientRect().width <= 760;
+  }
+
+  /** Desktop: hide or show the history sidebar; remembered in localStorage when it's available. */
+  #collapse(on: boolean) {
+    this.#collapsed = on;
+    try {
+      localStorage.setItem(SIDE_KEY, on ? "1" : "0");
+    } catch {
+      // storage blocked: the choice lasts until reload
+    }
+    this.#els.root.classList.toggle("collapsed", on);
+    ((on ? this.#els.menu : this.#els.side.querySelector(".scol")) as HTMLElement | null)?.focus();
+  }
+
   #renderSide() {
     if (!this.#page) return;
     const s = this.#s;
@@ -1085,13 +1137,17 @@ export class FindaroSearch extends HTMLElement {
                       } }, icon("trash")));
     this.#els.side.replaceChildren(
       h("div", { class: "shead" }, h("span", { class: "avatar" }, icon("spark")), h("strong", {}, s.assistantName),
+        h("button", { type: "button", class: "iconbtn scol", "aria-label": s.closeHistory, title: s.closeHistory,
+                      "aria-controls": "findaro-side", "aria-expanded": "true", onclick: () => this.#collapse(true) },
+          icon("side")),
         h("button", { type: "button", class: "iconbtn sclose", "aria-label": s.closeHistory,
                       onclick: () => this.#toggleSide(false) }, icon("x"))),
       h("button", { type: "button", class: "newchat", onclick: () => this.#newChat() }, icon("plus"), s.newChat),
       h("nav", { class: "convs", "aria-label": s.history },
         ...groups.filter(([, cs]) => cs.length).map(([label, cs]) =>
           h("div", { class: "grp" }, h("h4", {}, label), h("ul", { role: "list" }, ...cs.map(item)))),
-        this.#chatList().length ? null : h("p", { class: "none" }, s.noChats)));
+        this.#chatList().length ? null : h("p", { class: "none" }, s.noChats)),
+      this.#els.sfoot);
   }
 
   // --- product drawer (M5): a conversation about one product -------------------------------------------------

@@ -51,7 +51,7 @@ mkdir -p site
 docker compose build --pull api opensearch
 docker tag "zerch:$1" zerch:latest
 docker compose up -d --remove-orphans
-(crontab -l 2>/dev/null | grep -v '/srv/zerch/backup.sh'; echo '17 21 * * * /srv/zerch/backup.sh >> /srv/zerch/backups/backup.log 2>&1') | crontab -
+({ crontab -l 2>/dev/null || true; } | { grep -v '/srv/zerch/backup.sh' || true; }; echo '17 21 * * * /srv/zerch/backup.sh >> /srv/zerch/backups/backup.log 2>&1') | crontab -
 REMOTE
 
 echo "==> caddy site"

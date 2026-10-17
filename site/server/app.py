@@ -5,7 +5,8 @@ Runs from the findaro image without loading the search engine:
     uvicorn app:app --app-dir site/server
 
 Env: SITE_DATABASE_URL (postgresql://...), SITE_REDIS_URL (rate limits), SITE_PUBLIC_DIR, optional
-SITE_NOTIFY_WEBHOOK (Slack/Discord-compatible incoming webhook; gets name, company and plan, never the message).
+SITE_NOTIFY_WEBHOOK (incoming webhook that gets every field of the lead: a rich embed for Discord URLs, plain
+text for Slack-compatible ones). Use a private channel: the payload has the lead's email and message.
 Leads are stored in the `site_leads` table; list them with `python site/server/leads.py`.
 """
 
@@ -16,6 +17,7 @@ import logging
 import os
 import re
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 
 import asyncpg
@@ -32,6 +34,7 @@ PUBLIC = Path(os.environ.get("SITE_PUBLIC_DIR", Path(__file__).resolve().parent.
 PER_IP_PER_HOUR = 5
 PER_DAY = 200
 EMAIL = re.compile(r"^[^@\s]{1,64}@[^@\s]+\.[A-Za-z]{2,}$")
+MD_SPECIAL = re.compile(r"([\\*_~`|>\[\]<#])")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS site_leads (
@@ -90,15 +93,51 @@ async def _over_limit(r: aioredis.Redis, ip_hash: str) -> bool:
     return per_ip > PER_IP_PER_HOUR or per_day > PER_DAY
 
 
-async def _notify(lead: Lead) -> None:
+def _md(value: str | None, limit: int = 1024) -> str:
+    """User text as literal Discord/Slack markdown: escaped, trimmed to the field limit, never empty."""
+    value = (value or "").strip()
+    if not value:
+        return "-"
+    value = MD_SPECIAL.sub(r"\\\1", value)
+    return value if len(value) <= limit else value[: limit - 1] + "…"
+
+
+def _lead_fields(lead: Lead) -> list[tuple[str, str]]:
+    return [("Name", lead.name), ("Email", lead.email.strip().lower()), ("Company", lead.company),
+            ("Website", lead.website), ("Plan", lead.plan), ("Catalog size", lead.catalog_size)]
+
+
+def _discord_payload(lead: Lead, lead_id: int) -> dict:
+    return {
+        "allowed_mentions": {"parse": []},  # form text must never ping @everyone or a role
+        "embeds": [{
+            "title": "New access request",
+            "color": 0xEF8354,
+            "description": _md(lead.message, 4000) if (lead.message or "").strip() else "*No message*",
+            "fields": [{"name": k, "value": _md(v), "inline": True} for k, v in _lead_fields(lead)],
+            "footer": {"text": f"site_leads #{lead_id}"},
+            "timestamp": datetime.now(UTC).isoformat(),
+        }],
+    }
+
+
+def _text_payload(lead: Lead, lead_id: int) -> dict:
+    lines = [f"*New findaro access request* (site_leads #{lead_id})"]
+    lines += [f"{k}: {_md(v)}" for k, v in _lead_fields(lead)]
+    lines.append(f"Message: {_md(lead.message, 3000)}")
+    return {"text": "\n".join(lines)}
+
+
+async def _notify(lead: Lead, lead_id: int) -> None:
     url = os.environ.get("SITE_NOTIFY_WEBHOOK")
     if not url:
         return
-    text = f"New findaro access request: {lead.name} ({lead.company}), plan {lead.plan or '-'}, " \
-           f"catalog {lead.catalog_size or '-'}"
+    discord = "discord.com/api/webhooks/" in url or "discordapp.com/api/webhooks/" in url
+    payload = _discord_payload(lead, lead_id) if discord else _text_payload(lead, lead_id)
     try:
         async with httpx.AsyncClient(timeout=5) as c:
-            await c.post(url, json={"text": text, "content": text})
+            r = await c.post(url, json=payload)
+            r.raise_for_status()
     except httpx.HTTPError as e:
         log.warning("lead notification failed: %s", e)
 
@@ -117,12 +156,12 @@ async def request_access(request: Request) -> JSONResponse:
     if await _over_limit(request.app.state.redis, ip_hash):
         return JSONResponse({"error": "rate_limited"}, status_code=429)
     async with request.app.state.pg.acquire() as conn:
-        await conn.execute(
+        lead_id = await conn.fetchval(
             "INSERT INTO site_leads (name, email, company, website, catalog_size, plan, message, ip_hash)"
-            " VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+            " VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
             lead.name.strip(), lead.email.strip().lower(), lead.company.strip(), lead.website, lead.catalog_size,
             lead.plan, lead.message, ip_hash)
-    await _notify(lead)
+    await _notify(lead, lead_id)
     return JSONResponse({"ok": True})
 
 

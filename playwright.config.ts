@@ -1,10 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // Needs the stack running (docker compose up -d) and the widget built (npm run build).
-// globalSetup creates/refreshes the demo project and writes examples/plain-html/demo.html.
+// Run with `npm run e2e`: e2e/prepare.mjs creates/refreshes the demo project and writes the example pages' keys first.
 export default defineConfig({
   testDir: "e2e",
-  globalSetup: "./e2e/global-setup.ts",
   timeout: 45_000,
   expect: { timeout: 10_000 },  // shared CI runners are slow; local runs finish far below this
   retries: 0,

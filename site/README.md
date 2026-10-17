@@ -10,8 +10,8 @@ python3 -m http.server 8765 --directory site/public   # http://localhost:8765
 | Path | Page |
 |---|---|
 | `public/index.html` | Landing page (no widget on it: every demo link goes to `/demo/`) |
-| `public/demo/index.html` | The live demo: the site header plus the widget in its default unified mode (search as you type, Enter asks) on the demo project; `?q=` asks on load |
-| `public/ai.html` | Redirects to `/demo/` (old links) |
+| `public/demo/index.html` | The live demo: one page with a **Search \| AI Mode** switch (radiogroup) that sets the widget's `mode` (`toggle="off"`, `cards="full"`). AI Mode is the default tab; `?mode=search\|ai` picks the tab (kept in the URL), `?q=` runs a query in that tab on load |
+| `public/ai.html` | Redirects to `/demo/?mode=ai` (old links) |
 | `public/pricing.html` | Pricing (INR by default, USD toggle remembered in localStorage) |
 | `public/request-access.html` | Request-access form, POSTs JSON to `/api/request-access` |
 | `public/docs/` | Docs: `index`, `quickstart`, `widget`, `sdk`, `api` (generated), `self-hosting` |
@@ -71,8 +71,17 @@ footer.
 ## Editing
 
 The header, footer and docs sidebar are repeated in every page. If you change one, change them all. Colours and
-fonts are CSS variables at the top of `assets/site.css`, with a dark palette under
-`prefers-color-scheme: dark`. The palette is one blue, navy ink and cool greys, with no orange, amber or yellow:
-caution states use `--note` (slate-indigo) and red (`--danger`) is only for form validation errors. Any
-`<findaro-search>` on the site is themed from these tokens (bottom of `site.css`). Fonts: Geist (headings), IBM Plex
-Sans (body), IBM Plex Mono (code).
+fonts are CSS variables at the top of `assets/site.css`. The site is
+**light only** (`color-scheme: light`, no dark overrides): paper white (`--paper`), one secondary surface (`--mist`,
+for code, table headers and similar), navy ink (`--ink`), slate secondary text (`--slate`), grey hairlines and one
+cobalt accent (`--cobalt`) for actions, links, focus and the hero's annotation marks. Only the hero's understood words
+get the pale cobalt wash (`--wash`). Green (`--match`) means "matches"; red (`--error`) is only for form validation
+errors; there is no orange, amber or yellow. Radius by role: 999px chips, 12px cards and inputs, 8px buttons.
+Sections are separated by space, not boxes. Any `<findaro-search>` on the site is themed from these tokens (bottom of
+`site.css`) and carries `theme="light"`. Fonts: Rethink Sans (everything) and IBM Plex Mono (only what people
+literally type: queries and code).
+
+The landing hero is an annotated query: three real demo-store queries (Hinglish, English, typo) and what Findaro made
+of them. The page ships the Hinglish one as HTML; `site.js` types it in once on load (skipped with reduced motion) and
+switches examples. If the demo catalog changes, re-check the counts and chips in `index.html` and `site.js` against
+the live API.

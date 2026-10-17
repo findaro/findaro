@@ -31,6 +31,8 @@ export interface Strings {
   viewProduct: string;
   closeDrawer: string;
   allDetails: string;
+  yes: string; // boolean fields in details and comparisons
+  no: string;
   /** suggested questions by document field ("*" = always) */
   suggest: Record<string, string>;
   // AI Mode (thread, sidebar, cards, compare)
@@ -81,6 +83,8 @@ export interface Strings {
   // unified mode (search + assistant in one surface)
   newSearch: string;
   hint: string;
+  /** mode="search" empty state (shown with starters) */
+  searchHint: string;
   followUp: string;
   earlierTurns: string; // {n}
 }
@@ -118,6 +122,8 @@ export const STRINGS: Record<string, Strings> = {
     viewProduct: "View product",
     closeDrawer: "Close",
     allDetails: "All details",
+    yes: "Yes",
+    no: "No",
     suggest: { material: "What is it made of?", country_of_origin: "Where is it made?",
                warranty: "Is there a warranty?", care: "How do I take care of it?",
                return_policy: "Can I return it?", "*": "Tell me more about it" },
@@ -167,6 +173,7 @@ export const STRINGS: Record<string, Strings> = {
     nextSteps: "Next steps",
     newSearch: "New search",
     hint: "Results update as you type. Press Enter to ask: it narrows the results and answers questions.",
+    searchHint: "Results update as you type, in English or Hinglish. Try one of these:",
     followUp: "Refine or ask a follow-up, e.g. “only leather” or “which is best for school?”",
     earlierTurns: "Conversation ({n})",
   },
@@ -202,6 +209,8 @@ export const STRINGS: Record<string, Strings> = {
     viewProduct: "Product dekhein",
     closeDrawer: "Band karein",
     allDetails: "Saari details",
+    yes: "Haan",
+    no: "Nahi",
     suggest: { material: "Ye kis cheez se bana hai?", country_of_origin: "Kahan bana hai?",
                warranty: "Warranty hai kya?", care: "Iski dekhbhal kaise karein?",
                return_policy: "Return ho sakta hai?", "*": "Iske baare mein aur bataiye" },
@@ -251,6 +260,7 @@ export const STRINGS: Record<string, Strings> = {
     nextSteps: "Aage kya karein",
     newSearch: "Naya search",
     hint: "Type karte hi results badalte hain. Enter dabaiye: results chhaant kar sawalon ka jawab milega.",
+    searchHint: "Type karte hi results badalte hain, English ya Hinglish mein. Inmein se koi try kijiye:",
     followUp: "Aur chhaantiye ya poochhiye, jaise “sirf leather” ya “school ke liye kaunsa best hai?”",
     earlierTurns: "Baatcheet ({n})",
   },

@@ -3,7 +3,6 @@
   "use strict";
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
-  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function store(key, value) {
     try {
@@ -30,6 +29,98 @@
     });
   }
 
+  /* ---------- hero: the annotated query ----------
+     Three real demo-store queries and what Findaro made of them. The page ships the Hinglish one as plain HTML;
+     this types it in once on load (underlines draw, chips drop), and lets the visitor switch examples. */
+  var aq = $("#aq");
+  if (aq) {
+    var EX = {
+      hinglish: {
+        q: "kaale joote 1000 ke andar",
+        segs: [["kaale", "Black"], ["joote", "Shoes"], ["1000 ke andar", "Under ₹1,000"]],
+        cap: "31 products match in the demo store.",
+        sr: "is understood as Black, Shoes and Under ₹1,000."
+      },
+      english: {
+        q: "cotton kurta under 800",
+        segs: [["cotton", "Cotton"], ["kurta", "Kurtas"], ["under 800", "Under ₹800"]],
+        cap: "9 products match in the demo store.",
+        sr: "is understood as Cotton, Kurtas and Under ₹800."
+      },
+      typo: {
+        q: "presure coker",
+        segs: [["presure", "pressure", true], ["coker", "cooker", true]],
+        cap: "Spelling is forgiven: the results are pressure cookers.",
+        sr: "is read as pressure cooker; the results are pressure cookers."
+      }
+    };
+    var line = $(".aq-line", aq);
+    var cap = $("#aq-cap");
+    var sr = $("#aq-sr");
+    var radios = $$("#aq-switch [role=radio]");
+    var still = !window.matchMedia || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var el = function (tag, cls, text) {
+      var n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text != null) n.textContent = text;
+      return n;
+    };
+
+    var render = function (key, mode) {
+      var ex = EX[key];
+      var CH = 55;      // ms per typed character
+      var i = 0;        // characters typed so far
+      line.textContent = "";
+      ex.segs.forEach(function (s, n) {
+        var seg = el("span", "aq-seg");
+        var w = el("span", "aq-w");
+        s[0].split("").forEach(function (c) {
+          var ch = el("span", "ch", c);
+          ch.style.setProperty("--t", (mode === "type" ? i * CH : 0) + "ms");
+          w.appendChild(ch);
+          i++;
+        });
+        i++; // the space between segments
+        var c = el("span", "aq-c");
+        var chip = el("span", s[2] ? "chip fix" : "chip", s[1]);
+        if (!s[2]) chip.appendChild(el("span", "x", "×"));
+        c.appendChild(chip);
+        seg.appendChild(w); seg.appendChild(c);
+        seg.style.setProperty("--m", (mode === "type" ? ex.q.length * CH + 180 + n * 170 : n * 90) + "ms");
+        line.appendChild(seg);
+      });
+      aq.style.setProperty("--f", (mode === "type" ? ex.q.length * CH + 180 + ex.segs.length * 170 + 300 : 0) + "ms");
+      cap.textContent = ex.cap + " ";
+      var a = el("a", null, "Run this search");
+      a.href = "/demo/?mode=search&q=" + encodeURIComponent(ex.q);
+      cap.appendChild(a);
+      sr.textContent = "The query “" + ex.q + "” " + ex.sr;
+      aq.setAttribute("data-example", key);
+      aq.classList.remove("play", "typing");
+      if (!still && mode) { void aq.offsetWidth; aq.classList.add("play"); if (mode === "type") aq.classList.add("typing"); }
+    };
+
+    var choose = function (r, focus) {
+      radios.forEach(function (b) {
+        var on = b === r;
+        b.setAttribute("aria-checked", on ? "true" : "false");
+        b.tabIndex = on ? 0 : -1;
+      });
+      if (focus) r.focus();
+      render(r.getAttribute("data-ex"), "mark");
+    };
+    radios.forEach(function (r, idx) {
+      r.addEventListener("click", function () { if (r.getAttribute("aria-checked") !== "true") choose(r); });
+      r.addEventListener("keydown", function (e) {
+        var d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+        if (!d) return;
+        e.preventDefault();
+        choose(radios[(idx + d + radios.length) % radios.length], true);
+      });
+    });
+    render("hinglish", "type");
+  }
+
   /* ---------- currency toggle (INR default) ---------- */
   var CUR_KEY = "findaro-currency";
   function setCurrency(cur) {
@@ -50,56 +141,6 @@
         store(CUR_KEY, cur);
       });
     });
-  }
-
-  /* ---------- hero: query → understood plan ---------- */
-  // Chip labels mirror what /v1/search returns in `understood.chips` (soft = boost/sort, not a hard filter).
-  var EXAMPLES = [
-    { q: "kaale joote 1000 ke andar", chips: [["Under ₹1,000"], ["Black"]], lang: "Hinglish", text: "black shoes" },
-    { q: "sasta pressure cooker", chips: [["Pressure Cookers", 1], ["Lower prices first", 1]], lang: "Hinglish", text: "pressure cooker" },
-    { q: "cotton kurta for men under 800", chips: [["Under ₹800"], ["Cotton"], ["Men"]], lang: "English", text: "cotton kurta" },
-    { q: "gents chappal 500 se kam", chips: [["Under ₹500"], ["Men"]], lang: "Hinglish", text: "men chappal" }
-  ];
-  var qtext = $("#qtext");
-  if (qtext) {
-    var chipsEl = $("#qchips"), langEl = $("#qlang"), semEl = $("#qsem");
-    var i = 0;
-    var show = function (typed) { qtext.textContent = typed; };
-    var renderChips = function (ex) {
-      chipsEl.textContent = "";
-      ex.chips.forEach(function (chip, n) {
-        var label = chip[0];
-        var c = document.createElement("span");
-        c.className = "chip" + (chip[1] ? " soft" : "");
-        c.style.animationDelay = (n * 90) + "ms";
-        c.textContent = label + " ";
-        var x = document.createElement("span");
-        x.className = "x"; x.setAttribute("aria-hidden", "true"); x.textContent = "×";
-        c.appendChild(x);
-        chipsEl.appendChild(c);
-      });
-      langEl.textContent = ex.lang;
-      semEl.textContent = "“" + ex.text + "”";
-    };
-    if (reduceMotion) {
-      show(EXAMPLES[0].q); renderChips(EXAMPLES[0]);
-    } else {
-      var run = function () {
-        var ex = EXAMPLES[i % EXAMPLES.length];
-        var n = 0;
-        chipsEl.textContent = "";
-        var tick = setInterval(function () {
-          n++;
-          show(ex.q.slice(0, n));
-          if (n >= ex.q.length) {
-            clearInterval(tick);
-            setTimeout(function () { renderChips(ex); }, 250);
-            setTimeout(function () { i++; run(); }, 3600);
-          }
-        }, 55);
-      };
-      run();
-    }
   }
 
   /* ---------- code tabs ---------- */

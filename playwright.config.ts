@@ -13,6 +13,9 @@ export default defineConfig({
     { name: "mobile", testMatch: /widget\.spec/, use: { ...devices["Pixel 7"] } },
     { name: "unified", testMatch: /unified\.spec/, use: { ...devices["Desktop Chrome"] } },
     { name: "react", testMatch: /react\.spec/, use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:4173" } },
+    // the website's /demo/ page; skipped unless FINDARO_SITE_URL points at a rendered copy of site/public
+    { name: "site", testMatch: /site-demo\.spec/,
+      use: { ...devices["Desktop Chrome"], baseURL: process.env.FINDARO_SITE_URL || "http://localhost:8766" } },
   ],
   // the React example (headless SDK) is built and served by vite preview
   webServer: {

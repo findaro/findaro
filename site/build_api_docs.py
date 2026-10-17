@@ -23,8 +23,8 @@ SPEC = SITE.parent / "packages" / "sdk" / "openapi.json"
 TEMPLATE = SITE / "public" / "docs" / "index.html"
 OUT = SITE / "public" / "docs" / "api.html"
 
-TITLE = "API reference · findaro docs"
-DESC = "findaro HTTP API reference: projects, documents, import jobs, schema, search and chat (Server-Sent Events)."
+TITLE = "API reference · Findaro docs"
+DESC = "Findaro HTTP API reference: projects, documents, import jobs, schema, search and chat (Server-Sent Events)."
 
 # Endpoint groups, in page order: (anchor, title, path predicate)
 GROUPS = [
@@ -228,7 +228,7 @@ def render_op(method: str, path: str, op: dict) -> str:
 
 def render(spec: dict) -> str:
     ops = [(m, p, o) for p, item in spec["paths"].items() for m, o in item.items()]
-    parts = ['<span class="eyebrow">Reference</span>', "<h1>API reference</h1>",
+    parts = ["<h1>API reference</h1>",
              f'<p class="lede">{md(spec["info"].get("description", ""))} Version '
              f'{esc(spec["info"].get("version", ""))}. Generated from the OpenAPI spec '
              '(<code>packages/sdk/openapi.json</code>).</p>',

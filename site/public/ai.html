@@ -3,19 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI Mode moved · findaro</title>
+<title>AI Mode moved · Findaro</title>
 <meta name="robots" content="noindex">
 <link rel="canonical" href="__SITE_URL__/demo/">
-<meta http-equiv="refresh" content="0; url=/demo/">
+<meta http-equiv="refresh" content="0; url=/demo/?mode=ai">
+<meta name="color-scheme" content="light">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/assets/site.css">
-<script>location.replace("/demo/" + location.search + location.hash);</script>
+<script>var p = new URLSearchParams(location.search); if (!p.has("mode")) p.set("mode", "ai"); location.replace("/demo/?" + p + location.hash);</script>
 </head>
 <body>
 <main id="main" class="notfound">
   <div>
     <h1 style="font-size:2rem">The AI Mode demo has moved.</h1>
-    <p><a href="/demo/">Open the live demo</a></p>
+    <p><a href="/demo/?mode=ai">Open the live demo in AI Mode</a></p>
   </div>
 </main>
 </body>

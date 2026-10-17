@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Live demo · findaro</title>
-<meta name="description" content="Try findaro on a demo store of 3,000 synthetic products: search as you type, then ask in your own words to narrow the results, compare products and get grounded answers.">
+<title>Try Findaro on a demo store</title>
+<meta name="description" content="Try Findaro on a demo store of 3,000 synthetic products: search as you type, then ask in your own words to narrow the results, compare products and get grounded answers.">
 <link rel="canonical" href="__SITE_URL__/demo/">
-<meta name="theme-color" content="#f7f9fc" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0a1120" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#ffffff">
+<meta name="color-scheme" content="light">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="findaro">
-<meta property="og:title" content="Live demo · findaro">
+<meta property="og:site_name" content="Findaro">
+<meta property="og:title" content="Live demo · Findaro">
 <meta property="og:description" content="Search and ask a demo store of 3,000 synthetic products, in English or Hinglish.">
 <meta property="og:url" content="__SITE_URL__/demo/">
 <meta property="og:image" content="__SITE_URL__/assets/og.png">
@@ -20,7 +20,7 @@
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=Geist:wght@600..800&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=Rethink+Sans:wght@400..800&amp;display=swap">
 <link rel="stylesheet" href="/assets/site.css">
 <script src="/assets/site.js" defer></script>
 <script src="/findaro-widget.js" data-project="__DEMO_PROJECT__" data-key="__DEMO_SEARCH_KEY__" data-base-url="__API_URL__" defer onerror="document.documentElement.classList.add('no-widget')"></script>
@@ -29,12 +29,11 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro<span class="beta">beta</span></a>
+    <a class="brand" href="/" aria-label="Findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M20.5 5.5h-2.75A4.75 4.75 0 0 0 13 10.25V22.5M8.5 13.25h10.5" fill="none" stroke="#14213d" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="5.5" y="25.5" width="21" height="3.2" rx="1.6" fill="#2348d8"/></svg>findaro<span class="beta">beta</span></a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
     <nav class="nav" id="site-nav" aria-label="Main">
-      <a href="/#features">Product</a>
       <a href="/demo/" aria-current="page">Live demo</a>
       <a href="/pricing.html">Pricing</a>
       <a href="/docs/">Docs</a>
@@ -46,32 +45,36 @@
 <main id="main" class="demo-main">
   <div class="wrap">
     <div class="demo-head">
-      <div>
-        <span class="eyebrow">Live demo</span>
-        <h1>Search it, then ask it.</h1>
-        <p>A demo store of 3,000 synthetic products. Results update as you type; press Enter to ask in your own words,
-        in English or Hinglish, and keep refining: “only leather”, “cheaper”, “which is best for school?”.</p>
-      </div>
-      <p class="demo-badge"><span>Demo store</span> 3,000 synthetic products</p>
+      <h1>Try Findaro on a demo store</h1>
+      <p>3,000 made-up products, no real photos.</p>
     </div>
-    <findaro-search id="demo" mode="unified" badges="material,tags"
-                    placeholder="Search 3,000 demo products… try “kaale joote 1000 ke andar”"
-                    starters="black shoes under 1000|kurta for a wedding|steel water bottle|gift for a 10 year old|how do these compare in quality?"></findaro-search>
-    <p class="demo-fallback" id="demo-fallback" role="status">The live demo couldn't load right now. You can run the
-      same demo locally: it ships with the <a href="__GITHUB_URL__" rel="noopener">open-source repo</a>.</p>
+    <div class="demo-bar">
+      <div class="seg" id="demo-mode" role="radiogroup" aria-label="Demo mode">
+        <button type="button" role="radio" data-mode="search" aria-checked="false" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>Search</button>
+        <button type="button" role="radio" data-mode="ai" aria-checked="true" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 2.5l2.1 6.2 6.4 2.3-6.4 2.3L12 19.5l-2.1-6.2L3.5 11l6.4-2.3z"/><path fill="currentColor" d="M19 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg>AI Mode</button>
+      </div>
+      <p class="hint" id="demo-hint">Ask in your own words, then narrow it down, compare and ask about products.</p>
+    </div>
+    <div class="demo-body ai" id="demo-body">
+      <findaro-search id="demo" mode="ai" theme="light" toggle="off" cards="full" badges="material,tags"
+                      placeholder="Search 3,000 demo products, like “kaale joote 1000 ke andar”"
+                      starters="black shoes under 1000|kaale joote 1000 ke andar|kurta for a wedding|gift for a 10 year old|how do these compare in quality?"></findaro-search>
+      <p class="demo-fallback" id="demo-fallback" role="status">The live demo couldn't load right now. You can run the
+        same demo locally: it ships with the <a href="__GITHUB_URL__" rel="noopener">open-source repo</a>.</p>
+    </div>
   </div>
 </main>
 <footer class="site-footer">
   <div class="wrap">
     <div class="about">
-      <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro</a>
-      <p>AI search for product catalogs: natural language, Indian English and Hinglish, grounded chat. Open source under Apache-2.0.</p>
+      <a class="brand" href="/" aria-label="Findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M20.5 5.5h-2.75A4.75 4.75 0 0 0 13 10.25V22.5M8.5 13.25h10.5" fill="none" stroke="#14213d" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="5.5" y="25.5" width="21" height="3.2" rx="1.6" fill="#2348d8"/></svg>findaro</a>
+      <p>AI search for online stores. Shoppers type the way they talk, in English, Indian English or Hinglish, and your search understands them.</p>
     </div>
     <div>
       <h4>Product</h4>
       <ul>
         <li><a href="/demo/">Live demo</a></li>
-        <li><a href="/#features">Features</a></li>
+        <li><a href="/#understands">What it understands</a></li>
         <li><a href="/pricing.html">Pricing</a></li>
         <li><a href="/compare.html">Compare</a></li>
         <li><a href="/request-access.html">Request access</a></li>
@@ -96,18 +99,81 @@
       </ul>
     </div>
     <div class="legal">
-      <span>© <span data-year>2026</span> __COMPANY_NAME__. findaro is open source.</span>
-      <span>Hosted beta · Oracle Cloud, Mumbai region</span>
+      <span>© <span data-year>2026</span> __COMPANY_NAME__. Findaro is open source.</span>
+      <span>Hosted beta in Oracle Cloud's Mumbai region</span>
     </div>
   </div>
 </footer>
 <script>
 (function () {
   "use strict";
+  // One demo, two tabs: the switch sets the widget's mode attribute ("search" or "ai"). Each tab keeps its own
+  // results; a search carries over to AI Mode as the first question. ?mode=search|ai picks the tab, ?q= runs a query.
   var el = document.getElementById("demo");
-  // /demo/?q=… runs the query as a question once the widget is ready
-  var q = null;
-  try { q = new URLSearchParams(location.search).get("q"); } catch (e) { /* old browser */ }
+  var body = document.getElementById("demo-body");
+  var group = document.getElementById("demo-mode");
+  var radios = Array.prototype.slice.call(group.querySelectorAll("[role=radio]"));
+  // Seven starters across the two tabs; each tab shows the ones that make sense there.
+  var STARTERS = {
+    ai: "black shoes under 1000|kaale joote 1000 ke andar|kurta for a wedding|gift for a 10 year old|how do these compare in quality?",
+    search: "kaale joote 1000 ke andar|black shoes under 1000|steel water bottle|kurta for a wedding|presure coker"
+  };
+  var HINTS = {
+    ai: "Ask in your own words, then narrow it down, compare and ask about products.",
+    search: "Results as you type, in English or Hinglish. Select products to compare them."
+  };
+  var hint = document.getElementById("demo-hint");
+  var params;
+  try { params = new URLSearchParams(location.search); } catch (e) { params = null; }
+  var q = params && params.get("q");
+  var mode = params && params.get("mode") === "search" ? "search" : "ai";
+
+  function remember(m) {
+    if (!params || !history.replaceState) return;
+    params.set("mode", m);
+    params.delete("q"); // it ran already; a reload shouldn't ask again
+    history.replaceState(null, "", location.pathname + "?" + params.toString() + location.hash);
+  }
+
+  function show(m) {
+    mode = m;
+    radios.forEach(function (r) {
+      var on = r.getAttribute("data-mode") === m;
+      r.setAttribute("aria-checked", on ? "true" : "false");
+      r.tabIndex = on ? 0 : -1;
+    });
+    body.classList.toggle("ai", m === "ai");
+    el.setAttribute("starters", STARTERS[m]);
+    hint.textContent = HINTS[m];
+    if (el.getAttribute("mode") !== m) el.setAttribute("mode", m);
+    remember(m);
+  }
+
+  function choose(m) {
+    if (m === mode) return;
+    show(m);
+    // a search typed in the Search tab becomes the first AI Mode question
+    if (m === "ai" && typeof el.search === "function" && !el.turns && el.query) el.search(el.query);
+  }
+
+  radios.forEach(function (r, i) {
+    r.addEventListener("click", function () { choose(r.getAttribute("data-mode")); });
+    r.addEventListener("keydown", function (e) {
+      var d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+      if (!d) return;
+      e.preventDefault();
+      var next = radios[(i + d + radios.length) % radios.length];
+      choose(next.getAttribute("data-mode"));
+      next.focus();
+    });
+  });
+  // the widget switches to AI Mode itself for Compare / Ask about these: follow it
+  el.addEventListener("findaro:mode", function (e) {
+    var m = e.detail && e.detail.mode;
+    if ((m === "ai" || m === "search") && m !== mode) show(m);
+  });
+
+  show(mode);
   if (window.customElements) {
     customElements.whenDefined("findaro-search").then(function () {
       if (q && typeof el.search === "function") el.search(q.slice(0, 200));

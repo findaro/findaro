@@ -26,7 +26,7 @@ schema to define, no search engine to tune. Apache-2.0.
 - **Grounded product Q&A.** Ask about a product the way you would on a product page ("made in India or
   imported?", "return ho jayega?"). The model only sees the products on screen, numbers are filled in by the
   server, and every sentence is checked in code before it streams. If the listing doesn't say, the answer says so.
-- **Drop-in widget and headless SDK.** `<findaro-search>` (one script tag, about 10 KB gzipped) or `@findaro/sdk`
+- **Drop-in widget and headless SDK.** `<findaro-search>` (one script tag, about 23 KB gzipped with the SDK) or `@findaro/sdk`
   (typed, zero dependencies, about 1.5 KB gzipped).
 - **Hybrid retrieval.** BM25 (with typo tolerance and ICU analysis) plus multilingual vectors
   (`multilingual-e5-small`, run locally), fused with Reciprocal Rank Fusion.

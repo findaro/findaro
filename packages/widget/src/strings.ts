@@ -33,6 +33,51 @@ export interface Strings {
   allDetails: string;
   /** suggested questions by document field ("*" = always) */
   suggest: Record<string, string>;
+  // AI Mode (thread, sidebar, cards, compare)
+  assistantName: string;
+  composerPlaceholder: string;
+  askSelected: string; // {n}
+  greeting: string;
+  greetingSub: string;
+  tryAsking: string;
+  newChat: string;
+  history: string;
+  openHistory: string;
+  closeHistory: string;
+  noChats: string;
+  today: string;
+  earlier: string;
+  deleteChat: string; // {title}
+  deleteConfirm: string;
+  deleteYes: string;
+  cancel: string;
+  stepThink: string;
+  stepUnderstand: string;
+  stepSearch: string; // {q}
+  stepFound: string; // {n}
+  howSearched: string;
+  searchedIn: string; // {t}
+  loosened: string; // {label} {reason}
+  time: string;
+  byMeaning: string;
+  showMore: string; // {n}
+  select: string;
+  selectTitle: string; // {title}
+  selected: string; // {n}
+  compare: string;
+  askThese: string;
+  clear: string;
+  compareMessage: string;
+  maxSelect: string; // {n}
+  matches: string; // {m} {t}
+  notMet: string; // {label}
+  notListed: string; // {label}
+  view: string;
+  jumpLatest: string;
+  price: string;
+  rating: string;
+  comparing: string; // {n}
+  nextSteps: string;
 }
 
 export const STRINGS: Record<string, Strings> = {
@@ -71,6 +116,50 @@ export const STRINGS: Record<string, Strings> = {
     suggest: { material: "What is it made of?", country_of_origin: "Where is it made?",
                warranty: "Is there a warranty?", care: "How do I take care of it?",
                return_policy: "Can I return it?", "*": "Tell me more about it" },
+    assistantName: "AI Mode",
+    composerPlaceholder: "Describe what you're looking for…",
+    askSelected: "Ask about the {n} selected products…",
+    greeting: "What are you looking for today?",
+    greetingSub: "Describe it in your own words. I'll search the catalog and help you narrow it down.",
+    tryAsking: "Try asking",
+    newChat: "New chat",
+    history: "Chat history",
+    openHistory: "Open chat history",
+    closeHistory: "Close chat history",
+    noChats: "Your conversations will appear here.",
+    today: "Today",
+    earlier: "Earlier",
+    deleteChat: "Delete conversation: {title}",
+    deleteConfirm: "Delete?",
+    deleteYes: "Delete",
+    cancel: "Cancel",
+    stepThink: "Thinking",
+    stepUnderstand: "Understanding your request",
+    stepSearch: "Searching for “{q}”",
+    stepFound: "Looking through {n} products",
+    howSearched: "How I searched",
+    searchedIn: "Searched in {t}",
+    loosened: "Loosened: {label} — {reason}",
+    time: "Time",
+    byMeaning: "No filters: searched by meaning",
+    showMore: "Show {n} more",
+    select: "Select",
+    selectTitle: "Select {title} to compare",
+    selected: "{n} selected",
+    compare: "Compare",
+    askThese: "Ask about these",
+    clear: "Clear",
+    compareMessage: "Compare these",
+    maxSelect: "You can select up to {n} products.",
+    matches: "Matches {m}/{t}",
+    notMet: "not {label}",
+    notListed: "{label} not listed",
+    view: "View",
+    jumpLatest: "Jump to latest",
+    price: "Price",
+    rating: "Rating",
+    comparing: "Comparing {n} products",
+    nextSteps: "Next steps",
   },
   "hi-en": {
     placeholder: "Products dhoondhiye…",
@@ -107,6 +196,50 @@ export const STRINGS: Record<string, Strings> = {
     suggest: { material: "Ye kis cheez se bana hai?", country_of_origin: "Kahan bana hai?",
                warranty: "Warranty hai kya?", care: "Iski dekhbhal kaise karein?",
                return_policy: "Return ho sakta hai?", "*": "Iske baare mein aur bataiye" },
+    assistantName: "AI Mode",
+    composerPlaceholder: "Bataiye aapko kya chahiye…",
+    askSelected: "Chune hue {n} products ke baare mein poochhiye…",
+    greeting: "Aaj kya dhoondh rahe hain?",
+    greetingSub: "Apne shabdon mein bataiye. Main catalog mein dhoondh kar options chhaantne mein madad karunga.",
+    tryAsking: "Aise poochh ke dekhiye",
+    newChat: "Nayi chat",
+    history: "Purani chats",
+    openHistory: "Purani chats kholo",
+    closeHistory: "Purani chats band karo",
+    noChats: "Aapki baatcheet yahan dikhegi.",
+    today: "Aaj",
+    earlier: "Pehle",
+    deleteChat: "Chat delete karo: {title}",
+    deleteConfirm: "Delete karein?",
+    deleteYes: "Haan, delete",
+    cancel: "Rehne do",
+    stepThink: "Soch raha hoon",
+    stepUnderstand: "Aapki baat samajh raha hoon",
+    stepSearch: "“{q}” dhoondh raha hoon",
+    stepFound: "{n} products dekh raha hoon",
+    howSearched: "Maine kaise dhoondha",
+    searchedIn: "{t} mein dhoondha",
+    loosened: "Thoda dheela kiya: {label} — {reason}",
+    time: "Samay",
+    byMeaning: "Koi filter nahi: matlab se dhoondha",
+    showMore: "{n} aur dikhao",
+    select: "Chuno",
+    selectTitle: "Compare ke liye chuno: {title}",
+    selected: "{n} chune",
+    compare: "Compare karo",
+    askThese: "Inke baare mein poochho",
+    clear: "Hatao",
+    compareMessage: "Inko compare karo",
+    maxSelect: "Ek saath {n} products tak chun sakte hain.",
+    matches: "{m}/{t} match",
+    notMet: "{label} nahi",
+    notListed: "{label} listed nahi",
+    view: "Dekho",
+    jumpLatest: "Neeche latest par jao",
+    price: "Daam",
+    rating: "Rating",
+    comparing: "{n} products ki tulna",
+    nextSteps: "Aage kya karein",
   },
 };
 

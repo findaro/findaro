@@ -392,8 +392,8 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
             text = (answer.fallback_search_text(resp.total if resp else 0,
                                                 resp.understood.match_quality if resp and resp.understood else "good",
                                                 docs, hinglish, title_field)
-                    if turn != "question" else ("Is sawal ka jawab abhi nahi de sakta." if hinglish
-                                                else "I can't answer questions about products right now."))
+                    if turn != "question" else answer.fallback_question_text(
+                        msg, list(zip(sess.last_ids, sess.last_docs, strict=False)), schema, hinglish, symbol))
             yield sse("text", {"delta": text})
             text_parts.append(text)
             first = time.perf_counter()
@@ -488,8 +488,17 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
     except (LLMError, OSError) as e:
         log.warning("chat answer failed: %s", e)
         answer_source = "error"
-        if not text_parts:
-            text = "Results upar dikh rahe hain." if hinglish else "Here are the results."
+        if not text_parts:  # the same grounded template a deployment without an LLM gives
+            if turn == "product":
+                text = answer.fallback_product_text(focus_docs, schema, hinglish, symbol)
+            elif turn == "question":
+                text = answer.fallback_question_text(msg, list(zip(sess.last_ids, sess.last_docs, strict=False)),
+                                                     schema, hinglish, symbol)
+            else:
+                docs = [(h.id, answer.doc_view(h.document, schema), False) for h in (resp.hits if resp else [])[:5]]
+                text = answer.fallback_search_text(
+                    resp.total if resp else 0, resp.understood.match_quality if resp and resp.understood else "good",
+                    docs, hinglish, title_field)
             yield sse("text", {"delta": text})
             text_parts.append(text)
     if first is not None:

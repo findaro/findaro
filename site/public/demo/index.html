@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Live demo · findaro</title>
-<meta name="description" content="Try findaro on a demo store of 3,000 synthetic products: AI Mode, a conversational shopping assistant that shows how it searched and compares products, and the classic search view.">
+<meta name="description" content="Try findaro on a demo store of 3,000 synthetic products: search as you type, then ask in your own words to narrow the results, compare products and get grounded answers.">
 <link rel="canonical" href="__SITE_URL__/demo/">
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#131c2c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f9fc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a1120" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="findaro">
 <meta property="og:title" content="Live demo · findaro">
-<meta property="og:description" content="Try findaro AI Mode on a demo store of 3,000 synthetic products.">
+<meta property="og:description" content="Search and ask a demo store of 3,000 synthetic products, in English or Hinglish.">
 <meta property="og:url" content="__SITE_URL__/demo/">
 <meta property="og:image" content="__SITE_URL__/assets/og.png">
 <meta property="og:image:width" content="1200">
@@ -20,119 +20,94 @@
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&amp;family=Instrument+Sans:wght@400..700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=Geist:wght@600..800&amp;display=swap">
 <link rel="stylesheet" href="/assets/site.css">
-<style>
-  /* an app page: top bar + the widget filling the rest of the viewport, no page scroll */
-  html, body { height: 100%; }
-  body.app { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100vh; height: 100dvh; overflow: hidden; background: var(--surface); }
-  .app-top { position: relative; z-index: 10; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; height: 56px; padding: 0 16px; padding-top: env(safe-area-inset-top, 0px); background: var(--surface); border-bottom: 1px solid var(--line); }
-  .app-top .brand { font-size: 1.2rem; }
-  .app-top .brand svg { width: 26px; height: 26px; }
-  .seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 99px; background: var(--bg-2); border: 1px solid var(--line); }
-  .seg button { font: 600 .9rem/1 var(--font-body); color: var(--muted); background: none; border: 0; border-radius: 99px; padding: .55rem 1rem; cursor: pointer; display: inline-flex; align-items: center; gap: .4rem; }
-  .seg button:hover { color: var(--ink); }
-  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(15, 23, 42, .12), 0 0 0 1px var(--line); }
-  .seg button[aria-pressed="true"] svg { color: var(--accent); }
-  .seg svg { width: 15px; height: 15px; }
-  .app-nav { justify-self: end; display: flex; align-items: center; gap: .25rem; }
-  .app-nav a { color: var(--ink-2); text-decoration: none; font-weight: 500; font-size: .93rem; padding: .45rem .7rem; border-radius: 8px; }
-  .app-nav a:hover { color: var(--ink); background: var(--bg-2); }
-  .app-nav a.btn-primary, .app-nav a.btn-primary:hover { color: var(--accent-ink); background: var(--accent); margin-left: .35rem; }
-  .app-nav a.btn-primary:hover { background: var(--accent-hover); }
-  .app-menu { display: none; justify-self: end; background: none; border: 1px solid var(--line-2); color: var(--ink); border-radius: 8px; width: 38px; height: 36px; cursor: pointer; }
-  .app-menu svg { width: 18px; height: 18px; display: block; margin: auto; }
-  .app-main { min-height: 0; position: relative; }
-  findaro-search#demo { height: 100%; --findaro-accent: var(--accent); --findaro-accent-ink: var(--accent-ink); --findaro-font: var(--font-body);
-    --findaro-bg: var(--surface); --findaro-surface: var(--bg); --findaro-fg: var(--ink); --findaro-muted: var(--muted);
-    --findaro-border: var(--line); --findaro-chip-bg: var(--accent-soft); --findaro-chip-fg: var(--accent-text); }
-  findaro-search:not(:defined) { display: block; }
-  .demo-note { display: flex; align-items: center; gap: .45rem; }
-  .demo-note::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex: none; }
-  .demo-fallback { display: none; position: absolute; inset: 0; place-content: center; text-align: center; padding: 24px; color: var(--ink-2); }
-  .no-widget .demo-fallback, .demo-fallback.show { display: grid; }
-  .no-widget findaro-search { display: none; }
-  @media (max-width: 760px) {
-    .app-top { grid-template-columns: auto 1fr auto; padding: 0 10px; gap: 8px; }
-    .app-top .brand .word { display: none; }
-    .seg { justify-self: center; }
-    .seg button { padding: .5rem .8rem; font-size: .86rem; }
-    .app-nav { display: none; position: absolute; top: 56px; right: 8px; flex-direction: column; align-items: stretch; min-width: 200px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
-    .app-nav.open { display: flex; }
-    .app-nav a { padding: .7rem .8rem; }
-    .app-nav a.btn-primary { margin: .3rem 0 0; justify-content: center; }
-    .app-menu { display: block; }
-  }
-  @media (min-width: 761px) { .app-nav .phone-only { display: none; } }
-</style>
+<script src="/assets/site.js" defer></script>
 <script src="/findaro-widget.js" data-project="__DEMO_PROJECT__" data-key="__DEMO_SEARCH_KEY__" data-base-url="__API_URL__" defer onerror="document.documentElement.classList.add('no-widget')"></script>
 </head>
-<body class="app">
-<header class="app-top">
-  <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="word">findaro</span></a>
-  <div class="seg" role="group" aria-label="Demo view">
-    <button type="button" data-mode="ai" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 2.5l2.1 6.2 6.4 2.3-6.4 2.3L12 19.5l-2.1-6.2L3.5 11l6.4-2.3z"/></svg>AI Mode</button>
-    <button type="button" data-mode="search" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search</button>
+<body class="demo-page">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro<span class="beta">beta</span></a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav class="nav" id="site-nav" aria-label="Main">
+      <a href="/#features">Product</a>
+      <a href="/demo/" aria-current="page">Live demo</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <a href="__GITHUB_URL__" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="/request-access.html">Request access</a>
+    </nav>
   </div>
-  <button class="app-menu" type="button" aria-expanded="false" aria-controls="app-nav" aria-label="Menu">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-  </button>
-  <nav class="app-nav" id="app-nav" aria-label="Main">
-    <a class="phone-only" href="/">Home</a>
-    <a href="/docs/">Docs</a>
-    <a class="phone-only" href="/pricing.html">Pricing</a>
-    <a class="phone-only" href="__GITHUB_URL__" rel="noopener">GitHub</a>
-    <a class="btn btn-primary btn-sm" href="/request-access.html">Request access</a>
-  </nav>
 </header>
-<main class="app-main" id="main">
-  <findaro-search id="demo" mode="ai" layout="page" badges="material,tags"
-                  placeholder="Search 3,000 demo products… try “kaale joote 1000 ke andar”"
-                  starters="black shoes under 1000|kurta for a wedding|steel water bottle|gift for a 10 year old">
-    <span slot="sidebar-footer" class="demo-note">Demo store · 3,000 synthetic products</span>
-  </findaro-search>
-  <p class="demo-fallback" id="demo-fallback" role="status">The live demo couldn't load right now. You can run the same
-    demo locally: it ships with the <a href="__GITHUB_URL__" rel="noopener">open-source repo</a>.</p>
+<main id="main" class="demo-main">
+  <div class="wrap">
+    <div class="demo-head">
+      <div>
+        <span class="eyebrow">Live demo</span>
+        <h1>Search it, then ask it.</h1>
+        <p>A demo store of 3,000 synthetic products. Results update as you type; press Enter to ask in your own words,
+        in English or Hinglish, and keep refining: “only leather”, “cheaper”, “which is best for school?”.</p>
+      </div>
+      <p class="demo-badge"><span>Demo store</span> 3,000 synthetic products</p>
+    </div>
+    <findaro-search id="demo" mode="unified" badges="material,tags"
+                    placeholder="Search 3,000 demo products… try “kaale joote 1000 ke andar”"
+                    starters="black shoes under 1000|kurta for a wedding|steel water bottle|gift for a 10 year old|how do these compare in quality?"></findaro-search>
+    <p class="demo-fallback" id="demo-fallback" role="status">The live demo couldn't load right now. You can run the
+      same demo locally: it ships with the <a href="__GITHUB_URL__" rel="noopener">open-source repo</a>.</p>
+  </div>
 </main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="about">
+      <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro</a>
+      <p>AI search for product catalogs: natural language, Indian English and Hinglish, grounded chat. Open source under Apache-2.0.</p>
+    </div>
+    <div>
+      <h4>Product</h4>
+      <ul>
+        <li><a href="/demo/">Live demo</a></li>
+        <li><a href="/#features">Features</a></li>
+        <li><a href="/pricing.html">Pricing</a></li>
+        <li><a href="/compare.html">Compare</a></li>
+        <li><a href="/request-access.html">Request access</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Developers</h4>
+      <ul>
+        <li><a href="/docs/">Docs</a></li>
+        <li><a href="/docs/quickstart.html">Quickstart</a></li>
+        <li><a href="/docs/api.html">API reference</a></li>
+        <li><a href="/docs/self-hosting.html">Self-hosting</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Project</h4>
+      <ul>
+        <li><a href="__GITHUB_URL__" rel="noopener">GitHub</a></li>
+        <li><a href="__GITHUB_URL__/blob/main/LICENSE" rel="noopener">License (Apache-2.0)</a></li>
+        <li><a href="/terms.html">Terms</a></li>
+        <li><a href="/privacy.html">Privacy</a></li>
+      </ul>
+    </div>
+    <div class="legal">
+      <span>© <span data-year>2026</span> __COMPANY_NAME__. findaro is open source.</span>
+      <span>Hosted beta · Oracle Cloud, Mumbai region</span>
+    </div>
+  </div>
+</footer>
 <script>
 (function () {
   "use strict";
   var el = document.getElementById("demo");
-  var tabs = Array.prototype.slice.call(document.querySelectorAll(".seg button"));
-  var params;
-  try { params = new URLSearchParams(location.search); } catch (e) { params = null; }
-
-  function setMode(mode, push) {
-    tabs.forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-mode") === mode ? "true" : "false"); });
-    el.setAttribute("mode", mode);
-    if (push && window.history && history.replaceState) {
-      history.replaceState(null, "", mode === "search" ? "?mode=search" : location.pathname);
-    }
-  }
-  tabs.forEach(function (b) {
-    b.addEventListener("click", function () { setMode(b.getAttribute("data-mode"), true); });
-  });
-  if (params && params.get("mode") === "search") setMode("search", false);
-
-  // phone menu
-  var menu = document.querySelector(".app-menu"), nav = document.getElementById("app-nav");
-  menu.addEventListener("click", function () {
-    var open = nav.classList.toggle("open");
-    menu.setAttribute("aria-expanded", open ? "true" : "false");
-  });
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && nav.classList.contains("open")) {
-      nav.classList.remove("open"); menu.setAttribute("aria-expanded", "false"); menu.focus();
-    }
-  });
-  document.addEventListener("click", function (e) {
-    if (nav.classList.contains("open") && !nav.contains(e.target) && !menu.contains(e.target)) {
-      nav.classList.remove("open"); menu.setAttribute("aria-expanded", "false");
-    }
-  });
-
-  // /demo/?q=… (links from the landing page): ask once the widget is ready
-  var q = params && params.get("q");
+  // /demo/?q=… runs the query as a question once the widget is ready
+  var q = null;
+  try { q = new URLSearchParams(location.search).get("q"); } catch (e) { /* old browser */ }
   if (window.customElements) {
     customElements.whenDefined("findaro-search").then(function () {
       if (q && typeof el.search === "function") el.search(q.slice(0, 200));

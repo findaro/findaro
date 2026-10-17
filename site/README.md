@@ -9,8 +9,8 @@ python3 -m http.server 8765 --directory site/public   # http://localhost:8765
 
 | Path | Page |
 |---|---|
-| `public/index.html` | Landing page, with a static preview of AI Mode (it doesn't load the widget) |
-| `public/demo/index.html` | The live demo: a full-screen app page with the widget in AI Mode / Search on the demo project |
+| `public/index.html` | Landing page (no widget on it: every demo link goes to `/demo/`) |
+| `public/demo/index.html` | The live demo: the site header plus the widget in its default unified mode (search as you type, Enter asks) on the demo project; `?q=` asks on load |
 | `public/ai.html` | Redirects to `/demo/` (old links) |
 | `public/pricing.html` | Pricing (INR by default, USD toggle remembered in localStorage) |
 | `public/request-access.html` | Request-access form, POSTs JSON to `/api/request-access` |
@@ -72,4 +72,7 @@ footer.
 
 The header, footer and docs sidebar are repeated in every page. If you change one, change them all. Colours and
 fonts are CSS variables at the top of `assets/site.css`, with a dark palette under
-`prefers-color-scheme: dark`.
+`prefers-color-scheme: dark`. The palette is one blue, navy ink and cool greys, with no orange, amber or yellow:
+caution states use `--note` (slate-indigo) and red (`--danger`) is only for form validation errors. Any
+`<findaro-search>` on the site is themed from these tokens (bottom of `site.css`). Fonts: Geist (headings), IBM Plex
+Sans (body), IBM Plex Mono (code).

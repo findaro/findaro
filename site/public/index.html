@@ -6,8 +6,8 @@
 <title>findaro · AI search for Indian e-commerce catalogs</title>
 <meta name="description" content="AI search API and drop-in widget: natural-language queries in English and Hinglish, filters inferred from the query, grounded AI chat. Open source, hosted beta.">
 <link rel="canonical" href="__SITE_URL__/">
-<meta name="theme-color" content="#f6f8fb" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0a0f1a" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f9fc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a1120" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="findaro">
 <meta property="og:title" content="findaro · AI search for Indian e-commerce catalogs">
@@ -20,7 +20,7 @@
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&amp;family=Instrument+Sans:wght@400..700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=Geist:wght@600..800&amp;display=swap">
 <link rel="stylesheet" href="/assets/site.css">
 <script src="/assets/site.js" defer></script>
 </head>
@@ -34,7 +34,7 @@
     </button>
     <nav class="nav" id="site-nav" aria-label="Main">
       <a href="/#features">Product</a>
-      <a href="/demo/">AI Mode</a>
+      <a href="/demo/">Live demo</a>
       <a href="/pricing.html">Pricing</a>
       <a href="/docs/">Docs</a>
       <a href="__GITHUB_URL__" rel="noopener">GitHub</a>
@@ -53,7 +53,7 @@
       and typos. Send us a JSON or CSV file, add one script tag, and shoppers find things in their own words.</p>
       <div class="cta-row">
         <a class="btn btn-primary" href="/request-access.html">Request access</a>
-        <a class="btn btn-ghost" href="/demo/">Try the demo</a>
+        <a class="btn btn-ghost" href="/demo/">Try the live demo <span class="arrow" aria-hidden="true">→</span></a>
         <a class="btn btn-ghost" href="__GITHUB_URL__" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.23 2.75.11 3.04.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.39-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg> View on GitHub</a>
       </div>
       <p class="hero-note"><span>Apache-2.0</span><span>No schema to write</span><span>Widget ~10 KB gzipped</span></p>
@@ -73,60 +73,6 @@
         <div>Every chip<b>removable</b></div>
       </div>
     </div>
-  </div>
-</section>
-
-<section id="demo" class="band" aria-labelledby="demo-h">
-  <div class="wrap">
-    <div class="demo-intro">
-      <div class="section-head">
-        <span class="eyebrow">Live demo · AI Mode</span>
-        <h2 id="demo-h">Shop by talking it through.</h2>
-        <p>AI Mode turns the widget into a shopping assistant: describe what you need, see how it searched, narrow the
-        results in one tap and compare products side by side. Try it on a demo store of 3,000 synthetic products.</p>
-      </div>
-      <div class="demo-cta">
-        <a class="btn btn-primary" href="/demo/">Open the live demo <span aria-hidden="true">→</span></a>
-        <p class="try" aria-label="Example queries">
-          <span class="try-label">Try</span>
-          <a href="/demo/?q=kaale+joote+1000+ke+andar">kaale joote 1000 ke andar</a>
-          <a href="/demo/?q=kurta+for+a+wedding">kurta for a wedding</a>
-          <a href="/demo/?q=presure+coker">presure coker</a>
-        </p>
-      </div>
-    </div>
-
-    <figure class="aim" aria-label="Preview of AI Mode: a shopper asks for black shoes under 1000 and gets matching products with next steps">
-      <div class="aim-bar" aria-hidden="true"><i></i><i></i><i></i><span>demo-store · AI Mode</span></div>
-      <div class="aim-body" aria-hidden="true">
-        <div class="aim-side">
-          <span class="aim-new">+ New chat</span>
-          <span class="aim-grp">Today</span>
-          <span class="aim-conv on">black shoes under 1000</span>
-          <span class="aim-conv">kurta for a wedding</span>
-          <span class="aim-conv">steel water bottle</span>
-        </div>
-        <div class="aim-main">
-          <div class="aim-user">black shoes under 1000</div>
-          <div class="aim-head"><span class="aim-av"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.5l2.1 6.2 6.4 2.3-6.4 2.3L12 19.5l-2.1-6.2L3.5 11l6.4-2.3z"/></svg></span><b>AI Mode</b><time>10:42</time></div>
-          <div class="aim-how">How I searched <span>· Under ₹1,000 · Black · 31 products</span></div>
-          <p class="aim-text">Here are black shoes under ₹1,000. All of these match both things you asked for.</p>
-          <div class="aim-cards">
-            <div class="aim-card"><div class="aim-img" style="--h:214">A</div><b>Kids school lace-up shoes</b><span class="aim-price">₹549</span><span class="aim-tags"><em>Canvas</em></span><span class="aim-req">✓ Matches 2/2 · Under ₹1,000, Black</span></div>
-            <div class="aim-card"><div class="aim-img" style="--h:200">S</div><b>Black canvas school shoes</b><span class="aim-price">₹899</span><span class="aim-tags"><em>Canvas</em></span><span class="aim-req">✓ Matches 2/2 · Under ₹1,000, Black</span></div>
-            <div class="aim-card"><div class="aim-img" style="--h:228">N</div><b>Velcro school shoes</b><span class="aim-price">₹399</span><span class="aim-tags"><em>Synthetic leather</em></span><span class="aim-req">✓ Matches 2/2 · Under ₹1,000, Black</span></div>
-          </div>
-          <div class="aim-next">
-            <span>Only lace-up <i>→</i></span>
-            <span>Under ₹500 <i>→</i></span>
-            <span>Compare the top 3 <i>→</i></span>
-          </div>
-          <div class="aim-composer">Ask a follow-up… <span class="aim-send"><svg viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5L12 5l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
-        </div>
-      </div>
-    </figure>
-    <p class="fine demo-foot">Illustration of the live demo. Product data in the demo store is synthetic.
-      <a href="/demo/">Open the live demo</a> to try it in your own words.</p>
   </div>
 </section>
 
@@ -358,14 +304,14 @@ file=@catalog.jsonl</code></pre>
       <p>Where Findaro is different, and where the others are ahead today. Checked October 2026 from each vendor's
       own pages.</p>
     </div>
-    <div class="cmp-wrap prose" style="max-width:none;overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)" tabindex="0" role="region" aria-labelledby="cmp-land-h">
-      <table style="min-width:760px;margin:0">
+    <div class="cmp-wrap short prose" tabindex="0" role="region" aria-labelledby="cmp-land-h">
+      <table>
         <thead><tr><th scope="col"></th><th scope="col">Findaro</th><th scope="col">Algolia</th><th scope="col">Typesense / Meilisearch</th><th scope="col">Shopify Search &amp; Discovery</th></tr></thead>
         <tbody>
           <tr><th scope="row">Open source, self-host</th><td>Yes (Apache-2.0)</td><td>No</td><td>Yes (GPL-3.0 / MIT)</td><td>No</td></tr>
           <tr><th scope="row">Query → visible, removable filters</th><td>Yes, rules first</td><td>AI features on higher plans</td><td>LLM-based or build it</td><td>Semantic search</td></tr>
           <tr><th scope="row">Hinglish / Indian English</th><td>Built in</td><td>No claim found</td><td>No claim found</td><td>Hindi not listed</td></tr>
-          <tr><th scope="row">Chat shopping assistant</th><td>AI Mode, ready to embed</td><td>Agent Studio (beta)</td><td>APIs, build the UI</td><td>No</td></tr>
+          <tr><th scope="row">Chat shopping assistant</th><td>Built into the widget, ready to embed</td><td>Agent Studio (beta)</td><td>APIs, build the UI</td><td>No</td></tr>
           <tr><th scope="row">Analytics, merchandising, Shopify app</th><td>Not yet</td><td>Yes</td><td>Partly</td><td>Yes</td></tr>
           <tr><th scope="row">Pricing</th><td>Flat ₹ plans, free tier</td><td>Per 1K searches after 10K free</td><td>Cloud per cluster / from $20/mo</td><td>Free, Shopify only</td></tr>
         </tbody>

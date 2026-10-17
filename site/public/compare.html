@@ -6,8 +6,8 @@
 <title>Findaro vs Algolia, Typesense, Meilisearch · findaro</title>
 <meta name="description" content="An honest, sourced comparison of findaro with Algolia, Typesense, Meilisearch, Elasticsearch/OpenSearch and Shopify search apps: what each is good at, pricing models, AI and Hinglish support.">
 <link rel="canonical" href="__SITE_URL__/compare.html">
-<meta name="theme-color" content="#f6f8fb" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0a0f1a" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f9fc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a1120" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="findaro">
 <meta property="og:title" content="Findaro vs Algolia, Typesense, Meilisearch · findaro">
@@ -20,7 +20,7 @@
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&amp;family=Instrument+Sans:wght@400..700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=Geist:wght@600..800&amp;display=swap">
 <link rel="stylesheet" href="/assets/site.css">
 <script src="/assets/site.js" defer></script>
 </head>
@@ -34,7 +34,7 @@
     </button>
     <nav class="nav" id="site-nav" aria-label="Main">
       <a href="/#features">Product</a>
-      <a href="/demo/">AI Mode</a>
+      <a href="/demo/">Live demo</a>
       <a href="/pricing.html">Pricing</a>
       <a href="/docs/">Docs</a>
       <a href="__GITHUB_URL__" rel="noopener">GitHub</a>
@@ -43,17 +43,6 @@
   </div>
 </header>
 <main id="main">
-<style>
-  .cmp-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
-  .cmp-wrap table { min-width: 980px; margin: 0; }
-  .cmp-wrap th[scope="row"] { min-width: 190px; }
-  .cmp-wrap td:nth-child(2), .cmp-wrap thead th:nth-child(2) { background: color-mix(in srgb, var(--accent) 7%, transparent); }
-  .yes { color: var(--ok); font-weight: 600; } .no { color: var(--muted); } .part { color: var(--ink-2); }
-  .vs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-  .vs .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
-  .vs .card h3 { margin: 0 0 .5rem; } .vs .card p { margin: 0 0 .6rem; color: var(--ink-2); }
-  .sources { font-size: .9rem; color: var(--muted); columns: 2 320px; } .sources li { break-inside: avoid; margin-bottom: .3rem; }
-</style>
 <div class="wrap">
   <div class="page-head">
     <div class="section-head" style="margin-bottom:0">
@@ -75,7 +64,7 @@
         <ul class="checks">
           <li>Your shoppers type the way they talk, in Indian English or Hinglish (“kaale joote 1000 ke andar”)</li>
           <li>You want filters understood from the query and shown back as chips shoppers can remove</li>
-          <li>You want a chat shopping assistant (AI Mode) without building RAG plumbing yourself</li>
+          <li>You want a chat shopping assistant in your search box without building RAG plumbing yourself</li>
           <li>You want open source you can self-host, or flat pricing in rupees</li>
           <li>Your catalog has up to about 100,000 products</li>
         </ul>
@@ -98,7 +87,7 @@
   <div class="wrap">
     <div class="section-head"><h2 id="table-h">Side by side</h2>
       <p>“—” means we found no such feature in the product's public docs. Scroll sideways on small screens.</p></div>
-    <div class="cmp-wrap prose" style="max-width:none" tabindex="0" role="region" aria-labelledby="table-h">
+    <div class="cmp-wrap prose" tabindex="0" role="region" aria-labelledby="table-h">
       <table>
         <thead><tr><th scope="col"></th><th scope="col">Findaro</th><th scope="col">Algolia</th><th scope="col">Typesense</th><th scope="col">Meilisearch</th><th scope="col">Elastic / OpenSearch</th><th scope="col">Shopify Search &amp; Discovery</th></tr></thead>
         <tbody>
@@ -108,7 +97,7 @@
 <tr><th scope="row">Natural-language query → filters</th><td>Rules first; an LLM only for words the rules can't read</td><td>AI features on higher plans; NeuralSearch on Elevate (custom)</td><td>Natural Language Search: an LLM you configure turns the query into filters</td><td>Hybrid / semantic search</td><td>Build it yourself</td><td>Semantic search on Shopify plans</td></tr>
 <tr><th scope="row">Shows what it understood (removable chips)</th><td><span class="yes">Yes</span></td><td>—</td><td>—</td><td>—</td><td>Build it yourself</td><td>—</td></tr>
 <tr><th scope="row">Indian English + Hinglish</th><td>Built in</td><td>No claim found</td><td>No claim found</td><td>No claim found</td><td>ELSER is English; build it yourself</td><td>Hindi not in its language list</td></tr>
-<tr><th scope="row">Conversational shopping (chat)</th><td>AI Mode with products inline, compare, next steps</td><td>Agent Studio (beta)</td><td>Conversational RAG API (build the UI)</td><td>Chat endpoint (experimental)</td><td>Build it yourself</td><td><span class="no">No</span></td></tr>
+<tr><th scope="row">Conversational shopping (chat)</th><td>Ask in the search box: results refine in place, compare, next steps</td><td>Agent Studio (beta)</td><td>Conversational RAG API (build the UI)</td><td>Chat endpoint (experimental)</td><td>Build it yourself</td><td><span class="no">No</span></td></tr>
 <tr><th scope="row">Product Q&amp;A grounded in the listing</th><td>Yes, every sentence checked</td><td>Via Agent Studio</td><td>Via RAG API</td><td>Via chat endpoint</td><td>Build it yourself</td><td><span class="no">No</span></td></tr>
 <tr><th scope="row">Drop-in UI</th><td>21 KB widget, 1.5 KB SDK</td><td>InstantSearch libraries</td><td>InstantSearch adapter</td><td>InstantSearch adapter</td><td>—</td><td>Theme search</td></tr>
 <tr><th scope="row">Analytics dashboard</th><td>Not yet</td><td><span class="yes">Yes</span></td><td><span class="part">Partly</span></td><td>Enterprise</td><td>Kibana / Dashboards</td><td><span class="yes">Yes</span></td></tr>
@@ -137,7 +126,7 @@
         offers natural-language search and a conversational RAG API.</p>
         <p><strong>Findaro differs:</strong> a product, not building blocks. Its natural-language search sends
         queries to an LLM you configure; Findaro reads most queries with rules and only asks a model about words
-        it can't place. Findaro ships the shopping UI (chips, AI Mode, compare). Apache-2.0 instead of GPL-3.0.</p></div>
+        it can't place. Findaro ships the shopping UI (chips, assistant, compare). Apache-2.0 instead of GPL-3.0.</p></div>
       <div class="card"><h3>vs Meilisearch</h3>
         <p><strong>Meilisearch is ahead on</strong> developer experience, a polished cloud from $20/mo, and hybrid
         search across many languages.</p>
@@ -152,7 +141,7 @@
       <div class="card"><h3>vs Shopify Search &amp; Discovery</h3>
         <p><strong>It is ahead on</strong> price (free), one-click setup and built-in analytics for Shopify stores.</p>
         <p><strong>Findaro differs:</strong> works on any platform through an API or a script tag; Hinglish (Hindi
-        isn't in its language list); conversational AI Mode and grounded product Q&amp;A, which the app doesn't
+        isn't in its language list); a conversational assistant and grounded product Q&amp;A, which the app doesn't
         have. No Shopify app yet.</p></div>
       <div class="card"><h3>vs Boost, SearchTap and other store apps</h3>
         <p><strong>They are ahead on</strong> filters, merchandising campaigns, reports and platform integrations
@@ -193,7 +182,7 @@
 <section class="final" aria-label="Try it">
   <div class="wrap">
     <h2>See it on a real catalog</h2>
-    <p>Try AI Mode on our demo store, or tell us about your catalog.</p>
+    <p>Try it on our demo store, or tell us about your catalog.</p>
     <div class="cta-row"><a class="btn btn-primary" href="/demo/">Open the live demo</a>
       <a class="btn btn-ghost" href="/request-access.html">Request access</a></div>
   </div>

@@ -6,8 +6,8 @@
 <title>Widget · findaro docs</title>
 <meta name="description" content="The <findaro-search> widget: attributes, properties, events and theming.">
 <link rel="canonical" href="__SITE_URL__/docs/widget.html">
-<meta name="theme-color" content="#f6f8fb" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0a0f1a" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f9fc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a1120" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="findaro">
 <meta property="og:title" content="Widget · findaro docs">
@@ -20,7 +20,7 @@
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&amp;family=Instrument+Sans:wght@400..700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=Geist:wght@600..800&amp;display=swap">
 <link rel="stylesheet" href="/assets/site.css">
 <script src="/assets/site.js" defer></script>
 </head>
@@ -34,7 +34,7 @@
     </button>
     <nav class="nav" id="site-nav" aria-label="Main">
       <a href="/#features">Product</a>
-      <a href="/demo/">AI Mode</a>
+      <a href="/demo/">Live demo</a>
       <a href="/pricing.html">Pricing</a>
       <a href="/docs/" aria-current="page">Docs</a>
       <a href="__GITHUB_URL__" rel="noopener">GitHub</a>
@@ -83,23 +83,38 @@ Attributes on an element override them. Self-hosting? Build the file with <code>
 it's at <code>packages/widget/dist/findaro-widget.js</code>. Serve it from your own domain.</p>
 
 <h2 id="what">What it renders</h2>
+<p>By default (<code>mode="unified"</code>) search and the assistant share one surface. See it on the
+<a href="/demo/">live demo</a>.</p>
 <ul>
-  <li>One search box with a <strong>Search / Ask AI</strong> toggle. Search runs as you type; Enter searches, Escape
-  clears.</li>
-  <li>Understood chips (“Under ₹1,000”, “Black”) that the shopper can remove.</li>
-  <li>Filter pills for the attributes that split the current results, behind a “Filters” button.</li>
-  <li>A product grid (image, title, price, rating), with exact matches first and close matches marked.</li>
-  <li>An AI panel: streamed answers, cards for the products it cites, clarifier chips (“Show slightly over budget”) and
-  a clear no-match state.</li>
-  <li>An <strong>Ask</strong> button on every card that opens a product drawer: details, suggested questions and a chat
-  about that one product.</li>
+  <li>One search box, no mode toggle. Results update as you type (debounced, rules only, never the LLM). Press
+  <strong>Enter</strong> to ask: the message goes to <code>/v1/chat</code> and the assistant refines the same results.
+  Follow-ups typed in the same box (“only leather”, “cheaper”, “is the first one leather?”) continue the conversation;
+  a question about the products on screen answers without changing the grid. <strong>New search</strong> starts
+  over.</li>
+  <li>Understood chips (“Under ₹1,000”, “Black”) that the shopper can remove, and filter pills behind a “Filters”
+  button. After a question, removing a chip continues the same conversation.</li>
+  <li>A compact assistant panel above the results: the latest answer (streamed, with small cards for the products it
+  cites), <strong>How I searched</strong>, one-click next steps and clarifier rows (“Show slightly over budget”).
+  Earlier turns fold into a “Conversation (N)” expander.</li>
+  <li>A product grid with exact matches first and close matches marked. Each card shows how well the product matches
+  the request (“Matches 2/2”, “Matches 1/2 · not Leather”), badges, price and rating, and <strong>Ask</strong>,
+  <strong>View</strong> and your own buttons.</li>
+  <li>Select 2 or 3 products and choose <strong>Compare</strong> (a side-by-side table built from the listings, shown in
+  the panel) or <strong>Ask about these</strong> (the next message is about those products only).</li>
+  <li><strong>Ask</strong> on a card opens a product drawer: details, suggested questions and a chat about that one
+  product.</li>
+  <li>An empty widget shows a one-line hint and the <code>starters</code> as chips.</li>
 </ul>
-<h2 id="ai-mode">AI Mode</h2>
-<p>In AI mode the widget is a conversational shopping assistant. Products appear inline in the conversation instead of
+<pre><code>&lt;findaro-search badges="material,tags"
+                starters="black shoes under 1000|kurta for a wedding|steel water bottle"&gt;&lt;/findaro-search&gt;</code></pre>
+<p><code>mode="search"</code> is search only, with a <strong>Search / Ask AI</strong> toggle in the box (Enter searches,
+Escape clears).</p>
+<h2 id="ai-mode">AI Mode (full page)</h2>
+<p><code>mode="ai"</code> and <code>layout="page"</code> are kept for existing integrations. In AI mode the widget is a conversational shopping assistant. Products appear inline in the conversation instead of
 a separate grid. Add <code>layout="page"</code> for a full-page version with a chat history sidebar (collapsible on
 desktop, a drawer on phones). A new conversation starts with the greeting, the composer and the starter questions
 centered on the page; after the first message the composer docks at the bottom. Give the element a height; it fills
-it. See it on the <a href="/demo/">live demo</a>.</p>
+it.</p>
 <pre><code>&lt;style&gt; findaro-search { height: 100dvh; } &lt;/style&gt;
 &lt;findaro-search mode="ai" layout="page" badges="material,tags"
                 starters="black shoes under 1000|kurta for a wedding|steel water bottle"&gt;&lt;/findaro-search&gt;</code></pre>
@@ -128,14 +143,14 @@ with <code>slot="sidebar-footer"</code> inside the widget to show it at the bott
     <tr><td><code>project</code></td><td><code>prj_…</code></td><td>script tag</td><td>Project id.</td></tr>
     <tr><td><code>key</code></td><td><code>fdr_search_…</code></td><td>script tag</td><td>The <em>search</em> key.</td></tr>
     <tr><td><code>base-url</code></td><td>URL</td><td>script tag</td><td>API base URL, e.g. <code>__API_URL__</code>.</td></tr>
-    <tr><td><code>mode</code></td><td><code>search</code> | <code>ai</code></td><td><code>search</code></td><td>Which mode the toggle starts in. Changing it later switches modes.</td></tr>
+    <tr><td><code>mode</code></td><td><code>unified</code> | <code>search</code> | <code>ai</code></td><td><code>unified</code></td><td><code>unified</code>: search as you type, Enter asks the assistant, which refines the same results. <code>search</code>: search only, with a Search / Ask AI toggle. <code>ai</code>: the conversational AI Mode. Changing it later switches modes.</td></tr>
     <tr><td><code>locale</code></td><td><code>en</code> | <code>hi-en</code></td><td><code>en</code></td><td>UI language. <code>hi-en</code> uses Hinglish strings.</td></tr>
     <tr><td><code>placeholder</code></td><td>text</td><td>from locale</td><td>Search box placeholder (search mode).</td></tr>
     <tr><td><code>size</code></td><td>1–100</td><td><code>20</code></td><td>Results per search.</td></tr>
     <tr><td><code>layout</code></td><td><code>page</code></td><td>none</td><td>Full-page AI Mode with a chat history sidebar. Implies <code>mode="ai"</code> unless <code>mode="search"</code> is set.</td></tr>
-    <tr><td><code>starters</code></td><td><code>a|b|c</code></td><td>none</td><td>Up to 4 example requests shown in an empty AI Mode conversation. Clicking one sends it.</td></tr>
-    <tr><td><code>badges</code></td><td>field names, comma-separated</td><td>none</td><td>Document fields shown as up to 2 short badges on AI Mode cards (arrays use their first values; values over 24 characters are skipped).</td></tr>
-    <tr><td><code>card-actions</code></td><td>labels, comma-separated</td><td>none</td><td>Extra buttons on AI Mode cards, e.g. <code>Add to cart,Save</code>. Each click dispatches <code>findaro:action</code>.</td></tr>
+    <tr><td><code>starters</code></td><td><code>a|b|c</code></td><td>none</td><td>Example requests shown in an empty widget (up to 6 chips in unified mode, 4 in AI Mode). Clicking one asks it.</td></tr>
+    <tr><td><code>badges</code></td><td>field names, comma-separated</td><td>none</td><td>Document fields shown as up to 2 short badges on unified and AI Mode cards (arrays use their first values; values over 24 characters are skipped).</td></tr>
+    <tr><td><code>card-actions</code></td><td>labels, comma-separated</td><td>none</td><td>Extra buttons on unified and AI Mode cards, e.g. <code>Add to cart,Save</code>. Each click dispatches <code>findaro:action</code>.</td></tr>
     <tr><td><code>theme</code></td><td><code>light</code> | <code>dark</code></td><td>follows the OS</td><td>Force a colour scheme. Without it, the widget follows <code>prefers-color-scheme</code>.</td></tr>
   </tbody>
 </table>
@@ -144,7 +159,7 @@ with <code>slot="sidebar-footer"</code> inside the widget to show it at the bott
 <table>
   <thead><tr><th>Name</th><th>What it does</th></tr></thead>
   <tbody>
-    <tr><td><code>el.search(query)</code></td><td>Run a search programmatically (or ask, in AI mode).</td></tr>
+    <tr><td><code>el.search(query)</code></td><td>Ask programmatically (unified and AI mode), or run a search (<code>mode="search"</code>).</td></tr>
     <tr><td><code>el.onProductClick = (hit, event) =&gt; …</code></td><td>Called when a product is clicked. When set, the widget doesn't follow the product URL.</td></tr>
     <tr><td><code>el.renderProduct = (hit, { display, formatPrice }) =&gt; …</code></td><td>Your own product card. Return an element, or an HTML string (escape document fields yourself).</td></tr>
     <tr><td><code>el.cardActions = [{ label, onClick(hit) }]</code></td><td>Extra buttons on AI Mode cards, after the ones from <code>card-actions</code>. <code>onClick</code> runs unless a <code>findaro:action</code> listener cancels the event.</td></tr>
@@ -205,19 +220,23 @@ dark mode.</p>
     <tr><td><code>--findaro-muted</code></td><td>Secondary text.</td></tr>
     <tr><td><code>--findaro-border</code></td><td>Borders.</td></tr>
     <tr><td><code>--findaro-chip-bg</code>, <code>--findaro-chip-fg</code></td><td>Chips and pills.</td></tr>
-    <tr><td><code>--findaro-warn</code></td><td>“Close match” and weak-match notes, partial requirement matches.</td></tr>
+    <tr><td><code>--findaro-warn</code></td><td>“Close match” badge, weak-match notes, partial requirement matches. A muted slate-blue by default (no warning yellows).</td></tr>
     <tr><td><code>--findaro-ok</code></td><td>Full requirement matches (“Matches 2/2”).</td></tr>
     <tr><td><code>--findaro-page-width</code></td><td>Width of the conversation column in <code>layout="page"</code> (default 820px).</td></tr>
     <tr><td><code>--findaro-wide-width</code></td><td>Width of product card grids and the search view in <code>layout="page"</code> (default 1040px).</td></tr>
     <tr><td><code>--findaro-radius</code></td><td>Corner radius.</td></tr>
-    <tr><td><code>--findaro-font</code></td><td>Font stack.</td></tr>
+    <tr><td><code>--findaro-font</code></td><td>Font stack for all widget text.</td></tr>
+    <tr><td><code>--findaro-font-heading</code></td><td>Font stack for headings (greeting, result and drawer titles). Defaults to <code>--findaro-font</code>.</td></tr>
+    <tr><td><code>--findaro-accent-soft</code></td><td>Soft accent tint (your message bubble, highlighted rows). Defaults to the accent mixed into the background.</td></tr>
     <tr><td><code>--findaro-card-min</code></td><td>Minimum product card width in the grid.</td></tr>
   </tbody>
 </table>
 
 <h2 id="behaviour">Behaviour and safety</h2>
 <ul>
-  <li>Mobile-first and keyboard accessible: the mode toggle is a radio group and the conversation is an ARIA live log. In AI Mode, Enter sends and
+  <li>Mobile-first and keyboard accessible: in unified mode Enter asks and Escape clears the box, the assistant panel is a
+  labelled region and selection uses real checkboxes; the compare bar stays docked at the bottom of the screen. In
+  <code>mode="search"</code> the mode toggle is a radio group. In AI Mode the conversation is an ARIA live log, Enter sends and
   Shift+Enter adds a line, product selection uses real checkboxes, and Escape closes the history drawer.</li>
   <li>Search-as-you-type is debounced and never calls the LLM planner; only a submitted search can.</li>
   <li>Product links from catalog data are only followed if they are <code>http(s)</code>.</li>

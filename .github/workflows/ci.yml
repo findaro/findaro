@@ -98,10 +98,8 @@ jobs:
     needs: [python, js]
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    # Non-blocking for now: this job builds the full stack (including the embedding model) and runs the
-    # widget and React example against it without an LLM (chat answers use the plain templates). It has
-    # not been confirmed green in CI yet; make it blocking once it is.
-    continue-on-error: true
+    # Builds the full stack (including the embedding model) and runs the widget and React example against it
+    # without an LLM (chat answers use the plain templates). Required on main.
     env:
       FINDARO_CHAT_PROVIDER: none
       FINDARO_PLANNER_PROVIDER: none

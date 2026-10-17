@@ -187,11 +187,17 @@ SIMPLE_TALK = re.compile(r"^\W*(hi+|hello|hey|namaste|namaskar|thanks?|thank ?yo
                          r"dhanyawad|ok|okay|cool|great|nice|bye|goodbye|good (morning|night|evening)|lol|hmm+|"
                          r"ji|bhai|sir|yaar)(\W+(hi+|hello|hey|there|ji|bhai|sir|yaar|so much|a lot|everyone))*\W*$",
                          re.I)
+ABOUT_ME = re.compile(r"\b(who are you|what can you do|what do you do|are you (a )?(bot|human|ai))\b", re.I)
 THANKS = re.compile(r"\b(thanks?|thank you|thx|ty|shukriya|dhanyavaad|dhanyavad|dhanyawad)\b", re.I)
 
 
 def chitchat_reply(message: str, hinglish: bool, has_results: bool = False) -> str:
     """Instant reply to a greeting or thanks (no LLM); suggestion chips come with it when nothing is on screen."""
+    if ABOUT_ME.search(message):
+        return ("Main is store ka shopping assistant hoon. Bataiye kya chahiye, jaise budget, rang ya occasion, aur "
+                "main matching products dhoondh ke compare karne mein madad karunga." if hinglish else
+                "I'm this store's shopping assistant. Tell me what you need, like a budget, colour or occasion, and "
+                "I'll find matching products and help you compare them.")
     if THANKS.search(message) and has_results:
         return ("Khushi hui! Inhe aur refine karein, ya kuch aur dhoondhein?" if hinglish else
                 "Happy to help! Want to refine these, or look for something else?")

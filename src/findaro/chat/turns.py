@@ -24,6 +24,11 @@ CHITCHAT = {
     "dhanyavad", "dhanyawad", "ok", "okay", "cool", "great", "nice", "bye", "goodbye", "how are you",
     "kaise ho", "kya haal hai", "who are you", "what can you do", "good morning", "good night", "lol", "hmm",
 }
+# small talk inside a longer message ("hi, how is it going?"); counts only when the message names nothing in the
+# catalog, so "how are these shoes" stays a product turn
+SMALL_TALK = re.compile(r"\b(how (are|r) (you|u)|how('s| is) it going|how('s| is) your day|what'?s up|wassup|"
+                        r"kaise ho|kya haal|who are you|what can you do|what do you do|are you (a )?(bot|human|ai)|"
+                        r"good (morning|afternoon|evening|night))\b", re.I)
 # words that show the user is asking about results already on screen
 ORDINALS = {"first": 1, "1st": 1, "pehla": 1, "pehle": 1, "pehli": 1, "second": 2, "2nd": 2, "dusra": 2,
             "doosra": 2, "dusre": 2, "dusri": 2, "third": 3, "3rd": 3, "teesra": 3, "tisra": 3, "teesri": 3,
@@ -159,6 +164,8 @@ def classify(message: str, has_plan: bool, has_results: bool, parsed: QueryPlan,
     if not toks or norm in CHITCHAT or (len(toks) <= 3 and all(t in CHITCHAT or t in {"ji", "bhai", "sir"}
                                                                for t in toks)):
         return "chitchat", "greeting/thanks"
+    if SMALL_TALK.search(message) and not parsed.filters and not parsed.boosts and not parsed.sort:
+        return "chitchat", "small talk"
     if _has(toks, RESET):
         return "new", "reset words"
     if has_results:

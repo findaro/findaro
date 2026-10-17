@@ -487,3 +487,35 @@ async def test_compare_without_llm_states_the_cheapest(loaded):
     low = min(h["document"]["price"] for h in res["hits"][:3])
     cheapest = {h["id"] for h in res["hits"][:3] if h["document"]["price"] == low}  # ties: any of them
     assert "couldn't find" not in text and any(f"[{i}]" in text for i in cheapest), text
+
+
+async def test_small_talk_without_llm(loaded):
+    for msg in ("Hi, how is it going?", "hey what's up", "who are you?", "kaise ho bhai"):
+        ev = await chat(loaded, msg)
+        assert first(ev, "done")["turn_type"] == "chitchat", (msg, first(ev, "done"))
+    ev = await chat(loaded, "what can you do?")
+    assert "shopping assistant" in "".join(d["delta"] for e, d in ev if e == "text")
+
+
+def test_small_talk_rule_leaves_product_sentences_alone():
+    for msg in ("how are these water bottles", "good morning, need a steel water bottle"):
+        t, _ = classify(msg, False, False, plan_for(msg), DICT)
+        assert t != "chitchat", msg
+
+
+async def test_failed_llm_answer_falls_back_to_grounded_template(state, loaded):
+    from findaro.llm.base import LLMError
+
+    class Broken(FakeChatLLM):
+        async def stream(self, prompt, system=None, **kw):
+            raise LLMError("401 from provider")
+            yield ""  # pragma: no cover - makes this an async generator
+
+    state.chat_llm = Broken()
+    try:
+        ev = await chat(loaded, "water bottle")
+    finally:
+        state.chat_llm = None
+    text = "".join(d["delta"] for e, d in ev if e == "text")
+    assert first(ev, "done")["answer_source"] == "error"
+    assert f"[{first(ev, 'results')['items'][0]['id']}]" in text, text

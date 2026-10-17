@@ -30,6 +30,7 @@ const ICONS: Record<string, string> = {
     + '<path fill="currentColor" stroke="none" d="M19 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>',
   send: '<path d="M12 19V5M5.5 11.5L12 5l6.5 6.5"/>',
   arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>',
   chev: '<path d="M9 6l6 6-6 6"/>',
   down: '<path d="M12 5v14M6 13l6 6 6-6"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h10"/>',

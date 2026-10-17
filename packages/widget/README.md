@@ -12,9 +12,18 @@ LLM), Enter asks the assistant (`/v1/chat`), which refines the same grid and ans
 (latest reply, "How I searched", next steps; earlier turns folded into "Conversation (N)"). Follow-ups in the same box
 continue the session; chips, filter pills and next-step rows apply patches to it; cards can be selected (2–3) to compare
 or ask about; "New search" starts over. `starters="a|b|c"` shows example requests as chips in the empty state.
-`mode="search"` is search only (with a Search / Ask AI toggle).
+`mode="search"` is search only (with a Search / Ask AI toggle; `starters` show as search chips when it's empty).
 
-Theme with CSS variables (`--findaro-accent`, `--findaro-bg`, `--findaro-fg`, `--findaro-radius`, `--findaro-font`,
+**Your own Search | AI Mode switch:** `toggle="off"` hides the built-in toggle and your page changes the `mode`
+attribute (`search` ↔ `ai`). Each mode keeps its own results across switches; a search typed in Search mode is put in
+the AI Mode composer (`el.search(el.query)` asks it right away; `el.turns` is the conversation length). `cards="full"`
+gives the search grid the AI Mode cards (select to compare, "Matches 2/2", badges, Ask / View); Compare and Ask about
+these switch to AI Mode and fire `findaro:mode` (`detail.mode`). The in-box AI Mode thread takes a fixed height from
+`--findaro-thread-height` (composer docked at its bottom) and exposes `::part(thread)`. The site's
+[live demo](../../site/public/demo/index.html) is built this way.
+
+Light defaults: white, neutral greys, near-black text, one deep teal accent (no warm colours); `theme="light"` /
+`theme="dark"` force a scheme, otherwise it follows the OS. Theme with CSS variables (`--findaro-accent`, `--findaro-bg`, `--findaro-fg`, `--findaro-radius`, `--findaro-font`,
 `--findaro-font-heading`, `--findaro-accent-soft`, `--findaro-warn` for close-match/partial states, …), customise cards with
 `el.renderProduct = (hit, { display, formatPrice }) => …`, handle clicks with `el.onProductClick`, and override text with
 `el.strings = { … }` (`locale="hi-en"` for Hinglish defaults). See the repository README.
@@ -36,11 +45,13 @@ view instead. Conversations are kept in `localStorage` per project; the search k
 | Attribute | |
 |---|---|
 | `layout="page"` | Full-page AI Mode with chat history (or full-page search with `mode="search"`). Give the element a height. |
-| `starters="a\|b\|c"` | Up to 4 example requests in an empty conversation. |
+| `starters="a\|b\|c"` | Up to 6 example requests in an empty conversation. |
+| `toggle="off"` | No built-in Search / Ask AI toggle (the host page switches `mode`). |
+| `cards="full"` | `mode="search"` uses the AI Mode cards. |
 | `badges="field,field"` | Up to 2 short value badges per card from these document fields. |
 | `card-actions="Add to cart,Save"` | Extra card buttons; each click dispatches `findaro:action`. |
 
-Script-tag equivalents: `data-layout`, `data-starters`, `data-badges`, `data-card-actions`.
+Script-tag equivalents: `data-layout`, `data-starters`, `data-badges`, `data-card-actions`, `data-toggle`, `data-cards`.
 
 ```js
 el.cardActions = [{ label: "Wishlist", onClick: (hit) => wishlist.add(hit.id) }];

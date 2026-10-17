@@ -59,3 +59,24 @@ Fixes from a real demo conversation: product-type words inside compound categori
 caps from refinements like "increase it to 2000", budget clarifiers on weak matches, and full product titles
 counted as citations (search nDCG@10 0.966 → 0.970). Added small talk answered by the chat model with a suggested
 search, suggestion chips (`clarify.reason = "suggest"`) and the JSONL query log (`scripts/queries.py`).
+
+## Open source and rename (2026-10-17)
+
+Renamed zerch to **Findaro** (the old name collided with other products), moved to the `findaro` GitHub org and made
+the repository public under Apache-2.0, with CI (Python, JS, Playwright e2e), contributing guide, security policy
+and protected `main`.
+
+## Hosted beta (2026-10-17 – 10-18)
+
+Per-project usage metering and operator-set plan limits (`/v1/projects/{id}/usage`, `/v1/operator/*`), a daily LLM
+call cap, a request-access form with alerts, nightly backups, and a single-box deploy behind a shared Caddy. Since
+10-18 it is served through a Cloudflare Worker at https://findaro.fortwinai.com, with the origin only reachable
+through the edge.
+
+## AI Mode and the unified widget (2026-10-17 – 10-18)
+
+`<findaro-search>` gained AI Mode (conversation with products inline, "How I searched", next-step rows,
+select-and-compare) and a unified default mode, plus per-result `requirements` ("Matches 2/3"). Chat fixes from
+live use: refinements stay in the named category, value families ("leather" covers every kind of leather),
+questions about fields of the results on screen ("rating of top 5"), and grounded answers without an LLM.
+Search and chat evals unchanged throughout.

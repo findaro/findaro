@@ -6,7 +6,8 @@ Read this first. It is the source of truth for scope and rules across sessions.
 
 Developers connect their catalog, call one API (or drop in a JS widget), and get AI search:
 natural-language queries, Indian-English/Hinglish understanding, filters inferred from the query,
-a chat-style refinement mode, a headless SDK and a drop-in widget. Open source (Apache-2.0); hosted service later.
+a chat-style refinement mode, a headless SDK and a drop-in widget. Open source (Apache-2.0) at
+github.com/findaro/findaro; hosted beta at https://findaro.fortwinai.com (API https://findaro-api.fortwinai.com).
 
 ## Milestones
 
@@ -17,6 +18,7 @@ a chat-style refinement mode, a headless SDK and a drop-in widget. Open source (
 | M3 | Chat search (conversational refinement over the M2 query representation) | done (conversations need review) |
 | M4 | JS SDK / drop-in widget (uses the browser-safe `search_key`) | done |
 | M5 | Product conversation (`product_ids` on `/v1/chat`, labeled general know-how, widget product drawer) | done |
+| M6 | Hosted beta: usage metering and plan limits, website and live demo, AI Mode / unified widget, deploy (single box + Cloudflare edge) | done |
 
 ## Contracts (change additively only)
 
@@ -38,6 +40,9 @@ a chat-style refinement mode, a headless SDK and a drop-in widget. Open source (
   chips are `clarify` events with `reason: "suggest"` and an empty `patch` (send the label as the message).
 - Chat answers must stay grounded: the model only sees products on screen, numbers come from server-filled
   slots, comparisons are computed in code, and every sentence is checked (`findaro.chat.slots`) before it streams.
+- Hits carry `requirements` (met / unmet / unknown understood constraints); chat `clarify` has `reason: "next"` for
+  one-click refinements; usage and limits live under `/v1/projects/{id}/usage` and the operator API
+  (`/v1/operator/*`, bootstrap token only).
 - `eval/` is the gate: changes must not regress `eval/report.md` against `eval/baselines/m1.json`.
 
 ## Stack
@@ -81,6 +86,11 @@ a chat-style refinement mode, a headless SDK and a drop-in widget. Open source (
 - `tests/` — pytest; needs compose services up (`docker compose up -d postgres opensearch redis`)
 - `packages/sdk` (`@findaro/sdk`, headless TS client, types generated from `packages/sdk/openapi.json`),
   `packages/widget` (`<findaro-search>`), `examples/plain-html`, `examples/react`, `e2e/` (Playwright)
+- `site/` — website and docs (static `public/`, rendered with placeholders at deploy) plus a small server for the
+  request-access form (`site/server/`)
+- `deploy/app-a1/` — single-box deploy (compose, Caddy, backups, demo project, site render);
+  `deploy/cloudflare/` — the edge Worker in front of it
+- `docs/` — milestone history (`history.md`) and the product brief
 - JS budgets (enforced by `npm run size`): SDK ≤ 10 KB gz, widget incl. SDK ≤ 40 KB gz. Zero runtime deps.
 
 ## Not built yet

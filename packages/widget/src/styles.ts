@@ -234,7 +234,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .pc .card:focus-visible { outline-offset: -2px; }
 .pc .body { padding: 10px 12px 2px; gap: 5px; align-content: start; }
 .pc .title { font-weight: 500; line-height: 1.35; }
-.sel { position: absolute; top: 10px; left: 10px; display: inline-flex; align-items: center; gap: 6px;
+.sel { position: absolute; top: 10px; left: 10px; display: inline-flex; align-items: center; gap: 6px; color-scheme: light;
        padding: 4px 10px 4px 8px; border-radius: 999px; background: rgb(255 255 255 / .94); color: #18181b;
        font-size: 12px; font-weight: 600; box-shadow: 0 1px 4px rgb(0 0 0 / .18); cursor: pointer; }
 .sel input { margin: 0; width: 15px; height: 15px; accent-color: var(--findaro-accent); cursor: pointer; }

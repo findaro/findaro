@@ -34,6 +34,7 @@
     </button>
     <nav class="nav" id="site-nav" aria-label="Main">
       <a href="/#features">Product</a>
+      <a href="/ai.html">AI Mode</a>
       <a href="/pricing.html">Pricing</a>
       <a href="/docs/" aria-current="page">Docs</a>
       <a href="__GITHUB_URL__" rel="noopener">GitHub</a>
@@ -69,14 +70,15 @@
 <span class="eyebrow">Integrate</span>
 <h1>Widget</h1>
 <p class="lede"><code>&lt;findaro-search&gt;</code> is a Web Component (Shadow DOM, no framework, no dependencies, about
-10 KB gzipped with the SDK included). It works in any page: plain HTML, React, Vue, a CMS template.</p>
+20 KB gzipped with the SDK included). It works in any page: plain HTML, React, Vue, a CMS template.</p>
 
 <h2 id="install">Install</h2>
 <pre><code>&lt;script src="__SITE_URL__/findaro-widget.js" data-project="prj_…" data-key="fdr_search_…"
         data-base-url="__API_URL__" defer&gt;&lt;/script&gt;
 &lt;findaro-search&gt;&lt;/findaro-search&gt;</code></pre>
 <p>Settings on the script tag (<code>data-project</code>, <code>data-key</code>, <code>data-base-url</code>,
-<code>data-locale</code>, <code>data-mode</code>) apply to every <code>&lt;findaro-search&gt;</code> on the page.
+<code>data-locale</code>, <code>data-mode</code>, <code>data-layout</code>, <code>data-starters</code>,
+<code>data-badges</code>, <code>data-card-actions</code>) apply to every <code>&lt;findaro-search&gt;</code> on the page.
 Attributes on an element override them. Self-hosting? Build the file with <code>npm install &amp;&amp; npm run build</code>;
 it's at <code>packages/widget/dist/findaro-widget.js</code>. Serve it from your own domain.</p>
 
@@ -92,6 +94,28 @@ it's at <code>packages/widget/dist/findaro-widget.js</code>. Serve it from your 
   <li>An <strong>Ask</strong> button on every card that opens a product drawer: details, suggested questions and a chat
   about that one product.</li>
 </ul>
+<h2 id="ai-mode">AI Mode</h2>
+<p>In AI mode the widget is a conversational shopping assistant. Products appear inline in the conversation instead of
+a separate grid. Add <code>layout="page"</code> for a full-page version with a chat history sidebar (a drawer on
+phones) and a composer fixed at the bottom. Give the element a height; it fills it.</p>
+<pre><code>&lt;style&gt; findaro-search { height: 100dvh; } &lt;/style&gt;
+&lt;findaro-search mode="ai" layout="page" badges="material,tags"
+                starters="black shoes under 1000|kurta for a wedding|steel water bottle"&gt;&lt;/findaro-search&gt;</code></pre>
+<ul>
+  <li>Each answer shows <strong>How I searched</strong>: what the query was understood as, any filter that was
+  loosened to find results, the result count and the time taken.</li>
+  <li>Cards show how well each product matches the request (“Matches 2/2”, “Matches 1/2 · not Leather”,
+  “Leather not listed”). The API works this out from each listing.</li>
+  <li>Up to three one-click next steps (“Only Copper”, “Under ₹700”) follow each set of results.</li>
+  <li>Shoppers can select 2 or 3 products and choose <strong>Compare</strong>, which shows a side-by-side table
+  built from the listings, or <strong>Ask about these</strong>, which sends their next question about those
+  products only.</li>
+  <li>Conversations are saved in the shopper's browser (<code>localStorage</code>, per project, up to 30). The search
+  key is never stored. A conversation reopened after 30 minutes starts a new server session, and the widget re-asks
+  the last question when it needs to.</li>
+</ul>
+<p>Without <code>layout="page"</code>, <code>mode="ai"</code> shows the same conversation inside the widget box,
+under the Search / Ask AI toggle.</p>
 
 <h2 id="attributes">Attributes</h2>
 <table>
@@ -104,6 +128,10 @@ it's at <code>packages/widget/dist/findaro-widget.js</code>. Serve it from your 
     <tr><td><code>locale</code></td><td><code>en</code> | <code>hi-en</code></td><td><code>en</code></td><td>UI language. <code>hi-en</code> uses Hinglish strings.</td></tr>
     <tr><td><code>placeholder</code></td><td>text</td><td>from locale</td><td>Search box placeholder (search mode).</td></tr>
     <tr><td><code>size</code></td><td>1–100</td><td><code>20</code></td><td>Results per search.</td></tr>
+    <tr><td><code>layout</code></td><td><code>page</code></td><td>none</td><td>Full-page AI Mode with a chat history sidebar. Implies <code>mode="ai"</code>.</td></tr>
+    <tr><td><code>starters</code></td><td><code>a|b|c</code></td><td>none</td><td>Up to 4 example requests shown in an empty AI Mode conversation. Clicking one sends it.</td></tr>
+    <tr><td><code>badges</code></td><td>field names, comma-separated</td><td>none</td><td>Document fields shown as up to 2 short badges on AI Mode cards (arrays use their first values; values over 24 characters are skipped).</td></tr>
+    <tr><td><code>card-actions</code></td><td>labels, comma-separated</td><td>none</td><td>Extra buttons on AI Mode cards, e.g. <code>Add to cart,Save</code>. Each click dispatches <code>findaro:action</code>.</td></tr>
     <tr><td><code>theme</code></td><td><code>light</code> | <code>dark</code></td><td>follows the OS</td><td>Force a colour scheme. Without it, the widget follows <code>prefers-color-scheme</code>.</td></tr>
   </tbody>
 </table>
@@ -115,6 +143,7 @@ it's at <code>packages/widget/dist/findaro-widget.js</code>. Serve it from your 
     <tr><td><code>el.search(query)</code></td><td>Run a search programmatically (or ask, in AI mode).</td></tr>
     <tr><td><code>el.onProductClick = (hit, event) =&gt; …</code></td><td>Called when a product is clicked. When set, the widget doesn't follow the product URL.</td></tr>
     <tr><td><code>el.renderProduct = (hit, { display, formatPrice }) =&gt; …</code></td><td>Your own product card. Return an element, or an HTML string (escape document fields yourself).</td></tr>
+    <tr><td><code>el.cardActions = [{ label, onClick(hit) }]</code></td><td>Extra buttons on AI Mode cards, after the ones from <code>card-actions</code>. <code>onClick</code> runs unless a <code>findaro:action</code> listener cancels the event.</td></tr>
     <tr><td><code>el.strings = { … }</code></td><td>Override any UI text, merged over the locale's defaults.</td></tr>
     <tr><td><code>el.client</code></td><td>Inject a preconfigured SDK client (for example with a custom <code>fetch</code>).</td></tr>
   </tbody>
@@ -139,6 +168,7 @@ it's at <code>packages/widget/dist/findaro-widget.js</code>. Serve it from your 
   <tbody>
     <tr><td><code>findaro:results</code></td><td>the search response (<code>total</code>, <code>hits</code>, <code>understood</code>, …)</td><td>After each search returns.</td></tr>
     <tr><td><code>findaro:product-click</code></td><td><code>{ hit }</code></td><td>A product was clicked. Cancelable: <code>preventDefault()</code> stops navigation to the product URL.</td></tr>
+    <tr><td><code>findaro:action</code></td><td><code>{ action, hit }</code></td><td>A custom card button was clicked (<code>action</code> is its label). Cancelable.</td></tr>
     <tr><td><code>findaro:error</code></td><td>the error</td><td>A request failed.</td></tr>
   </tbody>
 </table>
@@ -146,6 +176,9 @@ it's at <code>packages/widget/dist/findaro-widget.js</code>. Serve it from your 
 el.addEventListener("findaro:product-click", (e) =&gt; {
   e.preventDefault();
   openQuickView(e.detail.hit);
+});
+el.addEventListener("findaro:action", (e) =&gt; {
+  if (e.detail.action === "Add to cart") cart.add(e.detail.hit.id);
 });</code></pre>
 
 <h2 id="theming">Theming</h2>
@@ -168,7 +201,9 @@ dark mode.</p>
     <tr><td><code>--findaro-muted</code></td><td>Secondary text.</td></tr>
     <tr><td><code>--findaro-border</code></td><td>Borders.</td></tr>
     <tr><td><code>--findaro-chip-bg</code>, <code>--findaro-chip-fg</code></td><td>Chips and pills.</td></tr>
-    <tr><td><code>--findaro-warn</code></td><td>“Close match” and weak-match notes.</td></tr>
+    <tr><td><code>--findaro-warn</code></td><td>“Close match” and weak-match notes, partial requirement matches.</td></tr>
+    <tr><td><code>--findaro-ok</code></td><td>Full requirement matches (“Matches 2/2”).</td></tr>
+    <tr><td><code>--findaro-page-width</code></td><td>Width of the conversation column in <code>layout="page"</code> (default 880px).</td></tr>
     <tr><td><code>--findaro-radius</code></td><td>Corner radius.</td></tr>
     <tr><td><code>--findaro-font</code></td><td>Font stack.</td></tr>
     <tr><td><code>--findaro-card-min</code></td><td>Minimum product card width in the grid.</td></tr>
@@ -177,7 +212,8 @@ dark mode.</p>
 
 <h2 id="behaviour">Behaviour and safety</h2>
 <ul>
-  <li>Mobile-first and keyboard accessible: the mode toggle is a radio group and the conversation is an ARIA live log.</li>
+  <li>Mobile-first and keyboard accessible: the mode toggle is a radio group and the conversation is an ARIA live log. In AI Mode, Enter sends and
+  Shift+Enter adds a line, product selection uses real checkboxes, and Escape closes the history drawer.</li>
   <li>Search-as-you-type is debounced and never calls the LLM planner; only a submitted search can.</li>
   <li>Product links from catalog data are only followed if they are <code>http(s)</code>.</li>
   <li>A missing or placeholder key shows a setup message instead of failing silently.</li>

@@ -6,8 +6,8 @@
 <title>Widget · findaro docs</title>
 <meta name="description" content="The <findaro-search> widget: attributes, properties, events and theming.">
 <link rel="canonical" href="__SITE_URL__/docs/widget.html">
-<meta name="theme-color" content="#f5f2ea" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#11100d" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f8fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0f1a" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="findaro">
 <meta property="og:title" content="Widget · findaro docs">
@@ -34,7 +34,7 @@
     </button>
     <nav class="nav" id="site-nav" aria-label="Main">
       <a href="/#features">Product</a>
-      <a href="/ai.html">AI Mode</a>
+      <a href="/demo/">AI Mode</a>
       <a href="/pricing.html">Pricing</a>
       <a href="/docs/" aria-current="page">Docs</a>
       <a href="__GITHUB_URL__" rel="noopener">GitHub</a>
@@ -96,8 +96,10 @@ it's at <code>packages/widget/dist/findaro-widget.js</code>. Serve it from your 
 </ul>
 <h2 id="ai-mode">AI Mode</h2>
 <p>In AI mode the widget is a conversational shopping assistant. Products appear inline in the conversation instead of
-a separate grid. Add <code>layout="page"</code> for a full-page version with a chat history sidebar (a drawer on
-phones) and a composer fixed at the bottom. Give the element a height; it fills it.</p>
+a separate grid. Add <code>layout="page"</code> for a full-page version with a chat history sidebar (collapsible on
+desktop, a drawer on phones). A new conversation starts with the greeting, the composer and the starter questions
+centered on the page; after the first message the composer docks at the bottom. Give the element a height; it fills
+it. See it on the <a href="/demo/">live demo</a>.</p>
 <pre><code>&lt;style&gt; findaro-search { height: 100dvh; } &lt;/style&gt;
 &lt;findaro-search mode="ai" layout="page" badges="material,tags"
                 starters="black shoes under 1000|kurta for a wedding|steel water bottle"&gt;&lt;/findaro-search&gt;</code></pre>
@@ -115,7 +117,9 @@ phones) and a composer fixed at the bottom. Give the element a height; it fills 
   the last question when it needs to.</li>
 </ul>
 <p>Without <code>layout="page"</code>, <code>mode="ai"</code> shows the same conversation inside the widget box,
-under the Search / Ask AI toggle.</p>
+under the Search / Ask AI toggle. With <code>layout="page" mode="search"</code> the page shows the search box, chips,
+filters and product grid instead; switch between the two by changing the <code>mode</code> attribute. Put an element
+with <code>slot="sidebar-footer"</code> inside the widget to show it at the bottom of the history sidebar.</p>
 
 <h2 id="attributes">Attributes</h2>
 <table>
@@ -128,7 +132,7 @@ under the Search / Ask AI toggle.</p>
     <tr><td><code>locale</code></td><td><code>en</code> | <code>hi-en</code></td><td><code>en</code></td><td>UI language. <code>hi-en</code> uses Hinglish strings.</td></tr>
     <tr><td><code>placeholder</code></td><td>text</td><td>from locale</td><td>Search box placeholder (search mode).</td></tr>
     <tr><td><code>size</code></td><td>1–100</td><td><code>20</code></td><td>Results per search.</td></tr>
-    <tr><td><code>layout</code></td><td><code>page</code></td><td>none</td><td>Full-page AI Mode with a chat history sidebar. Implies <code>mode="ai"</code>.</td></tr>
+    <tr><td><code>layout</code></td><td><code>page</code></td><td>none</td><td>Full-page AI Mode with a chat history sidebar. Implies <code>mode="ai"</code> unless <code>mode="search"</code> is set.</td></tr>
     <tr><td><code>starters</code></td><td><code>a|b|c</code></td><td>none</td><td>Up to 4 example requests shown in an empty AI Mode conversation. Clicking one sends it.</td></tr>
     <tr><td><code>badges</code></td><td>field names, comma-separated</td><td>none</td><td>Document fields shown as up to 2 short badges on AI Mode cards (arrays use their first values; values over 24 characters are skipped).</td></tr>
     <tr><td><code>card-actions</code></td><td>labels, comma-separated</td><td>none</td><td>Extra buttons on AI Mode cards, e.g. <code>Add to cart,Save</code>. Each click dispatches <code>findaro:action</code>.</td></tr>
@@ -203,7 +207,8 @@ dark mode.</p>
     <tr><td><code>--findaro-chip-bg</code>, <code>--findaro-chip-fg</code></td><td>Chips and pills.</td></tr>
     <tr><td><code>--findaro-warn</code></td><td>“Close match” and weak-match notes, partial requirement matches.</td></tr>
     <tr><td><code>--findaro-ok</code></td><td>Full requirement matches (“Matches 2/2”).</td></tr>
-    <tr><td><code>--findaro-page-width</code></td><td>Width of the conversation column in <code>layout="page"</code> (default 880px).</td></tr>
+    <tr><td><code>--findaro-page-width</code></td><td>Width of the conversation column in <code>layout="page"</code> (default 820px).</td></tr>
+    <tr><td><code>--findaro-wide-width</code></td><td>Width of product card grids and the search view in <code>layout="page"</code> (default 1040px).</td></tr>
     <tr><td><code>--findaro-radius</code></td><td>Corner radius.</td></tr>
     <tr><td><code>--findaro-font</code></td><td>Font stack.</td></tr>
     <tr><td><code>--findaro-card-min</code></td><td>Minimum product card width in the grid.</td></tr>
@@ -232,7 +237,7 @@ dark mode.</p>
     <div>
       <h4>Product</h4>
       <ul>
-        <li><a href="/#demo">Live demo</a></li>
+        <li><a href="/demo/">Live demo</a></li>
         <li><a href="/#features">Features</a></li>
         <li><a href="/pricing.html">Pricing</a></li>
         <li><a href="/request-access.html">Request access</a></li>

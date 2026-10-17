@@ -102,32 +102,6 @@
     }
   }
 
-  /* ---------- live demo ---------- */
-  var demo = $("findaro-search#demo-widget");
-  $$(".try button[data-q]").forEach(function (b) {
-    b.addEventListener("click", function () {
-      var el = $("findaro-search#demo-widget");
-      if (!el || typeof el.search !== "function") {
-        var fb = $("#demo-fallback");
-        if (fb) fb.classList.add("show");
-        return;
-      }
-      el.setAttribute("mode", b.getAttribute("data-mode") === "ai" ? "ai" : "search");
-      el.search(b.getAttribute("data-q"));
-      el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
-    });
-  });
-  if (demo) {
-    window.addEventListener("load", function () {
-      setTimeout(function () {
-        if (!window.customElements || !window.customElements.get("findaro-search")) {
-          var fb = $("#demo-fallback");
-          if (fb) fb.classList.add("show");
-        }
-      }, 3000);
-    });
-  }
-
   /* ---------- code tabs ---------- */
   $$("[role=tablist]").forEach(function (list) {
     var tabs = $$("[role=tab]", list);

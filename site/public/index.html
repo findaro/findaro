@@ -416,8 +416,8 @@ file=@catalog.jsonl</code></pre>
   <div class="pricing-notes">
     <div class="note">
       <p><strong>Going over a limit never cuts your search off without warning — we'll contact you first.</strong>
-      Searches are search API calls plus chat turns: each request to <code>/v1/search</code> counts (including the
-      debounced search-as-you-type requests the widget sends), and each chat message counts as one.</p>
+      Searches are submitted searches plus chat turns: each <code>/v1/search</code> request counts, and each chat
+      message counts as one. Search-as-you-type requests while someone types (<code>"llm": false</code>) are free.</p>
     </div>
     <div class="note">
       <p>All plans are the <strong>hosted beta</strong>, priced per month and billed by invoice. Beta means the
@@ -475,8 +475,8 @@ file=@catalog.jsonl</code></pre>
       </details>
       <details>
         <summary>What counts as a search?</summary>
-        <div><p>Each call to the search API, including the debounced search-as-you-type requests the widget sends, and
-        each chat turn. If you're about to go over your plan, we'll contact you first; search is never cut off without
+        <div><p>Each submitted search and each chat turn. Search-as-you-type requests sent while someone types don't
+        count. If you're about to go over your plan, we'll contact you first; search is never cut off without
         warning.</p></div>
       </details>
       <details>

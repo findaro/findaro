@@ -128,8 +128,8 @@
   <div class="pricing-notes">
     <div class="note">
       <p><strong>Going over a limit never cuts your search off without warning — we'll contact you first.</strong>
-      Searches are search API calls plus chat turns: each request to <code>/v1/search</code> counts (including the
-      debounced search-as-you-type requests the widget sends), and each chat message counts as one.</p>
+      Searches are submitted searches plus chat turns: each <code>/v1/search</code> request counts, and each chat
+      message counts as one. Search-as-you-type requests while someone types (<code>"llm": false</code>) are free.</p>
     </div>
     <div class="note">
       <p>All plans are the <strong>hosted beta</strong>, priced per month and billed by invoice. Beta means the
@@ -176,9 +176,9 @@
     <div class="faq">
       <details>
         <summary>What counts as a search?</summary>
-        <div><p>Search API calls plus chat turns. Each request to <code>/v1/search</code> counts, including the
-        debounced search-as-you-type requests the widget sends while someone types. Each message in the AI chat counts
-        as one.</p></div>
+        <div><p>Submitted searches plus chat turns. Each <code>/v1/search</code> request counts, and each message in the
+        AI chat counts as one. Search-as-you-type requests the widget sends while someone types
+        (<code>"llm": false</code>) don't count.</p></div>
       </details>
       <details>
         <summary>What happens if we go over a limit?</summary>

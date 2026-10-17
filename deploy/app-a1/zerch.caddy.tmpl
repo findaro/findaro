@@ -1,0 +1,32 @@
+# zerch API and demo page. Rendered by deploy.sh (API_HOST / DEMO_HOST) into /srv/caddy/sites/zerch.caddy.
+API_HOST {
+	@compress not path /v1/chat
+	encode @compress zstd gzip
+	request_body {
+		max_size 60MB
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+	reverse_proxy zerch-api:8000 {
+		flush_interval -1
+	}
+}
+
+DEMO_HOST {
+	encode zstd gzip
+	request_body {
+		max_size 1KB
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+	reverse_proxy zerch-demo:80
+}

@@ -10,7 +10,8 @@ RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --no-ins
 # Bake the embedding model into the image as a plain directory, so startup never touches the HF hub.
 ARG EMBEDDING_MODEL=intfloat/multilingual-e5-small
 RUN /app/.venv/bin/python -c "from sentence_transformers import SentenceTransformer; \
-SentenceTransformer('${EMBEDDING_MODEL}').save('/models/embedding')" && rm -rf /models/hub /models/xet
+SentenceTransformer('${EMBEDDING_MODEL}').save('/models/embedding')" && rm -rf /models/hub /models/xet \
+    && chmod -R a+rX /models
 
 COPY src ./src
 COPY packs ./packs

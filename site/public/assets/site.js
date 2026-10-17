@@ -41,11 +41,17 @@
         cap: "31 products match in the demo store.",
         sr: "is understood as Black, Shoes and Under ₹1,000."
       },
-      english: {
-        q: "cotton kurta under 800",
-        segs: [["cotton", "Cotton"], ["kurta", "Kurtas"], ["under 800", "Under ₹800"]],
-        cap: "9 products match in the demo store.",
-        sr: "is understood as Cotton, Kurtas and Under ₹800."
+      specs: {
+        q: "1200W electric kettle",
+        segs: [["1200W", "1200W"], ["electric kettle", "Electric Kettles"]],
+        cap: "Read as a specification, not a price.",
+        sr: "is understood as 1200W and Electric Kettles."
+      },
+      budget: {
+        q: "water bottle under 500",
+        segs: [["water bottle", "Water Bottles"], ["under 500", "Under ₹500"]],
+        cap: "22 products match in the demo store.",
+        sr: "is understood as Water Bottles and Under ₹500."
       },
       typo: {
         q: "presure coker",

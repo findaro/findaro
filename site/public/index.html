@@ -45,7 +45,9 @@
 
 <section class="hero" aria-labelledby="hero-h">
   <div class="wrap">
-    <h1 id="hero-h"><span>Your shoppers don't type keywords.</span> <span>Findaro understands what they mean.</span></h1>
+    <h1 id="hero-h"><span>Your customers know what they want.</span> <span>Your search should too.</span></h1>
+    <p class="hero-sub">Natural-language product search that understands Hinglish, technical specifications, and real
+    buying intent.</p>
 
     <figure class="aq" id="aq" data-example="hinglish">
       <p class="sr-only" id="aq-sr" aria-live="polite">The query “kaale joote 1000 ke andar” is understood as Black, Shoes and Under ₹1,000.</p>
@@ -57,7 +59,8 @@
       <figcaption class="aq-foot">
         <span class="seg" role="radiogroup" aria-label="Example query" id="aq-switch">
           <button type="button" role="radio" data-ex="hinglish" aria-checked="true">Hinglish</button>
-          <button type="button" role="radio" data-ex="english" aria-checked="false" tabindex="-1">English</button>
+          <button type="button" role="radio" data-ex="specs" aria-checked="false" tabindex="-1">Specs</button>
+          <button type="button" role="radio" data-ex="budget" aria-checked="false" tabindex="-1">Budget</button>
           <button type="button" role="radio" data-ex="typo" aria-checked="false" tabindex="-1">Typo</button>
         </span>
         <p class="aq-cap" id="aq-cap">31 products match in the demo store. <a href="/demo/?mode=search&amp;q=kaale%20joote%201000%20ke%20andar">Run this search</a></p>
@@ -65,10 +68,11 @@
     </figure>
 
     <div class="cta-row hero-ctas">
-      <a class="btn btn-primary" href="/request-access.html">Request access</a>
-      <a class="btn btn-ghost" href="/demo/">Try the live demo</a>
+      <a class="btn btn-primary" href="/demo/">Try live demo</a>
+      <a class="btn btn-ghost" href="__GITHUB_URL__" rel="noopener">View on GitHub</a>
     </div>
-    <p class="hero-note">Open source under Apache-2.0. Self-host it, or use the hosted beta in Mumbai.</p>
+    <p class="hero-note">Open source. <a href="/docs/self-hosting.html">Self-host it</a> or
+    <a href="/docs/quickstart.html">add it with one script tag</a>.</p>
   </div>
 </section>
 
@@ -76,8 +80,7 @@
   <div class="wrap">
     <div class="section-head">
       <h2 id="versus-h">Same query, two searches.</h2>
-      <p>Keyword search looks for the shopper's exact words in your product titles. Findaro reads the query first,
-      then searches.</p>
+      <p>Real results from the demo store.</p>
     </div>
     <div class="versus">
       <div class="side">
@@ -104,31 +107,24 @@
   <div class="wrap">
     <div class="section-head">
       <h2 id="und-h">What it understands.</h2>
-      <p>Real queries on the demo store, and what Findaro made of them. Every filter comes back as a chip the shopper
-      can remove.</p>
+      <p>Every filter comes back as a chip the shopper can remove.</p>
     </div>
     <ul class="uses">
-      <li><span class="typed">joote under 1k</span>
-        <span class="chips"><span class="chip">Under ₹1,000</span><span class="chip">Shoes</span></span>
-        <span class="why">Budgets written the way people write them: 1k, 1.5k, 500 se kam, ₹500-₹1000.</span></li>
       <li><span class="typed">500 ke andar steel bottle</span>
         <span class="chips"><span class="chip">Under ₹500</span><span class="chip">Stainless Steel</span><span class="chip">Water Bottles</span></span>
-        <span class="why">Hinglish price phrases, colours and materials, matched to your catalog's own values.</span></li>
-      <li><span class="typed">sarson ka tel</span>
-        <span class="chips"><span class="chip">Mustard Oil</span></span>
-        <span class="why">Hinglish product names, in their many spellings.</span></li>
+        <span class="why">Hinglish</span></li>
+      <li><span class="typed">1200W electric kettle</span>
+        <span class="chips"><span class="chip">1200W</span><span class="chip">Electric Kettles</span></span>
+        <span class="why">Specs, never read as prices</span></li>
+      <li><span class="typed">joote under 1k</span>
+        <span class="chips"><span class="chip">Under ₹1,000</span><span class="chip">Shoes</span></span>
+        <span class="why">Budgets as people write them</span></li>
       <li><span class="typed">presure coker</span>
-        <span class="found">Pressure cookers, from the first result down</span>
-        <span class="why">Typos are forgiven. Keyword and meaning-based search run together.</span></li>
-      <li><span class="typed">5 litre pressure cooker</span>
-        <span class="chips"><span class="chip">5 L</span><span class="chip">Pressure Cookers</span></span>
-        <span class="why">Sizes stay sizes. “5 litre” and “65W” are never read as prices.</span></li>
-      <li><span class="typed">sasta laptop bag</span>
-        <span class="chips"><span class="chip">Laptop Bags</span><span class="chip">Lower prices first</span></span>
-        <span class="why">Cheap and premium intent become a sort order.</span></li>
-      <li><span class="typed">only leather<small>after “black shoes under 1000”, in AI Mode</small></span>
+        <span class="found">Pressure cookers</span>
+        <span class="why">Typos</span></li>
+      <li><span class="typed">only leather<small>after “black shoes under 1000”</small></span>
         <span class="chips"><span class="chip add">Leather</span></span>
-        <span class="why">Follow-ups add to the search instead of starting over: 31 results become 14.</span></li>
+        <span class="why">Follow-ups refine, 31 results become 14</span></li>
     </ul>
   </div>
 </section>
@@ -137,7 +133,7 @@
   <div class="wrap">
     <div class="section-head">
       <h2 id="ai-h">AI Mode: narrow it down by talking.</h2>
-      <p>Shoppers refine the results in their own words, ask about products and compare them, in the same search box.</p>
+      <p>Refine, ask and compare in the same search box.</p>
     </div>
     <div class="split">
       <div class="thread" aria-label="Example AI Mode conversation on the demo store">
@@ -170,13 +166,9 @@
       </div>
       <div>
         <ul class="rules">
-          <li><strong>Answers come only from your listings.</strong> <span>The model sees the products on screen and
-          nothing else.</span></li>
-          <li><strong>Prices come from your data.</strong> <span>Numbers are filled in from the catalog, never written
-          by the model.</span></li>
-          <li><strong>Comparisons are calculated.</strong> <span>The table is worked out in code from the listings.</span></li>
-          <li><strong>Every sentence is checked before it shows.</strong> <span>Anything the listing doesn't back up is
-          dropped. If the listing doesn't say, the answer says so. General advice is labeled as general.</span></li>
+          <li><strong>Answers come only from your listings.</strong></li>
+          <li><strong>Prices and comparisons are computed, not generated.</strong></li>
+          <li><strong>Every sentence is checked before it shows.</strong></li>
         </ul>
         <p class="after-link"><a href="/demo/?mode=ai">Try AI Mode in the demo</a></p>
       </div>
@@ -192,70 +184,34 @@
     <ol class="steps">
       <li><div>
         <h3>Upload your catalog</h3>
-        <p>Send a JSON or CSV file, or push products over the API. Findaro works out which field is the title, the
-        price, the colour or the category from the data. You can change any of it.</p>
+        <p>JSON, CSV or the API. No schema to write.</p>
       </div></li>
       <li><div>
         <h3>Add one script tag</h3>
-        <p>You get a complete search box: chips, filters, compare and AI Mode. Building your own UI? Use the
-        <a href="/docs/sdk.html">headless SDK</a> or the HTTP API.</p>
+        <p>Or build your own UI with the <a href="/docs/sdk.html">SDK</a> or the API.</p>
 <pre><code><span class="k">&lt;script</span> src=<span class="s">"__SITE_URL__/findaro-widget.js"</span> data-project=<span class="s">"prj_…"</span>
         data-key=<span class="s">"fdr_search_…"</span> data-base-url=<span class="s">"__API_URL__"</span> defer<span class="k">&gt;&lt;/script&gt;</span>
 <span class="k">&lt;findaro-search&gt;&lt;/findaro-search&gt;</span></code></pre>
       </div></li>
       <li><div>
         <h3>Shoppers search in their own words</h3>
-        <p>Prices, colours, sizes and categories become filters they can see and remove. When nothing matches
-        exactly, Findaro says so and shows the closest options.</p>
+        <p>In English, Hinglish, with specs and typos.</p>
       </div></li>
     </ol>
     <p class="after-link"><a href="/docs/quickstart.html">Read the quickstart</a></p>
   </div>
 </section>
 
-<section aria-labelledby="measured-h">
-  <div class="wrap">
-    <div class="section-head"><h2 id="measured-h">Measured, in the open.</h2></div>
-    <div class="measured">
-      <p>On our 66 test queries, search quality (nDCG@10) is <b>0.970</b>. On 20 Hinglish queries written
-      independently, it is <b>0.818</b>, against <b>0.540</b> for the same search without query understanding. On
-      the server, 95% of searches finish within <b>24.7&nbsp;ms</b>.</p>
-      <p class="fine">Measured on the synthetic demo catalog. The method, the caveats and the failures are in the
-      <a href="__GITHUB_URL__/blob/main/eval/report.md" rel="noopener">eval report</a>.</p>
-    </div>
-  </div>
-</section>
-
 <section aria-labelledby="oss-h">
   <div class="wrap">
-    <div class="section-head">
-      <h2 id="oss-h">Open source, or hosted by us.</h2>
-      <p>The same engine and the same API either way. Findaro is Apache-2.0, with nothing held back for a paid edition.</p>
-    </div>
-    <div class="two">
-      <div>
-        <h3>Run it yourself</h3>
-        <p>The whole stack runs with <code>docker compose</code>: API, ingest worker, OpenSearch, Postgres and Redis.
-        Embeddings run locally on CPU, and AI Mode uses a local model by default.</p>
-        <ul>
-          <li>Free, under Apache-2.0</li>
-          <li>Your catalog and queries stay on your servers</li>
-          <li>Paid LLM APIs only if you turn them on</li>
-        </ul>
-        <a href="/docs/self-hosting.html">Self-hosting guide</a>
-      </div>
-      <div>
-        <h3>Use the hosted beta</h3>
-        <p>We run Findaro for you in Oracle Cloud's Mumbai region. You get an API URL and two keys; we handle
-        indexing, models and upgrades.</p>
-        <ul>
-          <li>No infrastructure to run</li>
-          <li>AI Mode managed for you</li>
-          <li>Move to self-hosting any time, with the same API</li>
-        </ul>
-        <a href="/request-access.html">Request access</a>
-      </div>
-    </div>
+    <div class="section-head"><h2 id="oss-h">Open source, measured in the open.</h2></div>
+    <ul class="facts">
+      <li><b>Apache-2.0</b><span>Every line on GitHub.</span><a href="__GITHUB_URL__" rel="noopener">View on GitHub</a></li>
+      <li><b>Self-host</b><span>One <code>docker compose</code> command.</span><a href="/docs/self-hosting.html">Guide</a></li>
+      <li><b>0.970 nDCG@10</b><span>0.818 on independent Hinglish queries.</span><a href="__GITHUB_URL__/blob/main/eval/report.md" rel="noopener">Eval report</a></li>
+      <li><b>Integrations</b><span>API, widget, TypeScript SDK, React.</span><a href="/docs/">Docs</a></li>
+    </ul>
+    <p class="fine">Or use the hosted beta in Mumbai: <a href="/request-access.html">request access</a>.</p>
   </div>
 </section>
 
@@ -263,8 +219,7 @@
   <div class="wrap">
     <div class="section-head">
       <h2 id="cmp-land-h">Compared with others.</h2>
-      <p>Where Findaro is different, and where the others are ahead today. Checked in October 2026 from each vendor's
-      own pages.</p>
+      <p>Checked in October 2026.</p>
     </div>
     <div class="cmp-wrap short" tabindex="0" role="region" aria-labelledby="cmp-land-h">
       <table>
@@ -367,10 +322,9 @@
 <section class="final" aria-labelledby="final-h">
   <div class="wrap">
     <h2 id="final-h">Let your shoppers search the way they talk.</h2>
-    <p>Tell us about your catalog and we'll set you up with a project and keys on the hosted beta.</p>
     <div class="cta-row">
-      <a class="btn btn-primary" href="/request-access.html">Request access</a>
-      <a class="btn btn-ghost" href="/demo/">Try the live demo</a>
+      <a class="btn btn-primary" href="/demo/">Try live demo</a>
+      <a class="btn btn-ghost" href="__GITHUB_URL__" rel="noopener">View on GitHub</a>
     </div>
   </div>
 </section>

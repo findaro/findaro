@@ -10,8 +10,8 @@ python3 -m http.server 8765 --directory site/public   # http://localhost:8765
 | Path | Page |
 |---|---|
 | `public/index.html` | Landing page (no widget on it: every demo link goes to `/demo/`) |
-| `public/demo/index.html` | The live demo: the site header plus the widget in its default unified mode (search as you type, Enter asks) on the demo project; `?q=` asks on load |
-| `public/ai.html` | Redirects to `/demo/` (old links) |
+| `public/demo/index.html` | The live demo: one page with a **Search \| AI Mode** switch (radiogroup) that sets the widget's `mode` (`toggle="off"`, `cards="full"`). AI Mode is the default tab; `?mode=search\|ai` picks the tab (kept in the URL), `?q=` runs a query in that tab on load |
+| `public/ai.html` | Redirects to `/demo/?mode=ai` (old links) |
 | `public/pricing.html` | Pricing (INR by default, USD toggle remembered in localStorage) |
 | `public/request-access.html` | Request-access form, POSTs JSON to `/api/request-access` |
 | `public/docs/` | Docs: `index`, `quickstart`, `widget`, `sdk`, `api` (generated), `self-hosting` |
@@ -71,8 +71,9 @@ footer.
 ## Editing
 
 The header, footer and docs sidebar are repeated in every page. If you change one, change them all. Colours and
-fonts are CSS variables at the top of `assets/site.css`, with a dark palette under
-`prefers-color-scheme: dark`. The palette is one blue, navy ink and cool greys, with no orange, amber or yellow:
-caution states use `--note` (slate-indigo) and red (`--danger`) is only for form validation errors. Any
-`<findaro-search>` on the site is themed from these tokens (bottom of `site.css`). Fonts: Geist (headings), IBM Plex
-Sans (body), IBM Plex Mono (code).
+fonts are CSS variables at the top of `assets/site.css`. The site is
+**light only** (`color-scheme: light`, no dark overrides): white and quiet neutral surfaces, near-black ink, grey
+hairlines and one deep teal accent (`--accent`) for primary actions, links and focus. Green (`--ok`) means
+"matches"; red (`--danger`) is only for form validation errors; there is no orange, amber or yellow. Any
+`<findaro-search>` on the site is themed from these tokens (bottom of `site.css`) and carries `theme="light"`.
+Fonts: Source Serif 4 (headings), Instrument Sans (body and UI), JetBrains Mono (code).

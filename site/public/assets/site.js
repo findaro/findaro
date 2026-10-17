@@ -3,7 +3,6 @@
   "use strict";
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
-  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function store(key, value) {
     try {
@@ -50,56 +49,6 @@
         store(CUR_KEY, cur);
       });
     });
-  }
-
-  /* ---------- hero: query → understood plan ---------- */
-  // Chip labels mirror what /v1/search returns in `understood.chips` (soft = boost/sort, not a hard filter).
-  var EXAMPLES = [
-    { q: "kaale joote 1000 ke andar", chips: [["Under ₹1,000"], ["Black"]], lang: "Hinglish", text: "black shoes" },
-    { q: "sasta pressure cooker", chips: [["Pressure Cookers", 1], ["Lower prices first", 1]], lang: "Hinglish", text: "pressure cooker" },
-    { q: "cotton kurta for men under 800", chips: [["Under ₹800"], ["Cotton"], ["Men"]], lang: "English", text: "cotton kurta" },
-    { q: "gents chappal 500 se kam", chips: [["Under ₹500"], ["Men"]], lang: "Hinglish", text: "men chappal" }
-  ];
-  var qtext = $("#qtext");
-  if (qtext) {
-    var chipsEl = $("#qchips"), langEl = $("#qlang"), semEl = $("#qsem");
-    var i = 0;
-    var show = function (typed) { qtext.textContent = typed; };
-    var renderChips = function (ex) {
-      chipsEl.textContent = "";
-      ex.chips.forEach(function (chip, n) {
-        var label = chip[0];
-        var c = document.createElement("span");
-        c.className = "chip" + (chip[1] ? " soft" : "");
-        c.style.animationDelay = (n * 90) + "ms";
-        c.textContent = label + " ";
-        var x = document.createElement("span");
-        x.className = "x"; x.setAttribute("aria-hidden", "true"); x.textContent = "×";
-        c.appendChild(x);
-        chipsEl.appendChild(c);
-      });
-      langEl.textContent = ex.lang;
-      semEl.textContent = "“" + ex.text + "”";
-    };
-    if (reduceMotion) {
-      show(EXAMPLES[0].q); renderChips(EXAMPLES[0]);
-    } else {
-      var run = function () {
-        var ex = EXAMPLES[i % EXAMPLES.length];
-        var n = 0;
-        chipsEl.textContent = "";
-        var tick = setInterval(function () {
-          n++;
-          show(ex.q.slice(0, n));
-          if (n >= ex.q.length) {
-            clearInterval(tick);
-            setTimeout(function () { renderChips(ex); }, 250);
-            setTimeout(function () { i++; run(); }, 3600);
-          }
-        }, 55);
-      };
-      run();
-    }
   }
 
   /* ---------- code tabs ---------- */

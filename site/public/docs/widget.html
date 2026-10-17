@@ -6,8 +6,8 @@
 <title>Widget · findaro docs</title>
 <meta name="description" content="The <findaro-search> widget: attributes, properties, events and theming.">
 <link rel="canonical" href="__SITE_URL__/docs/widget.html">
-<meta name="theme-color" content="#f7f9fc" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0a1120" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#fafaf8">
+<meta name="color-scheme" content="light">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="findaro">
 <meta property="og:title" content="Widget · findaro docs">
@@ -20,7 +20,7 @@
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=Geist:wght@600..800&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,500;0,8..60,600;1,8..60,500&amp;display=swap">
 <link rel="stylesheet" href="/assets/site.css">
 <script src="/assets/site.js" defer></script>
 </head>
@@ -28,7 +28,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro<span class="beta">beta</span></a>
+    <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#17191d"/><path d="M19.5 9h-2.25a3 3 0 0 0-3 3v11.5M10.5 15h7.5" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="22.25" cy="22.25" r="2.6" fill="#4cbdb0"/></svg>findaro<span class="beta">beta</span></a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
@@ -70,7 +70,7 @@
 <span class="eyebrow">Integrate</span>
 <h1>Widget</h1>
 <p class="lede"><code>&lt;findaro-search&gt;</code> is a Web Component (Shadow DOM, no framework, no dependencies, about
-20 KB gzipped with the SDK included). It works in any page: plain HTML, React, Vue, a CMS template.</p>
+23 KB gzipped with the SDK included). It works in any page: plain HTML, React, Vue, a CMS template.</p>
 
 <h2 id="install">Install</h2>
 <pre><code>&lt;script src="__SITE_URL__/findaro-widget.js" data-project="prj_…" data-key="fdr_search_…"
@@ -78,7 +78,7 @@
 &lt;findaro-search&gt;&lt;/findaro-search&gt;</code></pre>
 <p>Settings on the script tag (<code>data-project</code>, <code>data-key</code>, <code>data-base-url</code>,
 <code>data-locale</code>, <code>data-mode</code>, <code>data-layout</code>, <code>data-starters</code>,
-<code>data-badges</code>, <code>data-card-actions</code>) apply to every <code>&lt;findaro-search&gt;</code> on the page.
+<code>data-badges</code>, <code>data-card-actions</code>, <code>data-toggle</code>, <code>data-cards</code>) apply to every <code>&lt;findaro-search&gt;</code> on the page.
 Attributes on an element override them. Self-hosting? Build the file with <code>npm install &amp;&amp; npm run build</code>;
 it's at <code>packages/widget/dist/findaro-widget.js</code>. Serve it from your own domain.</p>
 
@@ -108,7 +108,27 @@ it's at <code>packages/widget/dist/findaro-widget.js</code>. Serve it from your 
 <pre><code>&lt;findaro-search badges="material,tags"
                 starters="black shoes under 1000|kurta for a wedding|steel water bottle"&gt;&lt;/findaro-search&gt;</code></pre>
 <p><code>mode="search"</code> is search only, with a <strong>Search / Ask AI</strong> toggle in the box (Enter searches,
-Escape clears).</p>
+Escape clears). With <code>starters</code> set, an empty search box shows them as chips that run a search.</p>
+
+<h2 id="tabs">Search and AI Mode as two tabs</h2>
+<p>To give shoppers your own <strong>Search | AI Mode</strong> switch (as the <a href="/demo/">live demo</a> does), hide
+the built-in toggle with <code>toggle="off"</code> and change the <code>mode</code> attribute from your switch. Each
+mode keeps its own results while you switch: going back to Search restores the search, going back to AI Mode restores
+the conversation. A search typed in Search mode is put in the AI Mode composer (call <code>el.search(el.query)</code>
+to ask it right away), and a question asked in AI Mode is searched when you switch to Search for the first time.
+<code>cards="full"</code> gives the search grid the AI Mode cards (select to compare, “Matches 2/2”, badges, Ask /
+View); <strong>Compare</strong> and <strong>Ask about these</strong> then switch the widget to AI Mode and fire
+<code>findaro:mode</code>, so keep your switch in sync with that event.</p>
+<pre><code>&lt;style&gt; findaro-search { --findaro-thread-height: 70vh; } &lt;/style&gt;
+&lt;findaro-search mode="ai" toggle="off" cards="full" theme="light"&gt;&lt;/findaro-search&gt;
+&lt;script&gt;
+  const el = document.querySelector("findaro-search");
+  function show(mode) {
+    el.setAttribute("mode", mode);
+    if (mode === "ai" &amp;&amp; !el.turns &amp;&amp; el.query) el.search(el.query); // carry the search over
+  }
+  el.addEventListener("findaro:mode", (e) =&gt; mySwitch.select(e.detail.mode));
+&lt;/script&gt;</code></pre>
 <h2 id="ai-mode">AI Mode (full page)</h2>
 <p><code>mode="ai"</code> and <code>layout="page"</code> are kept for existing integrations. In AI mode the widget is a conversational shopping assistant. Products appear inline in the conversation instead of
 a separate grid. Add <code>layout="page"</code> for a full-page version with a chat history sidebar (collapsible on
@@ -132,7 +152,9 @@ it.</p>
   the last question when it needs to.</li>
 </ul>
 <p>Without <code>layout="page"</code>, <code>mode="ai"</code> shows the same conversation inside the widget box,
-under the Search / Ask AI toggle. With <code>layout="page" mode="search"</code> the page shows the search box, chips,
+under the Search / Ask AI toggle (hidden with <code>toggle="off"</code>), with the composer docked at the bottom. Set
+<code>--findaro-thread-height</code> to give the thread a fixed height (the composer then stays at the bottom of it);
+style its frame with <code>::part(thread)</code>. With <code>layout="page" mode="search"</code> the page shows the search box, chips,
 filters and product grid instead; switch between the two by changing the <code>mode</code> attribute. Put an element
 with <code>slot="sidebar-footer"</code> inside the widget to show it at the bottom of the history sidebar.</p>
 
@@ -148,10 +170,12 @@ with <code>slot="sidebar-footer"</code> inside the widget to show it at the bott
     <tr><td><code>placeholder</code></td><td>text</td><td>from locale</td><td>Search box placeholder (search mode).</td></tr>
     <tr><td><code>size</code></td><td>1–100</td><td><code>20</code></td><td>Results per search.</td></tr>
     <tr><td><code>layout</code></td><td><code>page</code></td><td>none</td><td>Full-page AI Mode with a chat history sidebar. Implies <code>mode="ai"</code> unless <code>mode="search"</code> is set.</td></tr>
-    <tr><td><code>starters</code></td><td><code>a|b|c</code></td><td>none</td><td>Example requests shown in an empty widget (up to 6 chips in unified mode, 4 in AI Mode). Clicking one asks it.</td></tr>
+    <tr><td><code>starters</code></td><td><code>a|b|c</code></td><td>none</td><td>Example requests shown in an empty widget (up to 6). Clicking one asks it (in <code>mode="search"</code>, searches it).</td></tr>
     <tr><td><code>badges</code></td><td>field names, comma-separated</td><td>none</td><td>Document fields shown as up to 2 short badges on unified and AI Mode cards (arrays use their first values; values over 24 characters are skipped).</td></tr>
     <tr><td><code>card-actions</code></td><td>labels, comma-separated</td><td>none</td><td>Extra buttons on unified and AI Mode cards, e.g. <code>Add to cart,Save</code>. Each click dispatches <code>findaro:action</code>.</td></tr>
-    <tr><td><code>theme</code></td><td><code>light</code> | <code>dark</code></td><td>follows the OS</td><td>Force a colour scheme. Without it, the widget follows <code>prefers-color-scheme</code>.</td></tr>
+    <tr><td><code>toggle</code></td><td><code>off</code></td><td>on</td><td>Hide the built-in Search / Ask AI toggle; your page switches <code>mode</code> itself (see <a href="#tabs">two tabs</a>).</td></tr>
+    <tr><td><code>cards</code></td><td><code>full</code></td><td>none</td><td>In <code>mode="search"</code>, use the AI Mode cards (select to compare, requirement line, badges, Ask / View).</td></tr>
+    <tr><td><code>theme</code></td><td><code>light</code> | <code>dark</code></td><td>follows the OS</td><td>Force a colour scheme. Without it, the widget follows <code>prefers-color-scheme</code>. The light default is white with neutral greys, near-black text and a deep teal accent.</td></tr>
   </tbody>
 </table>
 
@@ -163,6 +187,7 @@ with <code>slot="sidebar-footer"</code> inside the widget to show it at the bott
     <tr><td><code>el.onProductClick = (hit, event) =&gt; …</code></td><td>Called when a product is clicked. When set, the widget doesn't follow the product URL.</td></tr>
     <tr><td><code>el.renderProduct = (hit, { display, formatPrice }) =&gt; …</code></td><td>Your own product card. Return an element, or an HTML string (escape document fields yourself).</td></tr>
     <tr><td><code>el.cardActions = [{ label, onClick(hit) }]</code></td><td>Extra buttons on AI Mode cards, after the ones from <code>card-actions</code>. <code>onClick</code> runs unless a <code>findaro:action</code> listener cancels the event.</td></tr>
+    <tr><td><code>el.query</code>, <code>el.turns</code></td><td>Read-only: the current search text (or the last question asked), and the number of messages in the conversation.</td></tr>
     <tr><td><code>el.strings = { … }</code></td><td>Override any UI text, merged over the locale's defaults.</td></tr>
     <tr><td><code>el.client</code></td><td>Inject a preconfigured SDK client (for example with a custom <code>fetch</code>).</td></tr>
   </tbody>
@@ -188,6 +213,7 @@ with <code>slot="sidebar-footer"</code> inside the widget to show it at the bott
     <tr><td><code>findaro:results</code></td><td>the search response (<code>total</code>, <code>hits</code>, <code>understood</code>, …)</td><td>After each search returns.</td></tr>
     <tr><td><code>findaro:product-click</code></td><td><code>{ hit }</code></td><td>A product was clicked. Cancelable: <code>preventDefault()</code> stops navigation to the product URL.</td></tr>
     <tr><td><code>findaro:action</code></td><td><code>{ action, hit }</code></td><td>A custom card button was clicked (<code>action</code> is its label). Cancelable.</td></tr>
+    <tr><td><code>findaro:mode</code></td><td><code>{ mode }</code></td><td>The mode changed (your attribute change, the built-in toggle, or Compare / Ask about these in <code>mode="search"</code>).</td></tr>
     <tr><td><code>findaro:error</code></td><td>the error</td><td>A request failed.</td></tr>
   </tbody>
 </table>
@@ -204,7 +230,7 @@ el.addEventListener("findaro:action", (e) =&gt; {
 <p>Set CSS custom properties on the element. Styles from your page win over the widget's defaults, in both light and
 dark mode.</p>
 <pre><code>findaro-search {
-  --findaro-accent: #2563eb;
+  --findaro-accent: #1d4ed8;
   --findaro-radius: 6px;
   --findaro-font: Inter, sans-serif;
   --findaro-card-min: 180px;
@@ -228,6 +254,7 @@ dark mode.</p>
     <tr><td><code>--findaro-font</code></td><td>Font stack for all widget text.</td></tr>
     <tr><td><code>--findaro-font-heading</code></td><td>Font stack for headings (greeting, result and drawer titles). Defaults to <code>--findaro-font</code>.</td></tr>
     <tr><td><code>--findaro-accent-soft</code></td><td>Soft accent tint (your message bubble, highlighted rows). Defaults to the accent mixed into the background.</td></tr>
+    <tr><td><code>--findaro-thread-height</code></td><td>Fixed height of the in-box AI Mode thread (default: grows up to 75vh).</td></tr>
     <tr><td><code>--findaro-card-min</code></td><td>Minimum product card width in the grid.</td></tr>
   </tbody>
 </table>
@@ -250,7 +277,7 @@ dark mode.</p>
 <footer class="site-footer">
   <div class="wrap">
     <div class="about">
-      <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro</a>
+      <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#17191d"/><path d="M19.5 9h-2.25a3 3 0 0 0-3 3v11.5M10.5 15h7.5" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="22.25" cy="22.25" r="2.6" fill="#4cbdb0"/></svg>findaro</a>
       <p>AI search for product catalogs: natural language, Indian English and Hinglish, grounded chat. Open source under Apache-2.0.</p>
     </div>
     <div>

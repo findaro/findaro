@@ -40,6 +40,19 @@ LLM: off by default (`FINDARO_LLM_PROVIDER=none` in `.env`): rules-only query un
 answers. Local Ollama models are too slow for the planner timeout on a 2-core box. To use a paid provider, edit
 `/srv/findaro/.env` (e.g. `FINDARO_CHAT_PROVIDER=openai` + `OPENAI_API_KEY=...`) and `docker compose up -d`.
 
+Behind Cloudflare (recommended, keeps the server's address out of DNS): deploy the edge Worker first, then
+this script with the public hostnames:
+
+```bash
+FINDARO_PUBLIC_SITE_HOST=findaro.example.com FINDARO_PUBLIC_API_HOST=findaro-api.example.com \
+FINDARO_SITE_HOST=<origin site host> FINDARO_API_HOST=<origin api host> ... deploy/cloudflare/deploy.sh
+FINDARO_PUBLIC_SITE_HOST=... FINDARO_PUBLIC_API_HOST=... FINDARO_SITE_HOST=... FINDARO_API_HOST=... deploy/app-a1/deploy.sh
+```
+
+The origin hostnames then serve only requests carrying the edge's secret header (`FINDARO_EDGE_SECRET` in
+`/srv/findaro/.env`, also a Worker secret) and redirect everything else to the public names. Keep public names one
+level deep (`findaro-api.example.com`, not `api.findaro.example.com`): Cloudflare's free certificate covers one level.
+
 Ops:
 
 ```bash

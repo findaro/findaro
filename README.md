@@ -129,7 +129,7 @@ Chat answers take a few seconds on the local 8B model.
 ## Hosted findaro
 
 Don't want to run OpenSearch, Postgres and the models yourself? A managed version of findaro is in **beta**: the same
-API, SDK and widget, operated for you. Request access at **https://findaro.130-210-49-63.sslip.io**.
+API, SDK and widget, operated for you. Request access at **https://findaro.fortwinai.com**.
 
 The open-source core in this repository is complete on its own; the hosted service runs the same engine.
 

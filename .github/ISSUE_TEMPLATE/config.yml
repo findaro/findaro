@@ -4,5 +4,5 @@ contact_links:
     url: https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability
     about: Please report security issues privately (Security tab → Report a vulnerability), not as a public issue. See SECURITY.md.
   - name: Hosted findaro (managed beta)
-    url: https://findaro.130-210-49-63.sslip.io
+    url: https://findaro.fortwinai.com
     about: Questions about the managed service or access to the beta.

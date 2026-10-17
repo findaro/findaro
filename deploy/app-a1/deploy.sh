@@ -5,6 +5,10 @@
 #   FINDARO_SITE_HOST=findaro.example.com FINDARO_API_HOST=api.findaro.example.com \
 #   [FINDARO_OLD_HOSTS="old.example.com"] [FINDARO_GITHUB_URL=...] [FINDARO_COMPANY_NAME=...] deploy/app-a1/deploy.sh
 #
+# Behind the Cloudflare edge (deploy/cloudflare): also set FINDARO_PUBLIC_SITE_HOST / FINDARO_PUBLIC_API_HOST.
+# Then FINDARO_SITE_HOST / FINDARO_API_HOST are origin-only names that serve requests carrying the edge's secret
+# header and redirect everything else; pages, the demo and links use the public names.
+#
 # First run writes /srv/findaro/.env (random secrets, chmod 600) and creates the demo project.
 # Secrets never leave the box and are never printed.
 set -euo pipefail
@@ -12,6 +16,10 @@ set -euo pipefail
 : "${FINDARO_DEPLOY_SSH:?user@host}" "${FINDARO_SITE_HOST:?}" "${FINDARO_API_HOST:?}"
 GITHUB_URL="${FINDARO_GITHUB_URL:-https://github.com/findaro/findaro}"
 COMPANY="${FINDARO_COMPANY_NAME:-findaro}"
+PUB_SITE="${FINDARO_PUBLIC_SITE_HOST:-$FINDARO_SITE_HOST}"
+PUB_API="${FINDARO_PUBLIC_API_HOST:-$FINDARO_API_HOST}"
+CADDY_TMPL=findaro.caddy.tmpl
+[ -n "${FINDARO_PUBLIC_SITE_HOST:-}" ] && CADDY_TMPL=findaro-edge.caddy.tmpl
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 SSH=(ssh -o BatchMode=yes ${FINDARO_DEPLOY_KEY:+-i "$FINDARO_DEPLOY_KEY"} "$FINDARO_DEPLOY_SSH")
@@ -59,9 +67,14 @@ docker builder prune -f --keep-storage 3gb >/dev/null  # build cache only; keeps
 REMOTE
 
 echo "==> caddy site"
-sed -e "s/__SITE_HOST__/$FINDARO_SITE_HOST/g" -e "s/__API_HOST__/$FINDARO_API_HOST/g" "$HERE/findaro.caddy.tmpl" |
+sed -e "s/__SITE_HOST__/$FINDARO_SITE_HOST/g" -e "s/__API_HOST__/$FINDARO_API_HOST/g" \
+    -e "s/__PUBLIC_SITE_HOST__/$PUB_SITE/g" -e "s/__PUBLIC_API_HOST__/$PUB_API/g" "$HERE/$CADDY_TMPL" |
   if [ -n "${FINDARO_OLD_HOSTS:-}" ]; then sed "s/__OLD_HOSTS__/$FINDARO_OLD_HOSTS/"; else sed '/__OLD_HOSTS__/,/^}/d'; fi |
-  "${SSH[@]}" 'cat > /srv/caddy/sites/findaro.caddy.new
+  "${SSH[@]}" 'umask 077; cat > /srv/caddy/sites/findaro.caddy.new
+if grep -q __EDGE_SECRET__ /srv/caddy/sites/findaro.caddy.new; then  # filled in here: the secret stays on the box
+  cd /srv/findaro && { grep -q "^FINDARO_EDGE_SECRET=." .env || echo "FINDARO_EDGE_SECRET=$(openssl rand -hex 32)" >> .env; }
+  sed -i "s/__EDGE_SECRET__/$(grep "^FINDARO_EDGE_SECRET=" .env | cut -d= -f2-)/g" /srv/caddy/sites/findaro.caddy.new
+fi
 cd /srv/caddy
 cp sites/findaro.caddy sites/findaro.caddy.bak 2>/dev/null || true
 mv sites/findaro.caddy.new sites/findaro.caddy
@@ -75,10 +88,10 @@ else
 fi'
 
 echo "==> demo project"
-"${SSH[@]}" python3 /srv/findaro/app/deploy/app-a1/demo_project.py "$FINDARO_API_HOST" "$FINDARO_SITE_HOST"
+"${SSH[@]}" python3 /srv/findaro/app/deploy/app-a1/demo_project.py "$PUB_API" "$PUB_SITE"
 
 echo "==> website"
-"${SSH[@]}" python3 /srv/findaro/app/deploy/app-a1/render_site.py "https://$FINDARO_SITE_HOST" "https://$FINDARO_API_HOST" \
+"${SSH[@]}" python3 /srv/findaro/app/deploy/app-a1/render_site.py "https://$PUB_SITE" "https://$PUB_API" \
   "$GITHUB_URL" "$COMPANY"
 "${SSH[@]}" 'cd /srv/findaro && docker compose restart site >/dev/null'  # the bind mount points at the replaced dir
-echo "done: https://$FINDARO_SITE_HOST  https://$FINDARO_API_HOST/healthz"
+echo "done: https://$PUB_SITE  https://$PUB_API/healthz"

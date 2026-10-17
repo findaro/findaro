@@ -1,0 +1,171 @@
+<!doctype html>
+<!-- DRAFT TEMPLATE: needs legal review before launch. Replace __COMPANY_NAME__ and check every section. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Terms of Service · zerch</title>
+<meta name="description" content="Terms of Service for the zerch hosted beta.">
+<link rel="canonical" href="__SITE_URL__/terms.html">
+<meta name="theme-color" content="#f5f2ea" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#11100d" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="zerch">
+<meta property="og:title" content="Terms of Service · zerch">
+<meta property="og:description" content="Terms of Service for the zerch hosted beta.">
+<meta property="og:url" content="__SITE_URL__/terms.html">
+<meta property="og:image" content="__SITE_URL__/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&amp;family=Instrument+Sans:wght@400..700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<link rel="stylesheet" href="/assets/site.css">
+<script src="/assets/site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="zerch home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M10 10.5h12L10 21.5h12" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>zerch<span class="beta">beta</span></a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav class="nav" id="site-nav" aria-label="Main">
+      <a href="/#features">Product</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <a href="__GITHUB_URL__" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="/request-access.html">Request access</a>
+    </nav>
+  </div>
+</header>
+<main id="main">
+<div class="wrap">
+  <div class="page-head">
+    <h1>Terms of Service</h1>
+    <p>Last updated: 17 October 2026. Plain-language terms for the zerch hosted beta.</p>
+  </div>
+  <div class="prose" style="padding-bottom:80px">
+    <div class="callout"><p>These terms cover the <strong>hosted</strong> zerch service operated by __COMPANY_NAME__.
+    The open-source software is covered by its own license (<a href="__GITHUB_URL__/blob/main/LICENSE">Apache-2.0</a>),
+    not by these terms.</p></div>
+
+    <h2>1. Who we are</h2>
+    <p>“zerch”, “we” and “us” mean __COMPANY_NAME__, the operator of the hosted zerch service (the “Service”).
+    “You” means the person or organisation using the Service.</p>
+
+    <h2>2. The Service is a beta</h2>
+    <p>The Service is offered as a beta. It is in active use and changes often. We work to keep it available and
+    correct, but we don't promise any particular uptime, response time or result quality during the beta. We will tell
+    you in advance about changes that materially affect you where we reasonably can.</p>
+
+    <h2>3. Your account and keys</h2>
+    <ul>
+      <li>We give you a project id, an admin key and a search key. Keep the admin key secret and on your server. The
+      search key is designed to be used in web pages.</li>
+      <li>You are responsible for activity that uses your keys. Tell us promptly if a key is compromised so we can
+      rotate it.</li>
+      <li>You must give us accurate contact details and keep them current.</li>
+    </ul>
+
+    <h2>4. Your data</h2>
+    <ul>
+      <li>You keep all rights to the catalog data you send us (“Customer Data”). You give us permission to store,
+      index and process it only to provide the Service to you.</li>
+      <li>You confirm you have the right to send us that data and that it doesn't break any law or anyone else's
+      rights.</li>
+      <li>Don't send personal data about individuals in your catalog. The Service is designed for product data.</li>
+      <li>You can delete documents or your whole project through the API at any time. When the Service ends for you,
+      we delete your Customer Data as described in the <a href="/privacy.html">privacy policy</a>.</li>
+    </ul>
+
+    <h2>5. Acceptable use</h2>
+    <p>Don't use the Service to break the law, to send malware or spam, to probe or attack our systems or other
+    customers, to get around usage limits or rate limits, or to resell the Service as a standalone search API without
+    our written agreement.</p>
+
+    <h2>6. AI features</h2>
+    <p>Chat answers are generated by language models and checked against your product data before they are shown. These
+    checks reduce, but cannot fully eliminate, mistakes. You are responsible for the accuracy of your catalog and for
+    how you present AI answers to your users.</p>
+
+    <h2>7. Plans, limits and fees</h2>
+    <ul>
+      <li>Plans, limits and prices are listed on the <a href="/pricing.html">pricing page</a> and are billed monthly by
+      invoice. Invoices are due within the period stated on them.</li>
+      <li>A “search” is a search API call or a chat turn. If you go over a limit, we will contact you before
+      restricting your search.</li>
+      <li>We may change prices with at least 30 days' notice. Changes apply from your next billing period.</li>
+    </ul>
+
+    <h2>8. Suspension and termination</h2>
+    <p>You can stop using the Service at any time. We may suspend or end your access if you materially breach these
+    terms, if invoices are left unpaid after a reminder, or if your use puts the Service or other customers at risk.
+    Except in urgent cases, we will tell you first and give you a chance to fix the problem.</p>
+
+    <h2>9. Open source</h2>
+    <p>The software behind the Service is open source under Apache-2.0. You can run it yourself at any time; doing so
+    is not governed by these terms.</p>
+
+    <h2>10. Disclaimers and liability</h2>
+    <p>To the extent the law allows, the Service is provided “as is” during the beta, without warranties of any kind.
+    Our total liability for any claim relating to the Service is limited to the fees you paid us for the Service in the
+    three months before the claim. Neither party is liable for indirect or consequential losses, such as lost profits.</p>
+
+    <h2>11. Changes to these terms</h2>
+    <p>We may update these terms. If a change materially affects you, we will tell you in advance by email. Continuing
+    to use the Service after a change takes effect means you accept the updated terms.</p>
+
+    <h2>12. Governing law</h2>
+    <p>These terms are governed by the laws of India, and the courts where __COMPANY_NAME__ is registered have jurisdiction.</p>
+
+    <h2>13. Contact</h2>
+    <p>Questions about these terms: use the <a href="/request-access.html">contact form</a> and mention “terms” in
+    your message.</p>
+  </div>
+</div>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="about">
+      <a class="brand" href="/" aria-label="zerch home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M10 10.5h12L10 21.5h12" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>zerch</a>
+      <p>AI search for product catalogs: natural language, Indian English and Hinglish, grounded chat. Open source under Apache-2.0.</p>
+    </div>
+    <div>
+      <h4>Product</h4>
+      <ul>
+        <li><a href="/#demo">Live demo</a></li>
+        <li><a href="/#features">Features</a></li>
+        <li><a href="/pricing.html">Pricing</a></li>
+        <li><a href="/request-access.html">Request access</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Developers</h4>
+      <ul>
+        <li><a href="/docs/">Docs</a></li>
+        <li><a href="/docs/quickstart.html">Quickstart</a></li>
+        <li><a href="/docs/api.html">API reference</a></li>
+        <li><a href="/docs/self-hosting.html">Self-hosting</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Project</h4>
+      <ul>
+        <li><a href="__GITHUB_URL__" rel="noopener">GitHub</a></li>
+        <li><a href="__GITHUB_URL__/blob/main/LICENSE" rel="noopener">License (Apache-2.0)</a></li>
+        <li><a href="/terms.html">Terms</a></li>
+        <li><a href="/privacy.html">Privacy</a></li>
+      </ul>
+    </div>
+    <div class="legal">
+      <span>© <span data-year>2026</span> __COMPANY_NAME__. zerch is open source.</span>
+      <span>Hosted beta · Oracle Cloud, Mumbai region</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

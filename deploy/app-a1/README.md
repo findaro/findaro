@@ -7,7 +7,7 @@ network called `web`, with one directory per app under `/srv` and one site file 
 ```bash
 npm install && npm run build      # the widget for the demo page
 ZERCH_DEPLOY_SSH=ubuntu@<host> ZERCH_DEPLOY_KEY=~/.ssh/<key> \
-ZERCH_API_HOST=zerch.<domain> ZERCH_DEMO_HOST=zerch-demo.<domain> \
+ZERCH_SITE_HOST=zerch.<domain> ZERCH_API_HOST=api.zerch.<domain> \
 deploy/app-a1/deploy.sh
 ```
 
@@ -30,8 +30,8 @@ Layout and limits (`compose.yml`):
 | worker | internal | 1280m | same hardening, no internet |
 | opensearch | internal | 2g (1g heap) | security plugin off; only reachable on `internal` |
 | postgres | internal | 256m | |
-| redis | internal | 160m | cache only, no persistence |
-| `zerch-demo` | web | 48m | nginx serving `/srv/zerch/demo`, read-only |
+| redis | internal | 128m | cache, rate limits, pending usage counters; no persistence |
+| `zerch-site` | web, internal | 160m | website + `/api/request-access`; same image, engine not loaded |
 
 `internal` is a Docker `internal: true` network: data services can't reach the internet and other apps on
 the box can't reach them. No service publishes host ports.

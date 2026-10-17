@@ -51,6 +51,10 @@ mkdir -p site
 docker compose build --pull api opensearch
 docker tag "zerch:$1" zerch:latest
 docker compose up -d --remove-orphans
+# drop this app's older image tags (only zerch:<sha>; never a global prune on a shared box)
+docker images --format '{{.Repository}}:{{.Tag}}' | grep -E '^zerch:[0-9a-f]{7,}$' | grep -vx "zerch:$1" |
+  xargs -r docker image rm >/dev/null 2>&1 || true
+docker builder prune -f --keep-storage 3gb >/dev/null  # build cache only; keeps the newest layers for rebuilds
 ({ crontab -l 2>/dev/null || true; } | { grep -v '/srv/zerch/backup.sh' || true; }; echo '17 21 * * * /srv/zerch/backup.sh >> /srv/zerch/backups/backup.log 2>&1') | crontab -
 REMOTE
 

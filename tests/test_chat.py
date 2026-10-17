@@ -423,3 +423,27 @@ async def test_small_talk_on_an_empty_screen_shows_no_cards(loaded, chat_llm):
     assert first(ev, "results")["items"] == []
     assert first(ev, "clarify")["reason"] == "suggest"
 
+
+
+async def test_daily_llm_budget_falls_back_to_templates(state, loaded):
+    from findaro.llm.base import LLMError
+    from findaro.llm.budget import BudgetedLLM
+
+    await state.redis.delete(*[k async for k in state.redis.scan_iter(match="llm:calls:*")] or ["-"])
+    fake = FakeChatLLM()
+    budgeted = BudgetedLLM(fake, state.redis, daily_limit=1)
+    assert json.loads(await budgeted.complete("x"))  # first call is within the budget
+    with pytest.raises(LLMError):
+        await budgeted.complete("x")
+    with pytest.raises(LLMError):
+        async for _ in budgeted.stream("x"):
+            pass
+    assert len(fake.prompts) == 1  # over-budget calls never reach the provider
+
+    state.chat_llm = budgeted
+    try:
+        ev = await chat(loaded, "water bottle")
+        assert names(ev)[-2:] == ["text", "done"]  # the turn still completes, with a template answer
+        assert "".join(d["delta"] for e, d in ev if e == "text").strip()
+    finally:
+        state.chat_llm = None

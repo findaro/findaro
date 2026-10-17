@@ -4,6 +4,19 @@ version = "0.1.0"
 description = "Open-source AI search as a service: hybrid retrieval, schema inference, Hinglish-friendly."
 readme = "README.md"
 license = "Apache-2.0"
+authors = [{ name = "The zerch authors" }]
+keywords = ["search", "semantic-search", "hybrid-search", "opensearch", "ecommerce-search", "hinglish", "llm"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Natural Language :: Hindi",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+]
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi>=0.115",

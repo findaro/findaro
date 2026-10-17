@@ -36,7 +36,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://findaro.130-210-49-63.sslip.io"
+Homepage = "https://findaro.fortwinai.com"
 Repository = "https://github.com/findaro/findaro"
 Issues = "https://github.com/findaro/findaro/issues"
 

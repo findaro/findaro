@@ -20,8 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      SITE: ${{ vars.FINDARO_SITE_URL || 'https://findaro.130-210-49-63.sslip.io' }}
-      API: ${{ vars.FINDARO_API_URL || 'https://api.findaro.130-210-49-63.sslip.io' }}
+      SITE: ${{ vars.FINDARO_SITE_URL || 'https://findaro.fortwinai.com' }}
+      API: ${{ vars.FINDARO_API_URL || 'https://findaro-api.fortwinai.com' }}
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:

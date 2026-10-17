@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Findaro vs Algolia, Typesense, Meilisearch · findaro</title>
+<meta name="description" content="An honest, sourced comparison of findaro with Algolia, Typesense, Meilisearch, Elasticsearch/OpenSearch and Shopify search apps: what each is good at, pricing models, AI and Hinglish support.">
+<link rel="canonical" href="__SITE_URL__/compare.html">
+<meta name="theme-color" content="#f6f8fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0f1a" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="findaro">
+<meta property="og:title" content="Findaro vs Algolia, Typesense, Meilisearch · findaro">
+<meta property="og:description" content="An honest, sourced comparison of findaro with Algolia, Typesense, Meilisearch, Elasticsearch/OpenSearch and Shopify search apps: what each is good at, pricing models, AI and Hinglish support.">
+<meta property="og:url" content="__SITE_URL__/compare.html">
+<meta property="og:image" content="__SITE_URL__/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&amp;family=Instrument+Sans:wght@400..700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<link rel="stylesheet" href="/assets/site.css">
+<script src="/assets/site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro<span class="beta">beta</span></a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav class="nav" id="site-nav" aria-label="Main">
+      <a href="/#features">Product</a>
+      <a href="/demo/">AI Mode</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <a href="__GITHUB_URL__" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="/request-access.html">Request access</a>
+    </nav>
+  </div>
+</header>
+<main id="main">
+<style>
+  .cmp-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+  .cmp-wrap table { min-width: 980px; margin: 0; }
+  .cmp-wrap th[scope="row"] { min-width: 190px; }
+  .cmp-wrap td:nth-child(2), .cmp-wrap thead th:nth-child(2) { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+  .yes { color: var(--ok); font-weight: 600; } .no { color: var(--muted); } .part { color: var(--ink-2); }
+  .vs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+  .vs .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
+  .vs .card h3 { margin: 0 0 .5rem; } .vs .card p { margin: 0 0 .6rem; color: var(--ink-2); }
+  .sources { font-size: .9rem; color: var(--muted); columns: 2 320px; } .sources li { break-inside: avoid; margin-bottom: .3rem; }
+</style>
+<div class="wrap">
+  <div class="page-head">
+    <div class="section-head" style="margin-bottom:0">
+      <span class="eyebrow">Compare</span>
+      <h1>Findaro vs Algolia, Typesense, Meilisearch and others</h1>
+      <p>An honest comparison, including where the others are ahead today. Checked on 17 October 2026 from each
+      vendor's own pricing and docs pages (sources at the bottom). Prices and features change, so check the links
+      before you decide. Spotted a mistake? <a href="__GITHUB_URL__/issues">Open an issue</a> and we'll fix it.</p>
+    </div>
+  </div>
+</div>
+
+<section style="padding-top:24px" aria-labelledby="when-h">
+  <div class="wrap">
+    <h2 id="when-h" class="sr-only">When to choose what</h2>
+    <div class="compare">
+      <div class="card">
+        <h3>Choose Findaro if</h3>
+        <ul class="checks">
+          <li>Your shoppers type the way they talk, in Indian English or Hinglish (“kaale joote 1000 ke andar”)</li>
+          <li>You want filters understood from the query and shown back as chips shoppers can remove</li>
+          <li>You want a chat shopping assistant (AI Mode) without building RAG plumbing yourself</li>
+          <li>You want open source you can self-host, or flat pricing in rupees</li>
+          <li>Your catalog has up to about 100,000 products</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Choose something else if</h3>
+        <ul class="checks">
+          <li>You need a search analytics dashboard and merchandising rules today (Algolia, Boost, Shopify)</li>
+          <li>You want a one-click Shopify app (Shopify Search &amp; Discovery, Boost, Algolia)</li>
+          <li>You need autocomplete, recommendations or personalization out of the box (Algolia)</li>
+          <li>You need a contractual SLA and enterprise compliance now (Algolia, Elastic)</li>
+          <li>You want a general-purpose search engine to build everything on yourself (Typesense, Meilisearch, OpenSearch)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" aria-labelledby="table-h">
+  <div class="wrap">
+    <div class="section-head"><h2 id="table-h">Side by side</h2>
+      <p>“—” means we found no such feature in the product's public docs. Scroll sideways on small screens.</p></div>
+    <div class="cmp-wrap prose" style="max-width:none" tabindex="0" role="region" aria-labelledby="table-h">
+      <table>
+        <thead><tr><th scope="col"></th><th scope="col">Findaro</th><th scope="col">Algolia</th><th scope="col">Typesense</th><th scope="col">Meilisearch</th><th scope="col">Elastic / OpenSearch</th><th scope="col">Shopify Search &amp; Discovery</th></tr></thead>
+        <tbody>
+<tr><th scope="row">Open source</th><td>Apache-2.0</td><td><span class="no">No</span></td><td>GPL-3.0</td><td>MIT (Community); BUSL-1.1 (Enterprise)</td><td>Elastic: AGPL / SSPL / ELv2 options; OpenSearch: Apache-2.0</td><td><span class="no">No</span></td></tr>
+<tr><th scope="row">Self-host</th><td>Yes, docker compose</td><td><span class="no">No</span></td><td><span class="yes">Yes</span></td><td><span class="yes">Yes</span></td><td><span class="yes">Yes</span></td><td><span class="no">No</span></td></tr>
+<tr><th scope="row">Hosted pricing</th><td>Flat monthly plans in ₹ and $; free plan</td><td>Usage-based: free up to 10K searches/mo, then per 1K searches</td><td>Hourly per dedicated cluster + bandwidth</td><td>Cloud from $20/mo</td><td>Elastic Cloud: resource- or usage-based</td><td>Free app (Shopify stores only)</td></tr>
+<tr><th scope="row">Natural-language query → filters</th><td>Rules first; an LLM only for words the rules can't read</td><td>AI features on higher plans; NeuralSearch on Elevate (custom)</td><td>Natural Language Search: an LLM you configure turns the query into filters</td><td>Hybrid / semantic search</td><td>Build it yourself</td><td>Semantic search on Shopify plans</td></tr>
+<tr><th scope="row">Shows what it understood (removable chips)</th><td><span class="yes">Yes</span></td><td>—</td><td>—</td><td>—</td><td>Build it yourself</td><td>—</td></tr>
+<tr><th scope="row">Indian English + Hinglish</th><td>Built in</td><td>No claim found</td><td>No claim found</td><td>No claim found</td><td>ELSER is English; build it yourself</td><td>Hindi not in its language list</td></tr>
+<tr><th scope="row">Conversational shopping (chat)</th><td>AI Mode with products inline, compare, next steps</td><td>Agent Studio (beta)</td><td>Conversational RAG API (build the UI)</td><td>Chat endpoint (experimental)</td><td>Build it yourself</td><td><span class="no">No</span></td></tr>
+<tr><th scope="row">Product Q&amp;A grounded in the listing</th><td>Yes, every sentence checked</td><td>Via Agent Studio</td><td>Via RAG API</td><td>Via chat endpoint</td><td>Build it yourself</td><td><span class="no">No</span></td></tr>
+<tr><th scope="row">Drop-in UI</th><td>21 KB widget, 1.5 KB SDK</td><td>InstantSearch libraries</td><td>InstantSearch adapter</td><td>InstantSearch adapter</td><td>—</td><td>Theme search</td></tr>
+<tr><th scope="row">Analytics dashboard</th><td>Not yet</td><td><span class="yes">Yes</span></td><td><span class="part">Partly</span></td><td>Enterprise</td><td>Kibana / Dashboards</td><td><span class="yes">Yes</span></td></tr>
+<tr><th scope="row">Merchandising rules UI</th><td>Not yet</td><td><span class="yes">Yes</span></td><td>—</td><td>Enterprise</td><td>—</td><td>Boosts, featured results</td></tr>
+<tr><th scope="row">Autocomplete, recommendations, personalization</th><td>Not yet</td><td><span class="yes">Yes</span></td><td>Partly (autocomplete)</td><td>Partly</td><td>Build it yourself</td><td>Recommendations</td></tr>
+<tr><th scope="row">Shopify one-click app</th><td>Not yet</td><td><span class="yes">Yes</span></td><td>—</td><td>—</td><td>—</td><td>Built in</td></tr>
+<tr><th scope="row">SLA / track record</th><td>Beta, no SLA</td><td>Up to 99.999% (Elevate)</td><td>Paid cloud SLAs</td><td>Paid cloud SLAs</td><td>Enterprise SLAs</td><td>Shopify</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="vs-h">
+  <div class="wrap">
+    <div class="section-head"><h2 id="vs-h">One by one</h2></div>
+    <div class="vs">
+      <div class="card"><h3>vs Algolia</h3>
+        <p><strong>Algolia is ahead on</strong> scale, analytics, merchandising, personalization, recommendations and
+        ecosystem. It is the safe default for large teams.</p>
+        <p><strong>Findaro differs:</strong> open source and self-hostable; flat ₹ pricing instead of per-request
+        billing; query understanding and chat in the base product, where Algolia's NeuralSearch is on its
+        custom-priced Elevate plan and Agent Studio is in beta; Hinglish built in.</p></div>
+      <div class="card"><h3>vs Typesense</h3>
+        <p><strong>Typesense is ahead on</strong> maturity as a general search engine, speed and community. It also
+        offers natural-language search and a conversational RAG API.</p>
+        <p><strong>Findaro differs:</strong> a product, not building blocks. Its natural-language search sends
+        queries to an LLM you configure; Findaro reads most queries with rules and only asks a model about words
+        it can't place. Findaro ships the shopping UI (chips, AI Mode, compare). Apache-2.0 instead of GPL-3.0.</p></div>
+      <div class="card"><h3>vs Meilisearch</h3>
+        <p><strong>Meilisearch is ahead on</strong> developer experience, a polished cloud from $20/mo, and hybrid
+        search across many languages.</p>
+        <p><strong>Findaro differs:</strong> commerce-specific understanding (prices, attributes, categories inferred
+        from your own data, shown as chips), Hinglish, and a finished chat shopping experience where Meilisearch's
+        chat endpoint is experimental and leaves the UI to you.</p></div>
+      <div class="card"><h3>vs Elasticsearch / OpenSearch</h3>
+        <p><strong>They are ahead on</strong> raw scale, tooling and observability. Findaro itself runs on
+        OpenSearch.</p>
+        <p><strong>Findaro differs:</strong> you get query understanding, relaxation, chat and a widget on top,
+        instead of building them. Elastic's ELSER model is recommended for English.</p></div>
+      <div class="card"><h3>vs Shopify Search &amp; Discovery</h3>
+        <p><strong>It is ahead on</strong> price (free), one-click setup and built-in analytics for Shopify stores.</p>
+        <p><strong>Findaro differs:</strong> works on any platform through an API or a script tag; Hinglish (Hindi
+        isn't in its language list); conversational AI Mode and grounded product Q&amp;A, which the app doesn't
+        have. No Shopify app yet.</p></div>
+      <div class="card"><h3>vs Boost, SearchTap and other store apps</h3>
+        <p><strong>They are ahead on</strong> filters, merchandising campaigns, reports and platform integrations
+        (Boost from $29/mo on Shopify; SearchTap plans from $59/mo).</p>
+        <p><strong>Findaro differs:</strong> natural-language understanding with visible chips, Hinglish, chat
+        shopping and an open-source core. We found no natural-language or Hinglish claims on their pages.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" aria-labelledby="src-h">
+  <div class="wrap">
+    <div class="section-head"><h2 id="src-h">Sources</h2>
+      <p>All accessed on 17 October 2026. Product names are trademarks of their owners; this page is not affiliated
+      with or endorsed by them.</p></div>
+    <ul class="sources">
+      <li><a href="https://www.algolia.com/pricing" rel="noopener">Algolia pricing</a></li>
+      <li><a href="https://algolia.com/doc/guides/algolia-ai/agent-studio" rel="noopener">Algolia Agent Studio docs</a></li>
+      <li><a href="https://apps.shopify.com/algolia-search" rel="noopener">Algolia on the Shopify App Store</a></li>
+      <li><a href="https://github.com/typesense/typesense" rel="noopener">Typesense on GitHub (license)</a></li>
+      <li><a href="https://cloud.typesense.org/pricing" rel="noopener">Typesense Cloud pricing</a></li>
+      <li><a href="https://typesense.org/docs/latest/api/natural-language-search.html" rel="noopener">Typesense natural-language search</a></li>
+      <li><a href="https://typesense.org/docs/latest/api/conversational-search-rag.html" rel="noopener">Typesense conversational search</a></li>
+      <li><a href="https://www.meilisearch.com/pricing" rel="noopener">Meilisearch pricing</a></li>
+      <li><a href="https://github.com/meilisearch/meilisearch" rel="noopener">Meilisearch on GitHub (license)</a></li>
+      <li><a href="https://www.meilisearch.com/docs/learn/chat/getting_started_with_chat" rel="noopener">Meilisearch chat docs</a></li>
+      <li><a href="https://www.elastic.co/pricing" rel="noopener">Elastic pricing</a></li>
+      <li><a href="https://www.elastic.co/docs/explore-analyze/machine-learning/nlp/ml-nlp-elser" rel="noopener">Elastic ELSER docs</a></li>
+      <li><a href="https://github.com/opensearch-project/OpenSearch" rel="noopener">OpenSearch on GitHub (license)</a></li>
+      <li><a href="https://apps.shopify.com/search-and-discovery" rel="noopener">Shopify Search &amp; Discovery</a></li>
+      <li><a href="https://changelog.shopify.com/posts/semantic-search-is-now-available-on-more-plans" rel="noopener">Shopify semantic search changelog</a></li>
+      <li><a href="https://apps.shopify.com/product-filter-search" rel="noopener">Boost AI Search &amp; Filter</a></li>
+      <li><a href="https://www.searchtap.io/" rel="noopener">SearchTap</a></li>
+    </ul>
+  </div>
+</section>
+
+<section class="final" aria-label="Try it">
+  <div class="wrap">
+    <h2>See it on a real catalog</h2>
+    <p>Try AI Mode on our demo store, or tell us about your catalog.</p>
+    <div class="cta-row"><a class="btn btn-primary" href="/demo/">Open the live demo</a>
+      <a class="btn btn-ghost" href="/request-access.html">Request access</a></div>
+  </div>
+</section>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="about">
+      <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro</a>
+      <p>AI search for product catalogs: natural language, Indian English and Hinglish, grounded chat. Open source under Apache-2.0.</p>
+    </div>
+    <div>
+      <h4>Product</h4>
+      <ul>
+        <li><a href="/demo/">Live demo</a></li>
+        <li><a href="/#features">Features</a></li>
+        <li><a href="/pricing.html">Pricing</a></li>
+        <li><a href="/compare.html">Compare</a></li>
+        <li><a href="/request-access.html">Request access</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Developers</h4>
+      <ul>
+        <li><a href="/docs/">Docs</a></li>
+        <li><a href="/docs/quickstart.html">Quickstart</a></li>
+        <li><a href="/docs/api.html">API reference</a></li>
+        <li><a href="/docs/self-hosting.html">Self-hosting</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Project</h4>
+      <ul>
+        <li><a href="__GITHUB_URL__" rel="noopener">GitHub</a></li>
+        <li><a href="__GITHUB_URL__/blob/main/LICENSE" rel="noopener">License (Apache-2.0)</a></li>
+        <li><a href="/terms.html">Terms</a></li>
+        <li><a href="/privacy.html">Privacy</a></li>
+      </ul>
+    </div>
+    <div class="legal">
+      <span>© <span data-year>2026</span> __COMPANY_NAME__. findaro is open source.</span>
+      <span>Hosted beta · Oracle Cloud, Mumbai region</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

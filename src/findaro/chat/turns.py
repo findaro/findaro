@@ -407,7 +407,8 @@ def apply_delta(plan: QueryPlan, delta: PlanDelta, schema: Schema, d: Compiled |
         new.filters = [x for x in new.filters if not (x.op == "not" and x.field == f.field and
                                                        set(map(str, x.value if isinstance(x.value, list)
                                                                else [x.value])) <= vals)]
-    new.filters += delta.add_filters
+    # what the shopper asks for in this turn is the last thing a zero-result search may loosen
+    new.filters += [f.model_copy(update={"confidence": max(f.confidence, 0.98)}) for f in delta.add_filters]
     for ex in delta.exclude:
         new.filters = [x for x in new.filters if not (x.field == ex.field and x.op in ("eq", "in") and
                                                        str(x.value) == str(ex.value))]
@@ -427,9 +428,28 @@ def apply_delta(plan: QueryPlan, delta: PlanDelta, schema: Schema, d: Compiled |
         new.keywords = [*new.keywords, *[w for w in delta.add_keywords if w not in new.keywords]]
         new.semantic_text = " ".join(new.keywords)
     # boosts for fields now filtered explicitly are redundant
-    filtered = {f.field for f in new.filters if f.op != "not"}
+    filtered = {f.field for f in new.filters if f.op != "not" and f.origin != "category_anchor"}
     new.boosts = [b for b in new.boosts if b.field not in filtered]
     return validate_plan(new, schema, d)
+
+
+def anchor_category(plan: QueryPlan) -> QueryPlan:
+    """Once a conversation refines a search, a category the shopper named ("shoes") is a constraint, not just a
+    ranking hint: otherwise "only leather" after "black shoes under 1000" ranks leather phone covers first.
+    The filter is non-strict, is never loosened by a zero-result search (budget first, then inferred attributes,
+    then what was just asked), and stays under the category's own chip (removing that chip removes both)."""
+    have = {f.field for f in plan.filters if f.op != "not"}
+    # in a conversation the budget is the most flexible constraint (the budget clarifier offers to lift it), so a
+    # zero-result search loosens it before any attribute
+    plan.filters = [f.model_copy(update={"confidence": min(f.confidence, 0.8)}) if f.origin == "price" else f
+                    for f in plan.filters]
+    for b in plan.boosts:
+        if b.origin == "category" and b.text and b.field not in have:
+            plan.filters.append(PlanFilter(field=b.field, op="in" if isinstance(b.value, list) else "eq",
+                                           value=b.value, strict=False, confidence=0.97, origin="category_anchor",
+                                           text=b.text))
+            have.add(b.field)
+    return plan
 
 
 def chip_label(text: str) -> str:

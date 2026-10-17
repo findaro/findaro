@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>__SITE_URL__/</loc></url>
   <url><loc>__SITE_URL__/pricing.html</loc></url>
-  <url><loc>__SITE_URL__/ai.html</loc></url>
+  <url><loc>__SITE_URL__/demo/</loc></url>
   <url><loc>__SITE_URL__/request-access.html</loc></url>
   <url><loc>__SITE_URL__/docs/</loc></url>
   <url><loc>__SITE_URL__/docs/quickstart.html</loc></url>

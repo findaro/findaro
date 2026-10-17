@@ -20,7 +20,7 @@ What it does:
 3. Starts the `findaro` compose project, writes `/srv/caddy/sites/findaro.caddy`, validates the Caddy config and
    reloads it (an invalid config is rolled back).
 4. Creates the demo project if needed (admin key kept in `/srv/findaro/demo-project.json`, chmod 600), restricts
-   its search key to the demo origin, and writes the demo page.
+   its search key to the demo origin, and renders the site with its key (the live demo is `site/public/demo/`).
 
 Layout and limits (`compose.yml`):
 

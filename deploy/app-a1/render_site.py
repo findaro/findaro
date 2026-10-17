@@ -2,8 +2,8 @@
 
     python3 render_site.py <site_url> <api_url> <github_url> <company_name>
 
-Copies app/site/{public,server}, fills the placeholders listed in site/README.md, adds the widget and a demo
-store page (examples/plain-html) at /demo/. The search key it writes is the demo project's browser-safe key.
+Copies app/site/{public,server}, fills the placeholders listed in site/README.md and adds the built widget. The live
+demo is the site's own page, public/demo/index.html. The search key it writes is the demo project's browser-safe key.
 """
 
 import json
@@ -24,12 +24,6 @@ shutil.rmtree(new, ignore_errors=True)
 shutil.copytree(FINDARO / "app/site/public", new / "public")
 shutil.copytree(FINDARO / "app/site/server", new / "server")
 shutil.copy(FINDARO / "findaro-widget.js", new / "public/findaro-widget.js")
-page = (FINDARO / "app/examples/plain-html/index.html").read_text()
-page = (page.replace("YOUR_PROJECT_ID", "__DEMO_PROJECT__").replace("YOUR_SEARCH_KEY", "__DEMO_SEARCH_KEY__")
-        .replace("http://localhost:8000", "__API_URL__")
-        .replace('src="./findaro-widget.js"', 'src="/findaro-widget.js"'))
-(new / "public/demo").mkdir(exist_ok=True)
-(new / "public/demo/index.html").write_text(page)
 
 for f in (new / "public").rglob("*"):
     if f.suffix in (".html", ".xml", ".txt", ".js", ".css", ".json", ".webmanifest") and f.name != "findaro-widget.js":

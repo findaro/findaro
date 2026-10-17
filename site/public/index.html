@@ -6,8 +6,8 @@
 <title>findaro · AI search for Indian e-commerce catalogs</title>
 <meta name="description" content="AI search API and drop-in widget: natural-language queries in English and Hinglish, filters inferred from the query, grounded AI chat. Open source, hosted beta.">
 <link rel="canonical" href="__SITE_URL__/">
-<meta name="theme-color" content="#f5f2ea" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#11100d" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f8fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0f1a" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="findaro">
 <meta property="og:title" content="findaro · AI search for Indian e-commerce catalogs">
@@ -23,13 +23,6 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&amp;family=Instrument+Sans:wght@400..700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
 <link rel="stylesheet" href="/assets/site.css">
 <script src="/assets/site.js" defer></script>
-<style>
-  /* map the widget's theme onto the site's tokens (outer styles win over :host defaults, both themes) */
-  findaro-search#demo-widget { --findaro-bg: var(--surface); --findaro-surface: var(--bg); --findaro-fg: var(--ink);
-    --findaro-muted: var(--muted); --findaro-border: var(--line); --findaro-chip-bg: var(--accent-soft);
-    --findaro-chip-fg: var(--accent-text); --findaro-accent-ink: var(--accent-ink); }
-</style>
-<script src="/findaro-widget.js" data-project="__DEMO_PROJECT__" data-key="__DEMO_SEARCH_KEY__" data-base-url="__API_URL__" defer onerror="document.documentElement.classList.add('no-widget')"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -41,7 +34,7 @@
     </button>
     <nav class="nav" id="site-nav" aria-label="Main">
       <a href="/#features">Product</a>
-      <a href="/ai.html">AI Mode</a>
+      <a href="/demo/">AI Mode</a>
       <a href="/pricing.html">Pricing</a>
       <a href="/docs/">Docs</a>
       <a href="__GITHUB_URL__" rel="noopener">GitHub</a>
@@ -60,7 +53,7 @@
       and typos. Send us a JSON or CSV file, add one script tag, and shoppers find things in their own words.</p>
       <div class="cta-row">
         <a class="btn btn-primary" href="/request-access.html">Request access</a>
-        <a class="btn btn-ghost" href="#demo">Try the demo</a>
+        <a class="btn btn-ghost" href="/demo/">Try the demo</a>
         <a class="btn btn-ghost" href="__GITHUB_URL__" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.23 2.75.11 3.04.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.39-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg> View on GitHub</a>
       </div>
       <p class="hero-note"><span>Apache-2.0</span><span>No schema to write</span><span>Widget ~10 KB gzipped</span></p>
@@ -85,32 +78,55 @@
 
 <section id="demo" class="band" aria-labelledby="demo-h">
   <div class="wrap">
-    <div class="section-head">
-      <span class="eyebrow">Live demo</span>
-      <h2 id="demo-h">Try it on a demo store.</h2>
-      <p>This is the real widget, running on a synthetic catalog of 3,000 Indian e-commerce products. Type anything,
-      or tap an example. Switch to <strong>Ask AI</strong> to refine in conversation.</p>
-    </div>
-    <div class="try" aria-label="Example queries">
-      <span class="try-label">Try</span>
-      <button type="button" data-q="kaale joote 1000 ke andar">kaale joote 1000 ke andar<span class="tag">Hinglish</span></button>
-      <button type="button" data-q="sarson ka tel">sarson ka tel<span class="tag">Hinglish</span></button>
-      <button type="button" data-q="presure coker">presure coker<span class="tag">typo</span></button>
-      <button type="button" data-q="women shoes under 1000">women shoes under 1000</button>
-      <button type="button" data-q="guitar strings">guitar strings<span class="tag">not in catalog</span></button>
-      <button type="button" data-mode="ai" data-q="saree under 1000">saree under 1000<span class="tag">Ask AI</span></button>
-      <button type="button" data-mode="ai" data-q="running shoes for men">running shoes for men<span class="tag">Ask AI</span></button>
-    </div>
-    <div class="demo-frame">
-      <div class="demo-bar"><i></i><i></i><i></i><span>demo-store · 3,000 products · synthetic data</span></div>
-      <div class="demo-body">
-        <p class="demo-fallback" id="demo-fallback" role="status">The live demo couldn't load right now. You can still
-        run the same demo locally: it ships with the <a href="__GITHUB_URL__" rel="noopener">open-source repo</a>.</p>
-        <findaro-search id="demo-widget" placeholder="Search the demo store… try “sasta pressure cooker”"></findaro-search>
+    <div class="demo-intro">
+      <div class="section-head">
+        <span class="eyebrow">Live demo · AI Mode</span>
+        <h2 id="demo-h">Shop by talking it through.</h2>
+        <p>AI Mode turns the widget into a shopping assistant: describe what you need, see how it searched, narrow the
+        results in one tap and compare products side by side. Try it on a demo store of 3,000 synthetic products.</p>
+      </div>
+      <div class="demo-cta">
+        <a class="btn btn-primary" href="/demo/">Open the live demo <span aria-hidden="true">→</span></a>
+        <p class="try" aria-label="Example queries">
+          <span class="try-label">Try</span>
+          <a href="/demo/?q=kaale+joote+1000+ke+andar">kaale joote 1000 ke andar</a>
+          <a href="/demo/?q=kurta+for+a+wedding">kurta for a wedding</a>
+          <a href="/demo/?q=presure+coker">presure coker</a>
+        </p>
       </div>
     </div>
-    <p class="fine" style="margin-top:1rem">In Ask AI, try a follow-up such as “only black” or “is the second one
-    lace-up?”, or tap <strong>Ask</strong> on any product card to ask about that product.</p>
+
+    <figure class="aim" aria-label="Preview of AI Mode: a shopper asks for black shoes under 1000 and gets matching products with next steps">
+      <div class="aim-bar" aria-hidden="true"><i></i><i></i><i></i><span>demo-store · AI Mode</span></div>
+      <div class="aim-body" aria-hidden="true">
+        <div class="aim-side">
+          <span class="aim-new">+ New chat</span>
+          <span class="aim-grp">Today</span>
+          <span class="aim-conv on">black shoes under 1000</span>
+          <span class="aim-conv">kurta for a wedding</span>
+          <span class="aim-conv">steel water bottle</span>
+        </div>
+        <div class="aim-main">
+          <div class="aim-user">black shoes under 1000</div>
+          <div class="aim-head"><span class="aim-av"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.5l2.1 6.2 6.4 2.3-6.4 2.3L12 19.5l-2.1-6.2L3.5 11l6.4-2.3z"/></svg></span><b>AI Mode</b><time>10:42</time></div>
+          <div class="aim-how">How I searched <span>· Under ₹1,000 · Black · 31 products</span></div>
+          <p class="aim-text">Here are black shoes under ₹1,000. All of these match both things you asked for.</p>
+          <div class="aim-cards">
+            <div class="aim-card"><div class="aim-img" style="--h:214">A</div><b>Kids school lace-up shoes</b><span class="aim-price">₹549</span><span class="aim-tags"><em>Canvas</em></span><span class="aim-req">✓ Matches 2/2 · Under ₹1,000, Black</span></div>
+            <div class="aim-card"><div class="aim-img" style="--h:200">S</div><b>Black canvas school shoes</b><span class="aim-price">₹899</span><span class="aim-tags"><em>Canvas</em></span><span class="aim-req">✓ Matches 2/2 · Under ₹1,000, Black</span></div>
+            <div class="aim-card"><div class="aim-img" style="--h:228">N</div><b>Velcro school shoes</b><span class="aim-price">₹399</span><span class="aim-tags"><em>Synthetic leather</em></span><span class="aim-req">✓ Matches 2/2 · Under ₹1,000, Black</span></div>
+          </div>
+          <div class="aim-next">
+            <span>Only lace-up <i>→</i></span>
+            <span>Under ₹500 <i>→</i></span>
+            <span>Compare the top 3 <i>→</i></span>
+          </div>
+          <div class="aim-composer">Ask a follow-up… <span class="aim-send"><svg viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5L12 5l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+        </div>
+      </div>
+    </figure>
+    <p class="fine demo-foot">Illustration of the live demo. Product data in the demo store is synthetic.
+      <a href="/demo/">Open the live demo</a> to try it in your own words.</p>
   </div>
 </section>
 
@@ -247,7 +263,7 @@ file=@catalog.jsonl</code></pre>
     <div class="section-head">
       <span class="eyebrow">For developers</span>
       <h2 id="code-h">One script tag, one endpoint.</h2>
-      <p>Same API whether we host it or you do. The full reference is in the <a href="/docs/api.html" style="color:#ffb37d">docs</a>.</p>
+      <p>Same API whether we host it or you do. The full reference is in the <a href="/docs/api.html">docs</a>.</p>
     </div>
     <div class="tabs" role="tablist" aria-label="Code examples">
       <button type="button" role="tab" id="t-widget" aria-controls="p-widget" aria-selected="true">Widget</button>
@@ -263,7 +279,7 @@ file=@catalog.jsonl</code></pre>
 
 <span class="k">&lt;findaro-search</span> locale=<span class="s">"hi-en"</span><span class="k">&gt;&lt;/findaro-search&gt;</span>
 
-<span class="k">&lt;style&gt;</span> findaro-search { --findaro-accent: #c2410c; --findaro-radius: 10px; } <span class="k">&lt;/style&gt;</span></code></pre>
+<span class="k">&lt;style&gt;</span> findaro-search { --findaro-accent: #2563eb; --findaro-radius: 10px; } <span class="k">&lt;/style&gt;</span></code></pre>
     </div>
     <div class="tabpanel" role="tabpanel" id="p-curl" aria-labelledby="t-curl" hidden>
 <pre><code>curl -X POST __API_URL__/v1/search \
@@ -515,7 +531,7 @@ file=@catalog.jsonl</code></pre>
     <div>
       <h4>Product</h4>
       <ul>
-        <li><a href="/#demo">Live demo</a></li>
+        <li><a href="/demo/">Live demo</a></li>
         <li><a href="/#features">Features</a></li>
         <li><a href="/pricing.html">Pricing</a></li>
         <li><a href="/request-access.html">Request access</a></li>

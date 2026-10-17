@@ -272,8 +272,7 @@ def write_section(rows, judged, neg, args) -> None:
     L = [BEGIN, "", "## M3 — chat search", "",
          f"- Date: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')} · {len({r['conv'] for r in rows})} "
          f"conversations, {len(rows)} turns (`eval/conversations.jsonl`, marked needs_review)",
-         f"- Chat model: {args.chat_model} · judge: {args.judge_provider}:{args.judge_model} "
-         "(OpenAI in place of claude-haiku-4-5, approved by Rohit 2026-10-08)", "",
+         f"- Chat model: {args.chat_model} · judge: {args.judge_provider}:{args.judge_model}", "",
          "| Target / metric | Result | |", "|---|---|---|",
          f"| results event p95 ≤ {TARGET_RESULTS_P95:.0f} ms (rules path, client-measured) | {res_p95:.0f} ms "
          f"(n={len(rules_rows)}) | {v(res_p95 <= TARGET_RESULTS_P95)} |",

@@ -28,7 +28,7 @@
 - **Label noise.** Ground truth comes from the generator's structured attributes, not from the LLM-written
   titles. A small fraction of titles drift: for example, 4 of 100 chargers are titled as "charging cable".
   Expect a few points of noise per query.
-- **Reviewed.** Rohit reviewed all 21 Hinglish and natural-language queries on 2026-10-07: 15 approved and
+- **Reviewed.** A maintainer reviewed all 21 Hinglish and natural-language queries on 2026-10-07: 15 approved and
   6 changed, with decisions in `eval/reviews.json`. Only q050 ("gaadi ke liye phone stand", narrowed to
   windshield mounts) changes which documents count as relevant. The other changes add a gender that the
   category already implies.

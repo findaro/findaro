@@ -1,7 +1,7 @@
 {
- "reviewed_by": "Rohit",
+ "reviewed_by": "maintainer",
  "reviewed_at": "2026-10-07",
- "source": "eval review page (claude.ai artifact 4eUQcroxpHWgwKQSJDuyZm)",
+ "source": "hand review",
  "decisions": {
   "q046": {
    "status": "approved"

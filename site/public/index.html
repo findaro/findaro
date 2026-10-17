@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>findaro · AI search for Indian e-commerce catalogs</title>
-<meta name="description" content="AI search API and drop-in widget: natural-language queries in English and Hinglish, filters inferred from the query, grounded AI chat. Open source, hosted beta.">
+<title>Findaro: search that understands what shoppers mean</title>
+<meta name="description" content="AI search for Indian online stores. Findaro reads prices, colours, categories, Hinglish and typos in the query and shows them as filters shoppers can remove. Open source, hosted beta in Mumbai.">
 <link rel="canonical" href="__SITE_URL__/">
-<meta name="theme-color" content="#fafaf8">
+<meta name="theme-color" content="#ffffff">
 <meta name="color-scheme" content="light">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="findaro">
-<meta property="og:title" content="findaro · AI search for Indian e-commerce catalogs">
-<meta property="og:description" content="AI search API and drop-in widget: natural-language queries in English and Hinglish, filters inferred from the query, grounded AI chat. Open source, hosted beta.">
+<meta property="og:site_name" content="Findaro">
+<meta property="og:title" content="Findaro: search that understands what shoppers mean">
+<meta property="og:description" content="AI search for Indian online stores. Findaro reads prices, colours, categories, Hinglish and typos in the query and shows them as filters shoppers can remove.">
 <meta property="og:url" content="__SITE_URL__/">
 <meta property="og:image" content="__SITE_URL__/assets/og.png">
 <meta property="og:image:width" content="1200">
@@ -20,7 +20,7 @@
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,500;0,8..60,600;1,8..60,500&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=Rethink+Sans:wght@400..800&amp;display=swap">
 <link rel="stylesheet" href="/assets/site.css">
 <script src="/assets/site.js" defer></script>
 </head>
@@ -28,12 +28,11 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#17191d"/><path d="M19.5 9h-2.25a3 3 0 0 0-3 3v11.5M10.5 15h7.5" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="22.25" cy="22.25" r="2.6" fill="#4cbdb0"/></svg>findaro<span class="beta">beta</span></a>
+    <a class="brand" href="/" aria-label="Findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M20.5 5.5h-2.75A4.75 4.75 0 0 0 13 10.25V22.5M8.5 13.25h10.5" fill="none" stroke="#14213d" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="5.5" y="25.5" width="21" height="3.2" rx="1.6" fill="#2348d8"/></svg>findaro<span class="beta">beta</span></a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
     <nav class="nav" id="site-nav" aria-label="Main">
-      <a href="/#features">Product</a>
       <a href="/demo/">Live demo</a>
       <a href="/pricing.html">Pricing</a>
       <a href="/docs/">Docs</a>
@@ -44,329 +43,217 @@
 </header>
 <main id="main">
 
-
 <section class="hero" aria-labelledby="hero-h">
   <div class="wrap">
-    <div>
-      <p class="pill-note"><b>Hosted beta</b> Open source under Apache-2.0 · hosted in Mumbai</p>
-      <h1 id="hero-h">Search that understands how India <em>actually</em> types.</h1>
-      <p class="lede">findaro turns your product catalog into natural-language search: English, Indian English,
-      Hinglish and typos. Send a JSON or CSV file, add one script tag, and shoppers find things in their own words,
-      with every filter it applied shown as a chip they can remove.</p>
-      <div class="cta-row">
-        <a class="btn btn-primary" href="/request-access.html">Request access</a>
-        <a class="btn btn-ghost" href="/demo/">Try the live demo <span class="arrow" aria-hidden="true">→</span></a>
-      </div>
-      <p class="hero-note"><span>No schema to write</span><span>Browser-safe search key</span><span>Same API hosted or self-hosted</span></p>
-    </div>
+    <h1 id="hero-h"><span>Your shoppers don't type keywords.</span> <span>Findaro understands what they mean.</span></h1>
 
-    <div class="mock" role="img" aria-label="Illustration: the findaro widget reading the Hinglish query “kaale joote 1000 ke andar” as the filters Under ₹1,000 and Black, with matching school shoes and an AI Mode answer">
-      <div class="mock-win" aria-hidden="true">
-        <div class="mock-bar"><span class="dots"><i></i><i></i><i></i></span> Demo store
-          <span class="seg"><span class="on">Search</span><span>AI Mode</span></span></div>
-        <div class="mock-body">
-          <div class="m-input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg><span class="q">kaale joote 1000 ke andar</span><span class="go">Search</span></div>
-          <div class="m-chips"><span class="lbl">Understood</span>
-            <span class="m-chip">Under ₹1,000 <span class="x">×</span></span>
-            <span class="m-chip">Black <span class="x">×</span></span>
-            <span class="m-chip soft">Shoes <span class="x">×</span></span></div>
-          <div class="m-status"><b>31 results</b> · searching “black shoes”</div>
-          <div class="m-grid">
-            <div class="m-card"><div class="m-img" style="--h:200"><span class="m-sel"><i></i>Select</span>A</div>
-              <div class="m-txt"><span class="m-title">Aadivaan Black Canvas School Shoes</span>
-                <span class="m-price">₹349<s>₹869</s></span><span class="m-meta">★ 4.5 (808)</span>
-                <span class="m-req">Matches 3/3</span></div></div>
-            <div class="m-card"><div class="m-img" style="--h:178"><span class="m-sel on"><i></i>Select</span>V</div>
-              <div class="m-txt"><span class="m-title">VedaVibes Black Synthetic Leather School Shoes</span>
-                <span class="m-price">₹499<s>₹999</s></span><span class="m-meta">★ 3.9 (15)</span>
-                <span class="m-req">Matches 3/3</span></div></div>
-            <div class="m-card"><div class="m-img" style="--h:226"><span class="m-sel"><i></i>Select</span>S</div>
-              <div class="m-txt"><span class="m-title">Sohum Black Canvas Kids School Shoes</span>
-                <span class="m-price">₹899<s>₹1,279</s></span><span class="m-meta">★ 3.7 (88)</span>
-                <span class="m-req">Matches 3/3</span></div></div>
+    <figure class="aq" id="aq" data-example="hinglish">
+      <p class="sr-only" id="aq-sr" aria-live="polite">The query “kaale joote 1000 ke andar” is understood as Black, Shoes and Under ₹1,000.</p>
+      <div class="aq-line" aria-hidden="true">
+        <span class="aq-seg"><span class="aq-w">kaale</span><span class="aq-c"><span class="chip">Black<span class="x">×</span></span></span></span>
+        <span class="aq-seg"><span class="aq-w">joote</span><span class="aq-c"><span class="chip">Shoes<span class="x">×</span></span></span></span>
+        <span class="aq-seg"><span class="aq-w">1000 ke andar</span><span class="aq-c"><span class="chip">Under ₹1,000<span class="x">×</span></span></span></span>
+      </div>
+      <figcaption class="aq-foot">
+        <span class="seg" role="radiogroup" aria-label="Example query" id="aq-switch">
+          <button type="button" role="radio" data-ex="hinglish" aria-checked="true">Hinglish</button>
+          <button type="button" role="radio" data-ex="english" aria-checked="false" tabindex="-1">English</button>
+          <button type="button" role="radio" data-ex="typo" aria-checked="false" tabindex="-1">Typo</button>
+        </span>
+        <p class="aq-cap" id="aq-cap">31 products match in the demo store. <a href="/demo/?mode=search&amp;q=kaale%20joote%201000%20ke%20andar">Run this search</a></p>
+      </figcaption>
+    </figure>
+
+    <div class="cta-row hero-ctas">
+      <a class="btn btn-primary" href="/request-access.html">Request access</a>
+      <a class="btn btn-ghost" href="/demo/">Try the live demo</a>
+    </div>
+    <p class="hero-note">Open source under Apache-2.0. Self-host it, or use the hosted beta in Mumbai.</p>
+  </div>
+</section>
+
+<section aria-labelledby="versus-h">
+  <div class="wrap">
+    <div class="section-head">
+      <h2 id="versus-h">Same query, two searches.</h2>
+      <p>Keyword search looks for the shopper's exact words in your product titles. Findaro reads the query first,
+      then searches.</p>
+    </div>
+    <div class="versus">
+      <div class="side">
+        <div><h3>Keyword search</h3><p class="who">Looks for “kaale” and “joote” in titles</p></div>
+        <div class="mock-input" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg><span class="q">kaale joote 1000 ke andar</span><span class="go">Search</span></div>
+        <div class="noresult"><strong>No results for “kaale joote 1000 ke andar”</strong>Check the spelling or try fewer words.</div>
+      </div>
+      <div class="side">
+        <div><h3>Findaro</h3><p class="who">Reads the colour, the category and the budget</p></div>
+        <div class="mock-input" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg><span class="q">kaale joote 1000 ke andar</span><span class="go">Search</span></div>
+        <div class="chips" aria-label="Understood as"><span class="chip">Under ₹1,000<span class="x" aria-hidden="true">×</span></span><span class="chip">Black<span class="x" aria-hidden="true">×</span></span><span class="chip">Shoes<span class="x" aria-hidden="true">×</span></span></div>
+        <p class="count"><b>31 results</b>, all black and under ₹1,000</p>
+        <ul class="pcards">
+          <li class="pcard"><div class="pimg" style="--tile:#e6edf7" aria-hidden="true">A</div><div class="ptxt"><span class="ptitle">Anantara Kids School Black Lace-Up Shoes - Black (UK 13C, UK 1)</span><span class="pprice">₹549<s>₹1,099</s></span><span class="pmeta">★ 3.6 (1)</span><span class="pmatch"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7"/></svg>Matches 3/3</span></div></li>
+          <li class="pcard"><div class="pimg" style="--tile:#e4ebf4" aria-hidden="true">S</div><div class="ptxt"><span class="ptitle">Sohum Black Canvas Kids School Shoes | Lace-Up Shoes for Boys &amp; Girls</span><span class="pprice">₹899<s>₹1,279</s></span><span class="pmeta">★ 3.7 (88)</span><span class="pmatch"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7"/></svg>Matches 3/3</span></div></li>
+          <li class="pcard"><div class="pimg" style="--tile:#e9edf3" aria-hidden="true">N</div><div class="ptxt"><span class="ptitle">Nirmaan Black Kids School Shoes - UK 1, UK 2, UK 3, UK 4, Closure Type - Velcro</span><span class="pprice">₹399<s>₹439</s></span><span class="pmeta">★ 4.4 (35)</span><span class="pmatch"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7"/></svg>Matches 3/3</span></div></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="understands" aria-labelledby="und-h">
+  <div class="wrap">
+    <div class="section-head">
+      <h2 id="und-h">What it understands.</h2>
+      <p>Real queries on the demo store, and what Findaro made of them. Every filter comes back as a chip the shopper
+      can remove.</p>
+    </div>
+    <ul class="uses">
+      <li><span class="typed">joote under 1k</span>
+        <span class="chips"><span class="chip">Under ₹1,000</span><span class="chip">Shoes</span></span>
+        <span class="why">Budgets written the way people write them: 1k, 1.5k, 500 se kam, ₹500-₹1000.</span></li>
+      <li><span class="typed">500 ke andar steel bottle</span>
+        <span class="chips"><span class="chip">Under ₹500</span><span class="chip">Stainless Steel</span><span class="chip">Water Bottles</span></span>
+        <span class="why">Hinglish price phrases, colours and materials, matched to your catalog's own values.</span></li>
+      <li><span class="typed">sarson ka tel</span>
+        <span class="chips"><span class="chip">Mustard Oil</span></span>
+        <span class="why">Hinglish product names, in their many spellings.</span></li>
+      <li><span class="typed">presure coker</span>
+        <span class="found">Pressure cookers, from the first result down</span>
+        <span class="why">Typos are forgiven. Keyword and meaning-based search run together.</span></li>
+      <li><span class="typed">5 litre pressure cooker</span>
+        <span class="chips"><span class="chip">5 L</span><span class="chip">Pressure Cookers</span></span>
+        <span class="why">Sizes stay sizes. “5 litre” and “65W” are never read as prices.</span></li>
+      <li><span class="typed">sasta laptop bag</span>
+        <span class="chips"><span class="chip">Laptop Bags</span><span class="chip">Lower prices first</span></span>
+        <span class="why">Cheap and premium intent become a sort order.</span></li>
+      <li><span class="typed">only leather<small>after “black shoes under 1000”, in AI Mode</small></span>
+        <span class="chips"><span class="chip add">Leather</span></span>
+        <span class="why">Follow-ups add to the search instead of starting over: 31 results become 14.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section aria-labelledby="ai-h">
+  <div class="wrap">
+    <div class="section-head">
+      <h2 id="ai-h">AI Mode: narrow it down by talking.</h2>
+      <p>Shoppers refine the results in their own words, ask about products and compare them, in the same search box.</p>
+    </div>
+    <div class="split">
+      <div class="thread" aria-label="Example AI Mode conversation on the demo store">
+        <div class="say">black shoes under 1000</div>
+        <div class="reply">
+          <div class="chips"><span class="chip">Under ₹1,000<span class="x" aria-hidden="true">×</span></span><span class="chip">Black<span class="x" aria-hidden="true">×</span></span><span class="chip">Shoes<span class="x" aria-hidden="true">×</span></span></div>
+          <p class="count">31 results</p>
+        </div>
+        <div class="say">only leather</div>
+        <div class="reply">
+          <div class="chips"><span class="chip">Under ₹1,000<span class="x" aria-hidden="true">×</span></span><span class="chip">Black<span class="x" aria-hidden="true">×</span></span><span class="chip add">Leather<span class="x" aria-hidden="true">×</span></span><span class="chip">Shoes<span class="x" aria-hidden="true">×</span></span></div>
+          <p class="count">14 results</p>
+        </div>
+        <div class="say">compare these 3</div>
+        <div class="reply">
+          <p>Here are the 3 products side by side. The cheapest is Nirmaan at ₹399.</p>
+          <div class="cmp-scroll" tabindex="0" role="region" aria-label="Comparison of three school shoes">
+            <table class="cmp-mini">
+              <thead><tr><td></td><th scope="col">Nirmaan</th><th scope="col">VedaVibes</th><th scope="col">Anantara</th></tr></thead>
+              <tbody>
+                <tr class="diff"><th scope="row">Price</th><td>₹399</td><td>₹499</td><td>₹599</td></tr>
+                <tr><th scope="row">Material</th><td>Synthetic Leather</td><td>Synthetic Leather</td><td>Synthetic Leather</td></tr>
+                <tr class="diff"><th scope="row">Closure</th><td>Velcro</td><td>Lace-Up</td><td>Velcro</td></tr>
+                <tr class="diff"><th scope="row">Rating</th><td>4.4 (35)</td><td>3.9 (15)</td><td>3.9 (17)</td></tr>
+                <tr class="diff"><th scope="row">Returns</th><td>7-day return</td><td>10-day size exchange</td><td>10-day return</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
-      <div class="mock-ai" aria-hidden="true">
-        <span class="u">which one is leather?</span>
-        <div class="a"><span class="who"><i></i>AI Mode</span>
-          Only the VedaVibes pair is listed as synthetic leather <span class="src">FW-00500</span>. The other two are canvas.</div>
+      <div>
+        <ul class="rules">
+          <li><strong>Answers come only from your listings.</strong> <span>The model sees the products on screen and
+          nothing else.</span></li>
+          <li><strong>Prices come from your data.</strong> <span>Numbers are filled in from the catalog, never written
+          by the model.</span></li>
+          <li><strong>Comparisons are calculated.</strong> <span>The table is worked out in code from the listings.</span></li>
+          <li><strong>Every sentence is checked before it shows.</strong> <span>Anything the listing doesn't back up is
+          dropped. If the listing doesn't say, the answer says so. General advice is labeled as general.</span></li>
+        </ul>
+        <p class="after-link"><a href="/demo/?mode=ai">Try AI Mode in the demo</a></p>
       </div>
-      <p class="mock-cap">Illustration · synthetic demo catalog</p>
     </div>
   </div>
 </section>
 
-<section class="proof" aria-label="Measured results and facts">
-  <div class="wrap">
-    <div class="stat"><b>0.970</b><span>nDCG@10 on the 66-query evaluation set (English, typos, prices, Hinglish)</span></div>
-    <div class="stat"><b>0.818</b><span>nDCG@10 on 20 held-out Hinglish queries written by a different model</span></div>
-    <div class="stat"><b>24.7 ms</b><span>server p95 on the rules-only path, on a 3,000-product catalog</span></div>
-    <div class="stat"><b>Apache-2.0</b><span>the whole engine, self-hostable with <code>docker compose</code></span></div>
-    <p class="src">Measured on the synthetic demo catalog. Method, caveats and failures are in the open
-      <a href="__GITHUB_URL__/blob/main/eval/report.md" rel="noopener">eval report</a>.</p>
-  </div>
-</section>
-
-<section aria-labelledby="problem-h">
+<section aria-labelledby="add-h">
   <div class="wrap">
     <div class="section-head">
-      <span class="eyebrow">The problem</span>
-      <h2 id="problem-h">Shoppers don't type keywords. Most search boxes expect them to.</h2>
-      <p>Keyword search fails on “joote under 1k”. Pure vector search shows confident nonsense. findaro does both
-      kinds of retrieval, and reads the query first.</p>
-    </div>
-    <div class="problems">
-      <article class="problem">
-        <span class="typed">kaale joote</span>
-        <h3>Their words aren't in your catalog</h3>
-        <p>Hinglish, spelling variants and typos match nothing in English product titles.</p>
-        <p class="fix"><b>findaro:</b> language packs map Hinglish to catalog terms; joota, juta and jootey match each other.</p>
-      </article>
-      <article class="problem">
-        <span class="typed">steel bottle 500 ke andar</span>
-        <h3>The budget is treated as a word</h3>
-        <p>“500” matches 500 ml bottles, not prices. The shopper scrolls past things they can't afford.</p>
-        <p class="fix"><b>findaro:</b> prices, colours, sizes and categories become real filters, shown as removable chips.</p>
-      </article>
-      <article class="problem">
-        <span class="typed">silk saree under 800</span>
-        <h3>Zero results, or the wrong ones</h3>
-        <p>A strict filter leaves an empty page; a loose one fills it with unrelated items.</p>
-        <p class="fix"><b>findaro:</b> says how good the match is, and marks close matches instead of hiding them.</p>
-      </article>
-    </div>
-  </div>
-</section>
-
-<section class="band" aria-labelledby="how-h">
-  <div class="wrap">
-    <div class="section-head">
-      <span class="eyebrow">How it works</span>
-      <h2 id="how-h">Three steps. No schema, no synonym lists.</h2>
+      <h2 id="add-h">Add it to your store.</h2>
     </div>
     <ol class="steps">
-      <li class="step">
-        <h3>Send your catalog</h3>
-        <p>Upload JSON, JSONL or CSV, or push documents over the API. findaro works out which field is the title, the
-        price, the colour or the category from the data itself. You can override any of it.</p>
-<pre class="no-copy"><code>POST /v1/projects/<span class="k">{id}</span>/import
-file=@catalog.jsonl</code></pre>
-      </li>
-      <li class="step">
-        <h3>Drop in the widget or call the API</h3>
-        <p>One script tag gives you a complete search UI. Prefer your own UI? Use the headless TypeScript SDK or plain
-        HTTP. The browser key can only search.</p>
-<pre class="no-copy"><code><span class="k">&lt;findaro-search&gt;</span><span class="k">&lt;/findaro-search&gt;</span></code></pre>
-      </li>
-      <li class="step">
+      <li><div>
+        <h3>Upload your catalog</h3>
+        <p>Send a JSON or CSV file, or push products over the API. Findaro works out which field is the title, the
+        price, the colour or the category from the data. You can change any of it.</p>
+      </div></li>
+      <li><div>
+        <h3>Add one script tag</h3>
+        <p>You get a complete search box: chips, filters, compare and AI Mode. Building your own UI? Use the
+        <a href="/docs/sdk.html">headless SDK</a> or the HTTP API.</p>
+<pre><code><span class="k">&lt;script</span> src=<span class="s">"__SITE_URL__/findaro-widget.js"</span> data-project=<span class="s">"prj_…"</span>
+        data-key=<span class="s">"fdr_search_…"</span> data-base-url=<span class="s">"__API_URL__"</span> defer<span class="k">&gt;&lt;/script&gt;</span>
+<span class="k">&lt;findaro-search&gt;&lt;/findaro-search&gt;</span></code></pre>
+      </div></li>
+      <li><div>
         <h3>Shoppers search in their own words</h3>
-        <p>Prices, colours, sizes and categories come out of the query and show up as chips they can remove. When
-        nothing matches exactly, findaro says so and shows the closest options.</p>
-<pre class="no-copy"><code><span class="s">"500 ke andar steel bottle"</span></code></pre>
-      </li>
+        <p>Prices, colours, sizes and categories become filters they can see and remove. When nothing matches
+        exactly, Findaro says so and shows the closest options.</p>
+      </div></li>
     </ol>
+    <p class="after-link"><a href="/docs/quickstart.html">Read the quickstart</a></p>
   </div>
 </section>
 
-<section id="features" aria-labelledby="feat-h">
+<section aria-labelledby="measured-h">
+  <div class="wrap">
+    <div class="section-head"><h2 id="measured-h">Measured, in the open.</h2></div>
+    <div class="measured">
+      <p>On our 66 test queries, search quality (nDCG@10) is <b>0.970</b>. On 20 Hinglish queries written
+      independently, it is <b>0.818</b>, against <b>0.540</b> for the same search without query understanding. On
+      the server, 95% of searches finish within <b>24.7&nbsp;ms</b>.</p>
+      <p class="fine">Measured on the synthetic demo catalog. The method, the caveats and the failures are in the
+      <a href="__GITHUB_URL__/blob/main/eval/report.md" rel="noopener">eval report</a>.</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="oss-h">
   <div class="wrap">
     <div class="section-head">
-      <span class="eyebrow">What you get</span>
-      <h2 id="feat-h">Built for real catalogs and the way real people type.</h2>
+      <h2 id="oss-h">Open source, or hosted by us.</h2>
+      <p>The same engine and the same API either way. Findaro is Apache-2.0, with nothing held back for a paid edition.</p>
     </div>
-    <div class="features">
-      <div class="feature wide">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg></div>
-        <h3>Reads the query, not just the words</h3>
-        <p>Price ranges (“under 500”, “1000 se kam”, “₹500-₹1000”, “1.5k”), colours, materials, sizes, brands,
-        audience and categories are pulled out of the query using only the values in <em>your</em> catalog. Units such as
-        “5 L” or “65W” are never mistaken for prices. Everything findaro applied comes back as chips your UI can remove.</p>
-        <div class="demo-line">“500 ke andar kaale joote” → <b>Under ₹500</b> · <b>Black</b> · searching “black shoes”</div>
-      </div>
-      <div class="feature">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8M8 3v2m2.5 0C9.7 9.6 7.3 13 4 15m3-6c1 2 2.6 3.6 5 5m1 7 4.5-10L22 21m-7.4-3h5.8"/></svg></div>
-        <h3>Indian English and Hinglish</h3>
-        <p>Language packs map hundreds of Hinglish words and phrases (“sarson ka tel” → mustard oil). Spelling variants
-        such as joota, juta and jootey match each other, and Devanagari is transliterated, so “जूते” finds “joote”.</p>
-      </div>
-      <div class="feature">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/></svg></div>
-        <h3>Hybrid retrieval</h3>
-        <p>Keyword search (BM25, typo-tolerant) and multilingual semantic vectors, fused into one ranking.
-        “presure coker” still finds pressure cookers.</p>
-      </div>
-      <div class="feature">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></div>
-        <h3>Honest when nothing matches</h3>
-        <p>Every response says whether the match is good, weak or none. If a filter leaves nothing, findaro relaxes it
-        and tells you which one. Exact matches come first, close matches after, clearly marked.</p>
-      </div>
-      <div class="feature">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3zM3 10h18M9 10v9"/></svg></div>
-        <h3>No schema to write</h3>
-        <p>Field roles (title, price, facet, category, image…) are inferred from your data on the first import. New
-        fields are picked up later. Overrides reindex in the background while search keeps working.</p>
-      </div>
-      <div class="feature">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.4 3.4 8.3 8 9 4.6-.7 8-4.6 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></div>
-        <h3>Keys that are safe where they live</h3>
-        <p>The <strong>search key</strong> is read-only and browser-safe: it can only search and chat, and only from
-        the origins you allow. The <strong>admin key</strong> manages your data and is refused from browsers.</p>
-      </div>
-      <div class="feature half">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7l8-4 8 4v10l-8 4-8-4V7Z"/><path d="m4 7 8 4 8-4M12 11v10"/></svg></div>
-        <h3>Drop-in widget</h3>
-        <p><code>&lt;findaro-search&gt;</code> is one Web Component: search as you type, removable chips, filter pills,
-        product cards with select-to-compare, AI Mode and a product drawer. Shadow DOM, mobile-first, keyboard
-        accessible, themeable with CSS variables, about 23 KB gzipped with no dependencies.</p>
-      </div>
-      <div class="feature half">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 8-4 4 4 4m8-8 4 4-4 4m-6 3 4-14"/></svg></div>
-        <h3>Headless SDK and plain HTTP</h3>
-        <p><code>@findaro/sdk</code> is a typed TypeScript client with zero dependencies, about 1.5 KB gzipped: search,
-        streaming chat, cancellation and retries. Or call the JSON API from any language.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="band" aria-labelledby="chat-h">
-  <div class="wrap split">
-    <div>
-      <span class="eyebrow">AI Mode</span>
-      <h2 id="chat-h">A shop assistant that only says what your listing says.</h2>
-      <p class="lede">Shoppers refine results in conversation (“cheaper”, “sirf cotton”, “not slippers”), compare
-      products side by side and ask about a product the way they would on a product page. The answers stay grounded.</p>
-      <ul class="checks">
-        <li>The model only sees the products on screen. Prices and other numbers are filled in from your data, not
-        written by the model.</li>
-        <li>Every sentence is checked in code before it streams. Anything not backed by the listing is dropped.</li>
-        <li>Comparisons are computed from the listings, not generated.</li>
-        <li>If the listing doesn't say, the answer says so (“The seller hasn't listed a warranty”) instead of
-        guessing. General know-how is labeled as general.</li>
-        <li>Hinglish in, Hinglish out.</li>
-      </ul>
-      <p style="margin-top:1.5rem"><a class="text-link" href="/demo/?mode=ai">Try AI Mode in the demo <span class="arrow" aria-hidden="true">→</span></a></p>
-    </div>
-    <div class="chat" aria-label="Illustration of a product conversation">
-      <div class="bubble user">Pasand na aaye to return ho jayega?</div>
-      <div class="who"><span class="av" aria-hidden="true"></span>AI Mode <time>10:42</time></div>
-      <span class="how-pill"><b>How I searched</b> · 1 product · from the listing</span>
-      <div class="bubble bot"><span class="lbl">From the listing</span>Is product par 10 din ka replacement hai, return
-      nahi <span class="cite">FW-00421</span>.</div>
-      <div class="dropped"><s>“You can return it within 30 days.”</s><span>dropped: not in the listing</span></div>
-      <div class="bubble general"><span class="lbl">General know-how</span>Tags aur box tab tak sambhal ke rakhiye jab tak
-      size theek na lage.</div>
-      <div class="nexts" aria-label="Suggested next questions">
-        <span>What is it made of?</span>
-        <span>Made in India?</span>
-      </div>
-      <p class="fine" style="margin:0">Illustration. Product data in the demo is synthetic.</p>
-    </div>
-  </div>
-</section>
-
-<section aria-labelledby="code-h">
-  <div class="wrap dev-grid">
-    <div>
-      <div class="section-head">
-        <span class="eyebrow">For developers</span>
-        <h2 id="code-h">One script tag, one endpoint.</h2>
-        <p>Same API whether we host it or you do. Every response tells you what was understood, so your own UI can
-        show it too.</p>
-      </div>
-      <ul class="checks">
-        <li>Typed SDK, OpenAPI spec, SSE for chat</li>
-        <li>Browser key restricted to your origins</li>
-        <li>Search-as-you-type never calls an LLM</li>
-      </ul>
-      <p style="margin-top:1.5rem"><a class="text-link" href="/docs/quickstart.html">Read the quickstart <span class="arrow" aria-hidden="true">→</span></a></p>
-    </div>
-    <div class="code-card">
-      <div class="tabs" role="tablist" aria-label="Code examples">
-        <button type="button" role="tab" id="t-widget" aria-controls="p-widget" aria-selected="true">Widget</button>
-        <button type="button" role="tab" id="t-curl" aria-controls="p-curl" aria-selected="false" tabindex="-1">curl</button>
-        <button type="button" role="tab" id="t-sdk" aria-controls="p-sdk" aria-selected="false" tabindex="-1">SDK</button>
-        <button type="button" role="tab" id="t-chat" aria-controls="p-chat" aria-selected="false" tabindex="-1">Chat (SSE)</button>
-      </div>
-      <div class="tabpanel" role="tabpanel" id="p-widget" aria-labelledby="t-widget">
-<pre><code><span class="c">&lt;!-- one script tag + one element; the search key is browser-safe --&gt;</span>
-<span class="k">&lt;script</span> src=<span class="s">"__SITE_URL__/findaro-widget.js"</span>
-        data-project=<span class="s">"prj_…"</span> data-key=<span class="s">"fdr_search_…"</span>
-        data-base-url=<span class="s">"__API_URL__"</span> defer<span class="k">&gt;&lt;/script&gt;</span>
-
-<span class="k">&lt;findaro-search</span> locale=<span class="s">"hi-en"</span><span class="k">&gt;&lt;/findaro-search&gt;</span>
-
-<span class="k">&lt;style&gt;</span> findaro-search { --findaro-accent: #0b6b63; --findaro-radius: 10px; } <span class="k">&lt;/style&gt;</span></code></pre>
-      </div>
-      <div class="tabpanel" role="tabpanel" id="p-curl" aria-labelledby="t-curl" hidden>
-<pre><code>curl -X POST __API_URL__/v1/search \
-  -H <span class="s">"authorization: Bearer $SEARCH_KEY"</span> -H <span class="s">'content-type: application/json'</span> \
-  -d <span class="s">'{"query": "kaale joote 1000 ke andar", "size": 5}'</span>
-
-<span class="c"># → hits, facets, and what was understood:</span>
-<span class="c"># "understood": { "semantic_text": "black shoes",</span>
-<span class="c">#   "chips": [{ "label": "Under ₹1,000", "remove": [...] }, { "label": "Black", "remove": [...] }],</span>
-<span class="c">#   "match_quality": "good", ... }</span></code></pre>
-      </div>
-      <div class="tabpanel" role="tabpanel" id="p-sdk" aria-labelledby="t-sdk" hidden>
-<pre><code><span class="k">import</span> { createClient } <span class="k">from</span> <span class="s">"@findaro/sdk"</span>;
-
-<span class="k">const</span> findaro = createClient({ projectId: <span class="s">"prj_…"</span>, searchKey: <span class="s">"fdr_search_…"</span>, baseUrl: <span class="s">"__API_URL__"</span> });
-
-<span class="k">const</span> res = <span class="k">await</span> findaro.search(<span class="s">"kaale joote 1000 ke andar"</span>);
-<span class="c">// drop the "Black" chip without a new query</span>
-<span class="k">await</span> findaro.search({ query: res.query, patch: res.understood!.chips[1].remove });</code></pre>
-      </div>
-      <div class="tabpanel" role="tabpanel" id="p-chat" aria-labelledby="t-chat" hidden>
-<pre><code>curl -N -X POST __API_URL__/v1/chat -H <span class="s">"authorization: Bearer $SEARCH_KEY"</span> \
-  -H <span class="s">'content-type: application/json'</span> -d <span class="s">'{"message": "saree under 1000"}'</span>
-
-<span class="k">event:</span> session   <span class="c">{"session_id": "chs_…", "turn": 1}</span>
-<span class="k">event:</span> plan      <span class="c">{"understood": {…}, "delta": {"added": ["Under ₹1,000", "Sarees"]}}</span>
-<span class="k">event:</span> results   <span class="c">{"items": […], "total": 10, "match_quality": "good"}</span>
-<span class="k">event:</span> clarify   <span class="c">{"question": "Only 1 match under ₹1,000. Want to see options slightly over budget?"}</span>
-<span class="k">event:</span> text      <span class="c">{"delta": "Only one saree is under ₹1,000: "}</span>
-<span class="k">event:</span> done      <span class="c">{"turn_type": "new", "answer_source": "model"}</span></code></pre>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="band" aria-labelledby="oss-h">
-  <div class="wrap">
-    <div class="section-head">
-      <span class="eyebrow">Open source or hosted</span>
-      <h2 id="oss-h">Same engine. You choose who runs it.</h2>
-      <p>findaro is Apache-2.0. There is no “enterprise edition” with the good parts held back.</p>
-    </div>
-    <div class="compare">
-      <div class="card">
-        <span class="tag">Self-host · free</span>
+    <div class="two">
+      <div>
         <h3>Run it yourself</h3>
-        <p>Run the whole stack with <code>docker compose</code>: API, ingest worker, OpenSearch, Postgres and Redis.
-        Embeddings run locally on CPU; the AI parts use a local Ollama model by default.</p>
-        <ul class="checks">
-          <li>Free forever, Apache-2.0</li>
+        <p>The whole stack runs with <code>docker compose</code>: API, ingest worker, OpenSearch, Postgres and Redis.
+        Embeddings run locally on CPU, and AI Mode uses a local model by default.</p>
+        <ul>
+          <li>Free, under Apache-2.0</li>
           <li>Your catalog and queries stay on your servers</li>
-          <li>Paid LLM APIs (OpenAI, Anthropic) only if you turn them on</li>
-          <li>You operate, scale and upgrade it</li>
+          <li>Paid LLM APIs only if you turn them on</li>
         </ul>
-        <a class="btn btn-ghost" href="/docs/self-hosting.html">Self-hosting guide</a>
+        <a href="/docs/self-hosting.html">Self-hosting guide</a>
       </div>
-      <div class="card dark">
-        <span class="tag">Hosted beta</span>
-        <h3>Hosted by us</h3>
-        <p>We run findaro for you in Oracle Cloud's Mumbai region. You get an API URL and two keys; we handle
-        indexing, models, upgrades and keeping it up.</p>
-        <ul class="checks">
+      <div>
+        <h3>Use the hosted beta</h3>
+        <p>We run Findaro for you in Oracle Cloud's Mumbai region. You get an API URL and two keys; we handle
+        indexing, models and upgrades.</p>
+        <ul>
           <li>No infrastructure to run</li>
-          <li>AI Mode and product Q&amp;A managed for you</li>
-          <li>Help onboarding your catalog on Growth and above</li>
-          <li>Move to self-hosting any time: same API</li>
+          <li>AI Mode managed for you</li>
+          <li>Move to self-hosting any time, with the same API</li>
         </ul>
-        <a class="btn btn-primary" href="/request-access.html">Request access</a>
+        <a href="/request-access.html">Request access</a>
       </div>
     </div>
   </div>
@@ -375,136 +262,58 @@ file=@catalog.jsonl</code></pre>
 <section id="compare" aria-labelledby="cmp-land-h">
   <div class="wrap">
     <div class="section-head">
-      <span class="eyebrow">How it compares</span>
-      <h2 id="cmp-land-h">Findaro vs Algolia, Typesense, Meilisearch and Shopify search</h2>
-      <p>Where Findaro is different, and where the others are ahead today. Checked October 2026 from each vendor's
+      <h2 id="cmp-land-h">Compared with others.</h2>
+      <p>Where Findaro is different, and where the others are ahead today. Checked in October 2026 from each vendor's
       own pages.</p>
     </div>
-    <div class="cmp-wrap short prose" tabindex="0" role="region" aria-labelledby="cmp-land-h">
+    <div class="cmp-wrap short" tabindex="0" role="region" aria-labelledby="cmp-land-h">
       <table>
-        <thead><tr><th scope="col"></th><th scope="col">Findaro</th><th scope="col">Algolia</th><th scope="col">Typesense / Meilisearch</th><th scope="col">Shopify Search &amp; Discovery</th></tr></thead>
+        <thead><tr><th scope="col"><span class="sr-only">Feature</span></th><th scope="col">Findaro</th><th scope="col">Algolia</th><th scope="col">Typesense / Meilisearch</th><th scope="col">Shopify Search &amp; Discovery</th></tr></thead>
         <tbody>
           <tr><th scope="row">Open source, self-host</th><td>Yes (Apache-2.0)</td><td>No</td><td>Yes (GPL-3.0 / MIT)</td><td>No</td></tr>
-          <tr><th scope="row">Query → visible, removable filters</th><td>Yes, rules first</td><td>AI features on higher plans</td><td>LLM-based or build it</td><td>Semantic search</td></tr>
-          <tr><th scope="row">Hinglish / Indian English</th><td>Built in</td><td>No claim found</td><td>No claim found</td><td>Hindi not listed</td></tr>
-          <tr><th scope="row">Chat shopping assistant</th><td>Built into the widget, ready to embed</td><td>Agent Studio (beta)</td><td>APIs, build the UI</td><td>No</td></tr>
+          <tr><th scope="row">Query becomes visible, removable filters</th><td>Yes, rules first</td><td>AI features on higher plans</td><td>LLM-based, or build it</td><td>Semantic search</td></tr>
+          <tr><th scope="row">Hinglish and Indian English</th><td>Built in</td><td>No claim found</td><td>No claim found</td><td>Hindi not listed</td></tr>
+          <tr><th scope="row">Chat shopping assistant</th><td>Built into the widget</td><td>Agent Studio (beta)</td><td>APIs, build the UI</td><td>No</td></tr>
           <tr><th scope="row">Analytics, merchandising, Shopify app</th><td>Not yet</td><td>Yes</td><td>Partly</td><td>Yes</td></tr>
-          <tr><th scope="row">Pricing</th><td>Flat ₹ plans, free tier</td><td>Per 1K searches after 10K free</td><td>Cloud per cluster / from $20/mo</td><td>Free, Shopify only</td></tr>
+          <tr><th scope="row">Pricing</th><td>Flat ₹ plans, free tier</td><td>Per 1K searches after 10K free</td><td>Per cluster, or from $20/mo</td><td>Free, Shopify only</td></tr>
         </tbody>
       </table>
     </div>
-    <p style="margin-top:1.1rem"><a class="text-link" href="/compare.html">Full comparison with sources <span class="arrow" aria-hidden="true">→</span></a></p>
+    <p class="after-link"><a href="/compare.html">Full comparison with sources</a></p>
   </div>
 </section>
 
-<section id="pricing" class="band" aria-labelledby="pricing-h">
+<section id="pricing" class="plans" aria-labelledby="pricing-h">
   <div class="wrap">
-    <div class="pricing-head">
-      <div class="section-head">
-        <span class="eyebrow">Pricing</span>
-        <h2 id="pricing-h">Simple monthly plans.</h2>
-        <p>Hosted beta, billed by invoice. <a href="/pricing.html">Full pricing details</a>.</p>
-      </div>
-      <div class="currency" role="group" aria-label="Currency">
-        <button type="button" data-currency="inr" aria-pressed="true">₹ INR</button>
-        <button type="button" data-currency="usd" aria-pressed="false">$ USD</button>
-      </div>
+    <div class="section-head">
+      <h2 id="pricing-h">Pricing.</h2>
+      <p>The hosted beta is priced per month and billed by invoice. Self-hosting is free.</p>
     </div>
-    <div class="tiers">
-      <article class="tier" aria-labelledby="tier-free">
-        <h3 id="tier-free">Free</h3>
-        <p class="for">Try it on a real catalog, or run a small store.</p>
-        <div class="price"><span data-inr="₹0" data-usd="$0">₹0</span><small>/ month</small></div>
-        <div class="limits">
-          <div><span>Products</span><b>1,000</b></div>
-          <div><span>Searches / month</span><b>10,000</b></div>
-        </div>
-        <ul>
-          <li>Search API, widget and SDK</li>
-          <li>Rules-based query understanding (English + Hinglish)</li>
-          <li>Hybrid keyword + semantic retrieval</li>
-          <li>Community support on GitHub</li>
-        </ul>
-        <a class="btn btn-ghost" href="/request-access.html?plan=free">Request access</a>
-      </article>
-      <article class="tier featured" aria-labelledby="tier-starter">
-        <span class="flag">Recommended</span>
-        <h3 id="tier-starter">Starter</h3>
-        <p class="for">Small catalogs that want AI Mode.</p>
-        <div class="price"><span data-inr="₹2,999" data-usd="$39">₹2,999</span><small>/ month</small></div>
-        <div class="limits">
-          <div><span>Products</span><b>10,000</b></div>
-          <div><span>Searches / month</span><b>100,000</b></div>
-        </div>
-        <ul>
-          <li>Everything in Free</li>
-          <li>AI Mode (chat) and product Q&amp;A</li>
-          <li>Email support</li>
-        </ul>
-        <a class="btn btn-primary" href="/request-access.html?plan=starter">Request access</a>
-      </article>
-      <article class="tier" aria-labelledby="tier-growth">
-        <h3 id="tier-growth">Growth</h3>
-        <p class="for">Larger catalogs and real traffic.</p>
-        <div class="price"><span data-inr="₹9,999" data-usd="$129">₹9,999</span><small>/ month</small></div>
-        <div class="limits">
-          <div><span>Products</span><b>100,000</b></div>
-          <div><span>Searches / month</span><b>500,000</b></div>
-        </div>
-        <ul>
-          <li>Everything in Starter</li>
-          <li>Priority support</li>
-          <li>Help onboarding your catalog</li>
-        </ul>
-        <a class="btn btn-ghost" href="/request-access.html?plan=growth">Request access</a>
-      </article>
-      <article class="tier" aria-labelledby="tier-enterprise">
-        <h3 id="tier-enterprise">Enterprise</h3>
-        <p class="for">Custom limits, your own deployment.</p>
-        <div class="price">Custom</div>
-        <div class="limits">
-          <div><span>Products</span><b>Custom</b></div>
-          <div><span>Searches / month</span><b>Custom</b></div>
-        </div>
-        <ul>
-          <li>Custom limits</li>
-          <li>Dedicated deployment</li>
-          <li>Support for running it on your own infrastructure</li>
-        </ul>
-        <a class="btn btn-ghost" href="/request-access.html?plan=enterprise">Talk to us</a>
-      </article>
+    <div class="table-wrap" tabindex="0" role="region" aria-labelledby="pricing-h">
+      <table>
+        <thead><tr><th scope="col">Plan</th><th scope="col">Per month</th><th scope="col">Products</th><th scope="col">Searches a month</th><th scope="col">AI Mode</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Free</th><td>₹0</td><td>1,000</td><td>10,000</td><td>No</td></tr>
+          <tr><th scope="row">Starter</th><td>₹2,999<small>$39</small></td><td>10,000</td><td>100,000</td><td>Yes</td></tr>
+          <tr><th scope="row">Growth</th><td>₹9,999<small>$129</small></td><td>100,000</td><td>500,000</td><td>Yes</td></tr>
+          <tr><th scope="row">Enterprise</th><td>Custom</td><td>Custom</td><td>Custom</td><td>Yes</td></tr>
+          <tr><th scope="row">Open source</th><td>Free</td><td>Your hardware</td><td>Unlimited</td><td>With your own model</td></tr>
+        </tbody>
+      </table>
     </div>
-    <div class="pricing-notes">
-      <div class="note">
-        <p><strong>Going over a limit never cuts your search off without warning — we'll contact you first.</strong>
-        Searches are submitted searches plus chat turns: each <code>/v1/search</code> request counts, and each chat
-        message counts as one. Search-as-you-type requests while someone types (<code>"llm": false</code>) are free.</p>
-      </div>
-      <div class="note">
-        <p>All plans are the <strong>hosted beta</strong>, priced per month and billed by invoice. Beta means the
-        product is in use and improving quickly; we'll tell you before anything that affects you changes.</p>
-      </div>
-    </div>
-    <div class="oss-row">
-      <div>
-        <h3>Open source (self-host)</h3>
-        <p>Free forever under Apache-2.0. Same engine, run it with docker compose on your own servers.</p>
-      </div>
-      <a class="btn btn-ghost" href="/docs/self-hosting.html">Self-hosting guide</a>
-    </div>
+    <p class="after-link"><a href="/pricing.html">Full pricing and what counts as a search</a></p>
   </div>
 </section>
 
 <section aria-labelledby="faq-h">
-  <div class="wrap faq-grid">
+  <div class="wrap">
     <div class="section-head">
-      <span class="eyebrow">FAQ</span>
-      <h2 id="faq-h">Questions teams ask us.</h2>
+      <h2 id="faq-h">Questions.</h2>
       <p>Something else? <a href="/request-access.html">Write to us</a>.</p>
     </div>
     <div class="faq">
       <details>
-        <summary>Which languages does findaro understand?</summary>
+        <summary>Which languages does Findaro understand?</summary>
         <div><p>English, Indian English and Hinglish (Hindi written in Latin script, with its many spellings). Hindi in
         Devanagari is transliterated for matching. Query-understanding packs exist for English and Hinglish today.</p></div>
       </details>
@@ -522,7 +331,7 @@ file=@catalog.jsonl</code></pre>
       </details>
       <details>
         <summary>Do I need to describe my catalog's schema?</summary>
-        <div><p>No. findaro infers each field's role (title, price, colour, category, image…) from the data. You can
+        <div><p>No. Findaro infers each field's role (title, price, colour, category, image…) from the data. You can
         review the inferred schema and override any field through the API.</p></div>
       </details>
       <details>
@@ -548,7 +357,7 @@ file=@catalog.jsonl</code></pre>
       </details>
       <details>
         <summary>Do you have autocomplete, analytics or recommendations?</summary>
-        <div><p>Not yet. Today findaro does search, query understanding and AI Mode over your catalog. We'd rather tell
+        <div><p>Not yet. Today Findaro does search, query understanding and AI Mode over your catalog. We'd rather tell
         you plainly than promise dates.</p></div>
       </details>
     </div>
@@ -557,13 +366,11 @@ file=@catalog.jsonl</code></pre>
 
 <section class="final" aria-labelledby="final-h">
   <div class="wrap">
-    <div class="cta-box">
-      <h2 id="final-h">Let your shoppers search the way they talk.</h2>
-      <p>Tell us about your catalog. We'll set you up with a project and keys on the hosted beta.</p>
-      <div class="cta-row">
-        <a class="btn btn-primary" href="/request-access.html">Request access</a>
-        <a class="btn btn-ghost" href="/demo/">Try the live demo</a>
-      </div>
+    <h2 id="final-h">Let your shoppers search the way they talk.</h2>
+    <p>Tell us about your catalog and we'll set you up with a project and keys on the hosted beta.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="/request-access.html">Request access</a>
+      <a class="btn btn-ghost" href="/demo/">Try the live demo</a>
     </div>
   </div>
 </section>
@@ -572,14 +379,14 @@ file=@catalog.jsonl</code></pre>
 <footer class="site-footer">
   <div class="wrap">
     <div class="about">
-      <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#17191d"/><path d="M19.5 9h-2.25a3 3 0 0 0-3 3v11.5M10.5 15h7.5" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="22.25" cy="22.25" r="2.6" fill="#4cbdb0"/></svg>findaro</a>
-      <p>AI search for product catalogs: natural language, Indian English and Hinglish, grounded chat. Open source under Apache-2.0.</p>
+      <a class="brand" href="/" aria-label="Findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M20.5 5.5h-2.75A4.75 4.75 0 0 0 13 10.25V22.5M8.5 13.25h10.5" fill="none" stroke="#14213d" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="5.5" y="25.5" width="21" height="3.2" rx="1.6" fill="#2348d8"/></svg>findaro</a>
+      <p>AI search for online stores. Shoppers type the way they talk, in English, Indian English or Hinglish, and your search understands them.</p>
     </div>
     <div>
       <h4>Product</h4>
       <ul>
         <li><a href="/demo/">Live demo</a></li>
-        <li><a href="/#features">Features</a></li>
+        <li><a href="/#understands">What it understands</a></li>
         <li><a href="/pricing.html">Pricing</a></li>
         <li><a href="/compare.html">Compare</a></li>
         <li><a href="/request-access.html">Request access</a></li>
@@ -604,8 +411,8 @@ file=@catalog.jsonl</code></pre>
       </ul>
     </div>
     <div class="legal">
-      <span>© <span data-year>2026</span> __COMPANY_NAME__. findaro is open source.</span>
-      <span>Hosted beta · Oracle Cloud, Mumbai region</span>
+      <span>© <span data-year>2026</span> __COMPANY_NAME__. Findaro is open source.</span>
+      <span>Hosted beta in Oracle Cloud's Mumbai region</span>
     </div>
   </div>
 </footer>

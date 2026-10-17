@@ -72,8 +72,16 @@ footer.
 
 The header, footer and docs sidebar are repeated in every page. If you change one, change them all. Colours and
 fonts are CSS variables at the top of `assets/site.css`. The site is
-**light only** (`color-scheme: light`, no dark overrides): white and quiet neutral surfaces, near-black ink, grey
-hairlines and one deep teal accent (`--accent`) for primary actions, links and focus. Green (`--ok`) means
-"matches"; red (`--danger`) is only for form validation errors; there is no orange, amber or yellow. Any
-`<findaro-search>` on the site is themed from these tokens (bottom of `site.css`) and carries `theme="light"`.
-Fonts: Source Serif 4 (headings), Instrument Sans (body and UI), JetBrains Mono (code).
+**light only** (`color-scheme: light`, no dark overrides): paper white (`--paper`), one secondary surface (`--mist`,
+for code, table headers and similar), navy ink (`--ink`), slate secondary text (`--slate`), grey hairlines and one
+cobalt accent (`--cobalt`) for actions, links, focus and the hero's annotation marks. Only the hero's understood words
+get the pale cobalt wash (`--wash`). Green (`--match`) means "matches"; red (`--error`) is only for form validation
+errors; there is no orange, amber or yellow. Radius by role: 999px chips, 12px cards and inputs, 8px buttons.
+Sections are separated by space, not boxes. Any `<findaro-search>` on the site is themed from these tokens (bottom of
+`site.css`) and carries `theme="light"`. Fonts: Rethink Sans (everything) and IBM Plex Mono (only what people
+literally type: queries and code).
+
+The landing hero is an annotated query: three real demo-store queries (Hinglish, English, typo) and what Findaro made
+of them. The page ships the Hinglish one as HTML; `site.js` types it in once on load (skipped with reduced motion) and
+switches examples. If the demo catalog changes, re-check the counts and chips in `index.html` and `site.js` against
+the live API.

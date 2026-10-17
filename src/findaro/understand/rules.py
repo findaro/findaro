@@ -295,9 +295,14 @@ class RulesParser:
                             by_field[fld] = (val, cnt)
                     if len(by_field) == 1:
                         (fld, (val, _)), = by_field.items()
+                        family = d.families.get(key, {}).get(fld)
                         if d.coverage.get(fld, 0.0) >= MIN_FILTER_COVERAGE:
                             prev = filters_by_field.get(fld)
-                            if prev is None:
+                            if prev is None and family and len(family) > 1:  # "leather": every kind of leather
+                                filters_by_field[fld] = PlanFilter(field=fld, op="in", value=list(family),
+                                                                   strict=False, confidence=0.85, origin="facet",
+                                                                   text=words)
+                            elif prev is None:
                                 filters_by_field[fld] = PlanFilter(field=fld, op="eq", value=val, strict=False,
                                                                    confidence=0.85, origin="facet", text=words)
                             elif val not in (prev.value if isinstance(prev.value, list) else [prev.value]):

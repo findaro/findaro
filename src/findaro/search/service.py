@@ -228,7 +228,12 @@ def build_understood(query: str, plan: QueryPlan | None, schema: Schema, symbol:
 
     chips: list[Chip] = []
     for f in plan.filters:
-        chips.append(Chip(label=_filter_label(f, schema, symbol), kind="filter", field=f.field, op=f.op,
+        if f.origin == "category_anchor":  # shown by the category's own chip, which also removes it
+            continue
+        label = _filter_label(f, schema, symbol)
+        if f.op == "in" and isinstance(f.value, list) and len(f.value) > 2 and f.text and len(f.text) <= 24:
+            label = f.text.strip().capitalize()  # "leather" covers every kind of leather: label it as asked
+        chips.append(Chip(label=label, kind="filter", field=f.field, op=f.op,
                           value=f.value, source=f.text or "", confidence=round(f.confidence, 2),
                           remove=remove_ops("filter", f.field, f.op, f.value, schema)))
     seen = set()
@@ -329,8 +334,11 @@ async def search(state: State, pid: str, project: dict[str, Any], schema: Schema
     relaxations: list[Relaxation] = []
     while True:
         result = await _retrieve(state, pid, schema, req, plan, explicit, aggs, hard_sort, offset)
-        if result.total == 0 and plan is not None and plan.filters and not relaxations:
-            weakest = min(plan.filters, key=lambda f: (f.confidence, f.strict))
+        # a conversation anchored to a category may loosen two constraints before giving up; a plain search one
+        anchored = plan is not None and any(f.origin == "category_anchor" for f in plan.filters)
+        loosenable = [f for f in plan.filters if f.origin != "category_anchor"] if plan is not None else []
+        if result.total == 0 and loosenable and len(relaxations) < (2 if anchored else 1):
+            weakest = min(loosenable, key=lambda f: (f.confidence, f.strict))
             plan.filters.remove(weakest)
             relaxations.append(Relaxation(field=weakest.field, value=weakest.value,
                                           reason="no results with this filter"))

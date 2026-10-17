@@ -196,3 +196,17 @@ def test_head_word_of_a_facet_value_matches_every_value_ending_in_it():
     plan = validate_plan(RulesParser(schema, LEX, d).parse("stainless steel bottle"), schema, d)
     f = next(f for f in plan.filters if f.field == "material")
     assert f.value == "Stainless Steel"  # the full value still wins over its head word
+
+
+def test_a_value_word_means_its_whole_family():
+    docs = []
+    for i, mat in enumerate(["Leather", "Genuine Leather", "Synthetic Leather", "Canvas", "Mesh", "Leather"] * 4):
+        docs.append({"id": f"s{i}", "title": f"{mat} shoe {i}", "category": "Footwear > Shoes", "material": mat,
+                     "price": 500 + i})
+    schema, d = payload_from(docs)
+    plan = validate_plan(RulesParser(schema, LEX, d).parse("leather shoes"), schema, d)
+    f = next(f for f in plan.filters if f.field == "material")
+    assert f.op == "in" and sorted(f.value) == ["Genuine Leather", "Leather", "Synthetic Leather"]
+    plan = validate_plan(RulesParser(schema, LEX, d).parse("genuine leather shoes"), schema, d)
+    f = next(f for f in plan.filters if f.field == "material")
+    assert f.value == "Genuine Leather"  # an exact longer value stays exact

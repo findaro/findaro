@@ -21,6 +21,7 @@ from findaro.chat import session as sess_mod
 from findaro.chat.slots import AFTER_SALE, SlotFiller
 from findaro.chat.turns import (
     PlanDelta,
+    anchor_category,
     apply_delta,
     chip_label,
     classify,
@@ -258,7 +259,7 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
     resp: SearchResponse | None = None
     plan = old_plan
     if reason == "patch":
-        plan = apply_patch(old_plan, req.patch, schema, d)
+        plan = anchor_category(apply_patch(old_plan, req.patch, schema, d))
     elif turn == "refine" and old_plan is not None:
         if delta is None:
             delta = _delta_from_llm(llm_out, schema) if llm_out else refine(
@@ -266,7 +267,7 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
         if delta.empty() and patch is None:
             turn, reason = "new", reason + "; nothing to refine"
         else:
-            plan = apply_delta(old_plan, delta, schema, d)
+            plan = anchor_category(apply_delta(old_plan, delta, schema, d))
     if turn == "new" or (turn == "refine" and old_plan is None):
         turn = "new"
         if llm_out and llm_out.get("semantic_text"):

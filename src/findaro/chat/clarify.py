@@ -26,7 +26,7 @@ class ClarifyChip(BaseModel):
 
 class Clarify(BaseModel):
     question: str
-    reason: str  # entropy | budget | weak_match
+    reason: str  # entropy | budget | weak_match | suggest | next
     field: str | None = None
     chips: list[ClarifyChip] = Field(default_factory=list)
 
@@ -166,3 +166,45 @@ def decide(plan: QueryPlan, resp: SearchResponse, schema: Schema, *, hinglish: b
     else:
         q = f"{_label(field).capitalize()} ka koi preference?" if hinglish else f"Any preference for {_label(field)}?"
     return Clarify(question=q, reason="entropy", field=field, chips=chips)
+
+
+def _round_budget(x: float) -> float:
+    """A price a person would say: 799 -> 700, 2340 -> 2000, 1500 -> 1500, 45 -> 40."""
+    if x < 10:
+        return float(math.floor(x))
+    step = 10 ** int(math.log10(x))  # 100 for 799, 1000 for 2340
+    if x < 2 * step:  # 1500: flooring to 1000 would cut too much, use the next digit
+        step //= 10
+    return float(math.floor(x / step) * step)
+
+
+def next_steps(plan: QueryPlan | None, resp: SearchResponse, schema: Schema, *, hinglish: bool,
+               symbol: str) -> Clarify | None:
+    """Up to three one-click ways to narrow the results on screen, each a real refinement of them:
+    the top value of the most useful attributes, a budget below the median price, cheapest first."""
+    if len(resp.hits) < 4:
+        return None
+    chips: list[ClarifyChip] = []
+    for pill in resp.pills[:2]:
+        top = max(pill.values, key=lambda v: v.count, default=None)
+        if top is None or top.count >= resp.total:
+            continue
+        chips.append(ClarifyChip(label=(f"Sirf {top.label}" if hinglish else f"Only {top.label}"), count=top.count,
+                                 patch=[p.model_dump(exclude_none=True) for p in top.patch], plan_patch={}))
+    price_field = primary_price_field(schema)
+    has_cap = plan is not None and any(f.field == price_field and f.op == "range" for f in plan.filters)
+    if price_field and not has_cap:
+        prices = sorted(float(p) for h in resp.hits
+                        if isinstance(p := h.document.get(price_field), int | float) and p > 0)
+        if len(prices) >= 4:
+            cap = _round_budget(prices[len(prices) // 2])
+            if prices[0] <= cap < prices[-1]:
+                label = f"{symbol}{int(cap):,} ke andar" if hinglish else f"Under {symbol}{int(cap):,}"
+                chips.append(ClarifyChip(label=label, patch=[{"op": "set_price_range", "lte": cap}], plan_patch={}))
+    if price_field and (plan is None or plan.sort is None) and len(chips) < 3:
+        chips.append(ClarifyChip(label="Sabse sasta pehle" if hinglish else "Cheapest first",
+                                 patch=[{"op": "set_sort", "field": price_field, "order": "asc"}], plan_patch={}))
+    if not chips:
+        return None
+    return Clarify(question="Aur chhota karein:" if hinglish else "Narrow it down:", reason="next",
+                   field=None, chips=chips[:3])

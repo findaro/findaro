@@ -4,15 +4,18 @@
  *   <script src="findaro-widget.js" data-project="prj_…" data-key="fdr_search_…" data-base-url="…" defer></script>
  *   <findaro-search></findaro-search>
  *
- * Attributes (override the script tag): project, key, base-url, mode ("search" | "ai"), locale ("en" | "hi-en"),
- * placeholder, size, theme ("light" | "dark"). Properties: renderProduct, onProductClick, strings, client.
- * Events: "findaro:product-click" (cancelable), "findaro:results", "findaro:error".
+ * Attributes (override the script tag): project, key, base-url, mode ("search" | "ai"), layout ("page": full-page
+ * AI Mode with chat history), locale ("en" | "hi-en"), placeholder, size, theme ("light" | "dark"),
+ * starters ("a|b|c"), badges ("field,field"), card-actions ("Add to cart,Save").
+ * Properties: renderProduct, onProductClick, cardActions, strings, client.
+ * Events: "findaro:product-click" (cancelable), "findaro:action" (cancelable), "findaro:results", "findaro:error".
  */
 import {
   createClient,
   debounce,
   type ChatEvent,
   type Chip,
+  type ClarifyChip,
   type ClarifyEvent,
   type Display,
   type Hit,
@@ -22,12 +25,19 @@ import {
   type FindaroClient,
 } from "@findaro/sdk";
 
+import { h, hhmm, icon, safeUrl, secs } from "./dom";
+import { loadChats, saveChats, slimTurn, type Conv, type Turn } from "./history";
 import { STRINGS, fmt, type Strings } from "./strings";
 import { CSS } from "./styles";
 
 export type RenderProduct = (hit: Hit, ctx: { display: Display; formatPrice: (v: unknown) => string }) =>
   HTMLElement | string;
 export type ProductClick = (hit: Hit, event: Event) => void;
+/** A button on each AI Mode product card. Clicking dispatches "findaro:action"; onClick runs unless it's canceled. */
+export interface CardAction {
+  label: string;
+  onClick?: (hit: Hit) => void;
+}
 
 interface View {
   total: number;
@@ -39,59 +49,41 @@ interface View {
   display: Display;
   semantic: string;
 }
+/** product drawer messages */
 interface Msg {
   role: "user" | "assistant";
   text: string;
-  general?: string; // labeled general know-how (product conversation)
-  clarify?: ClarifyEvent | null;
+  general?: string;
   pending?: boolean;
-  error?: boolean;
 }
 
 const SCRIPT_DEFAULTS: Record<string, string> = {};
 {
   const s = (typeof document !== "undefined" ? document.currentScript : null) as HTMLScriptElement | null;
   if (s?.dataset) {
-    for (const [k, v] of Object.entries({ project: s.dataset.project, key: s.dataset.key,
-      "base-url": s.dataset.baseUrl, locale: s.dataset.locale, mode: s.dataset.mode })) {
+    const d = s.dataset;
+    for (const [k, v] of Object.entries({ project: d.project, key: d.key, "base-url": d.baseUrl, locale: d.locale,
+      mode: d.mode, layout: d.layout, starters: d.starters, badges: d.badges, "card-actions": d.cardActions })) {
       if (v) SCRIPT_DEFAULTS[k] = v;
     }
   }
 }
 
-function h<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, unknown> = {},
-                                                   ...kids: (Node | string | null | undefined | false)[]) {
-  const el = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (v == null || v === false) continue;
-    if (k.startsWith("on") && typeof v === "function") el.addEventListener(k.slice(2), v as EventListener);
-    else if (k === "class") el.className = String(v);
-    else el.setAttribute(k, v === true ? "" : String(v));
-  }
-  for (const kid of kids) if (kid != null && kid !== false) el.append(kid);
-  return el;
-}
-
 const EMPTY_DISPLAY: Display = {};
-
-/** Only http(s) links from catalog data (no javascript:, data: …). */
-function safeUrl(value: unknown): string | null {
-  if (typeof value !== "string" || !value) return null;
-  try {
-    const u = new URL(value, location.href);
-    return u.protocol === "http:" || u.protocol === "https:" ? u.href : null;
-  } catch {
-    return null;
-  }
-}
+const MAX_SELECT = 3; // the chat API answers about at most 3 products at once
+const FIRST_CARDS = 6;
+const list = (v: string | null, sep: string) => (v || "").split(sep).map((t) => t.trim()).filter(Boolean);
 
 export class FindaroSearch extends HTMLElement {
-  static observedAttributes = ["mode", "locale", "placeholder", "project", "key", "base-url"];
+  static observedAttributes = ["mode", "locale", "placeholder", "project", "key", "base-url", "layout", "starters",
+    "badges", "card-actions"];
 
   /** Custom product card. Return an element, or an HTML string (escape document fields yourself: they are data). */
   renderProduct: RenderProduct | null = null;
   /** Called on product click; navigation to the product URL is skipped when set. */
   onProductClick: ProductClick | null = null;
+  /** Extra buttons on AI Mode product cards (after the ones from the card-actions attribute). */
+  cardActions: CardAction[] = [];
   /** Partial string overrides, merged over the locale's defaults. */
   strings: Partial<Strings> = {};
   /** Inject a preconfigured client (e.g. with a custom fetch). */
@@ -99,15 +91,18 @@ export class FindaroSearch extends HTMLElement {
 
   #root: ShadowRoot;
   #mode: "search" | "ai" = "search";
+  #page = false;
   #query = "";
   #patches: PatchOp[] = [];
   #view: View | null = null;
   #loading = false;
   #error = "";
   #session: string | null = null;
-  #msgs: Msg[] = [];
+  #msgs: Turn[] = [];
   #docs = new Map<string, Hit>();
+  #display: Display = EMPTY_DISPLAY;
   #input!: HTMLInputElement;
+  #ta!: HTMLTextAreaElement;
   #debounced = debounce(() => this.#runSearch(), 250);
 
   constructor() {
@@ -116,20 +111,32 @@ export class FindaroSearch extends HTMLElement {
   }
 
   connectedCallback() {
-    this.#mode = (this.#attr("mode") === "ai" ? "ai" : "search");
+    this.#page = this.#attr("layout") === "page";
+    this.#mode = this.#page || this.#attr("mode") === "ai" ? "ai" : "search";
     this.#build();
     this.#render();
   }
 
   attributeChangedCallback(name: string) {
     if (!this.isConnected || !this.#input) return;
-    if (name === "mode") this.#setMode(this.#attr("mode") === "ai" ? "ai" : "search");
-    else if (["project", "key", "base-url"].includes(name)) this.client = null;
+    if (name === "layout") {
+      this.connectedCallback();
+      return;
+    }
+    if (name === "mode") this.#setMode(this.#attr("mode") === "ai" || this.#page ? "ai" : "search");
+    else if (["project", "key", "base-url"].includes(name)) {
+      this.client = null;
+      this.#chats = null;
+    } else if (["starters", "badges", "card-actions"].includes(name)) this.#dirty = true;
     this.#render();
   }
 
   /** Run a search (or ask the AI in "ai" mode) programmatically. */
   search(query: string) {
+    if (this.#mode === "ai") {
+      if (query.trim()) this.#ask(query.trim());
+      return;
+    }
     this.#input.value = query;
     this.#submit();
   }
@@ -155,6 +162,10 @@ export class FindaroSearch extends HTMLElement {
     return this.client;
   }
 
+  get #disp(): Display {
+    return this.#view?.display && Object.keys(this.#view.display).length ? this.#view.display : this.#display;
+  }
+
   // --- layout -------------------------------------------------------------------------------------------
 
   #els: Record<string, HTMLElement> = {};
@@ -172,7 +183,7 @@ export class FindaroSearch extends HTMLElement {
     this.#els.modes = h("div", { class: "modes", role: "radiogroup", "aria-label": s.modeLabel },
       modeBtn("search", s.search), modeBtn("ai", s.ask));
     this.#els.go = h("button", { class: "go", type: "submit" }, s.search);
-    const form = h("form", { class: "box", role: "search", onsubmit: (e: Event) => {
+    this.#els.form = h("form", { class: "box", role: "search", onsubmit: (e: Event) => {
       e.preventDefault();
       this.#submit();
     } }, this.#els.modes, this.#input, this.#els.go);
@@ -180,21 +191,60 @@ export class FindaroSearch extends HTMLElement {
     this.#els.pills = h("div", { class: "pills", id: "findaro-filters" });
     this.#els.status = h("div", { class: "status", role: "status", "aria-live": "polite" });
     this.#els.results = h("div", {});
-    this.#els.panel = h("div", { class: "panel", role: "log", "aria-live": "polite" });
-    this.#els.layout = h("div", { class: "layout" }, this.#els.panel,
-      h("section", { "aria-label": s.products }, this.#els.status, this.#els.results));
-    this.#root.append(h("div", { class: "root", part: "root" },
-      form, this.#els.chips, this.#els.pills, this.#els.layout));
+    this.#els.searchView = h("section", { "aria-label": s.products }, this.#els.status, this.#els.results);
+
+    // AI Mode thread: scrollable log + sticky dock (selection bar, current filters, composer)
+    this.#els.log = h("div", { class: "log", role: "log", "aria-live": "polite", "aria-label": s.conversation });
+    this.#els.hello = h("div", { class: "hello" });
+    const sc = this.#els.scroll = h("div", { class: "scroll", onscroll: () => this.#onScroll() },
+      this.#els.hello, this.#els.log);
+    for (const ev of ["wheel", "touchmove", "keydown", "pointerdown"]) {
+      sc.addEventListener(ev, () => (this.#pin = false), { passive: true });
+    }
+    this.#ta = h("textarea", { rows: 1, enterkeyhint: "send", oninput: () => this.#grow(),
+                               onkeydown: (e: KeyboardEvent) => this.#onComposerKey(e) });
+    this.#els.send = h("button", { class: "send", type: "submit", "aria-label": s.send, disabled: true }, icon("send"));
+    this.#els.composer = h("form", { class: "composer", onsubmit: (e: Event) => {
+      e.preventDefault();
+      this.#sendComposer();
+    } }, this.#ta, this.#els.send);
+    this.#els.selbar = h("div", { class: "selbar", role: "group", "aria-label": s.compare });
+    this.#els.notice = h("div", { class: "notice", "aria-live": "polite" });
+    this.#els.jump = h("button", { class: "jump", type: "button", "aria-label": s.jumpLatest, title: s.jumpLatest,
+                                   hidden: true, onclick: () => this.#toBottom(true) }, icon("down"));
+    this.#els.dock = h("div", { class: "dock" }, this.#els.jump, this.#els.notice, this.#els.selbar,
+      this.#els.composer);
+    this.#els.thread = h("div", { class: "thread-wrap" }, sc, this.#els.dock);
+
+    if (this.#page) {
+      this.#els.side = h("aside", { class: "side", id: "findaro-side", "aria-label": s.history });
+      this.#els.menu = h("button", { class: "iconbtn", type: "button", "aria-label": s.openHistory,
+                                     "aria-controls": "findaro-side", "aria-expanded": "false",
+                                     onclick: () => this.#toggleSide(true) }, icon("menu"));
+      this.#els.sscrim = h("div", { class: "sscrim", hidden: true, onclick: () => this.#toggleSide(false) });
+      const top = h("div", { class: "mtop" }, this.#els.menu, h("strong", {}, s.assistantName),
+        h("button", { class: "iconbtn", type: "button", "aria-label": s.newChat, title: s.newChat,
+                      onclick: () => this.#newChat() }, icon("plus")));
+      this.#root.append(h("div", { class: "root page", part: "root", onkeydown: (e: KeyboardEvent) => {
+        if (e.key === "Escape" && this.#sideOpen) this.#toggleSide(false);
+      } }, this.#els.side, this.#els.sscrim, h("div", { class: "main" }, top, this.#els.thread)));
+    } else {
+      this.#els.layout = h("div", { class: "layout" }, this.#els.thread, this.#els.searchView);
+      this.#root.append(h("div", { class: "root", part: "root" },
+        this.#els.form, this.#els.chips, this.#els.pills, this.#els.layout));
+    }
+    this.#dirty = true;
   }
 
   #setMode(m: "search" | "ai", focus = false) {
     if (m === this.#mode && this.#els.layout) {
-      if (focus) this.#input.focus();
+      if (focus) (m === "ai" ? this.#ta : this.#input).focus();
       return;
     }
     this.#mode = m;
+    this.#dirty = true;
     this.#render();
-    if (focus) this.#input.focus();
+    if (focus) (m === "ai" ? this.#ta : this.#input).focus();
   }
 
   #typing = false; // search-as-you-type: rules only, no LLM planner call per keystroke
@@ -286,61 +336,103 @@ export class FindaroSearch extends HTMLElement {
 
   #lastAsked = "";
 
-  async #ask(message: string, patch?: PatchOp[], retried = false): Promise<void> {
-    if (!patch) this.#lastAsked = message;
+  async #ask(message: string, patch?: PatchOp[], retried = false,
+             opts: { productIds?: string[]; compare?: Hit[] } = {}): Promise<void> {
+    const s = this.#s;
+    if (!patch && !opts.productIds) this.#lastAsked = message;
     let expired = false;
-    const user: Msg = { role: "user", text: message };
-    const bot: Msg = { role: "assistant", text: "", pending: true, clarify: null };
+    const user: Turn = { role: "user", text: message, time: Date.now(), ...(patch ? { patch: true } : {}) };
+    const bot: Turn = { role: "assistant", text: "", general: "", time: Date.now(), pending: true, clarify: null,
+                        step: s.stepThink, compare: opts.compare ?? null };
+    const prev = this.#msgs[this.#msgs.length - 1];
     this.#msgs.push(user, bot);
-    this.#renderPanel();
+    this.#pin = true;
+    if (this.#mode === "ai") {
+      if (this.#dirty) this.#renderThread();
+      else {
+        if (prev) this.#paint(prev); // its next-step rows go away
+        this.#paint(user);
+        this.#paint(bot);
+      }
+      this.#renderHello();
+    }
+    this.#saveConv();
+    let sem = message;
     try {
-      const stream = this.#client().chat(patch ? "" : message, { sessionId: this.#session, patch });
+      const stream = this.#client().chat(patch ? "" : message, { sessionId: this.#session, patch,
+                                                                 productIds: opts.productIds });
       for await (const ev of stream as AsyncIterable<ChatEvent>) {
-        if (ev.type === "session") this.#session = ev.data.session_id;
-        else if (ev.type === "plan" && ev.data.understood && this.#view) {
-          this.#view.chips = ev.data.understood.chips ?? [];
+        if (ev.type === "session") {
+          this.#session = ev.data.session_id;
+          bot.step = s.stepUnderstand;
+        } else if (ev.type === "plan") {
+          const u = ev.data.understood;
+          if (u) {
+            sem = u.semantic_text || message;
+            bot.plan = { chips: (u.chips ?? []).map((c) => c.label),
+                         relax: (u.relaxations ?? []).map((r) => [r.label, r.reason] as [string, string]) };
+            bot.step = fmt(s.stepSearch, { q: sem });
+            if (this.#view) this.#view.chips = u.chips ?? [];
+            else {
+              this.#view = { total: 0, hits: [], pills: [], quality: null, close: new Set(), display: this.#display,
+                             chips: u.chips ?? [], semantic: sem };
+            }
+          }
         } else if (ev.type === "results" && !ev.data.unchanged) {
-          const prev = this.#view;
+          const prevView = this.#view;
+          const display = ev.data.display ?? prevView?.display ?? this.#display;
+          if (ev.data.display) this.#display = ev.data.display;
           this.#view = {
             total: ev.data.total, hits: ev.data.items, pills: ev.data.pills ?? [],
-            chips: prev?.chips ?? [], quality: ev.data.match_quality ?? null,
-            close: new Set(ev.data.close_matches ?? []), display: ev.data.display ?? prev?.display ?? EMPTY_DISPLAY,
-            semantic: message,
+            chips: prevView?.chips ?? [], quality: ev.data.match_quality ?? null,
+            close: new Set(ev.data.close_matches ?? []), display, semantic: sem,
           };
           for (const hit of ev.data.items) this.#docs.set(hit.id, hit);
+          if (bot.plan) {
+            bot.res = { q: sem, total: ev.data.total, hits: ev.data.items, close: ev.data.close_matches ?? [],
+                        weak: ev.data.match_quality === "weak" };
+            bot.step = fmt(s.stepFound, { n: ev.data.total });
+          }
           this.#renderResults();
-        } else if (ev.type === "plan" && ev.data.understood) {
-          this.#view = { total: 0, hits: [], pills: [], quality: null, close: new Set(), display: EMPTY_DISPLAY,
-                         chips: ev.data.understood.chips ?? [], semantic: message };
         } else if (ev.type === "clarify") bot.clarify = ev.data;
-        else if (ev.type === "text") bot.text += ev.data.delta;
-        else if (ev.type === "done") {
+        else if (ev.type === "text") {
+          if (ev.data.part === "general") bot.general += ev.data.delta;
+          else bot.text += ev.data.delta;
+        } else if (ev.type === "done") {
           bot.pending = false;
+          bot.ms = ev.data.timings?.total ?? null;
           expired = ev.data.reason === "session_expired";
         }
         this.#renderChips();
-        this.#renderPanel();
+        this.#paint(bot);
       }
     } catch (e) {
       if ((e as Error).name !== "AbortError") {
         bot.error = true;
-        bot.text = this.#s.error;
+        bot.text = s.error;
         this.#fail(e);
       }
     } finally {
       bot.pending = false;
+      this.#paint(bot);
       this.#render();
     }
     if (expired && patch && !retried && this.#lastAsked) {
       // the chat session timed out: drop the empty turn, ask the last question again, then apply the click
       this.#msgs.splice(-2, 2);
       this.#session = null;
+      this.#dirty = true;
+      this.#render();
       await this.#ask(this.#lastAsked);
       await this.#ask(message, patch, true);
+      return;
     }
+    this.#saveConv();
   }
 
   // --- rendering ----------------------------------------------------------------------------------------
+
+  #dirty = true; // the thread must be rebuilt (mode/layout/conversation changed)
 
   #render() {
     const s = this.#s;
@@ -348,16 +440,24 @@ export class FindaroSearch extends HTMLElement {
     for (const b of this.#els.modes.querySelectorAll("button")) {
       b.setAttribute("aria-checked", String(b.dataset.mode === this.#mode));
     }
-    this.#input.placeholder = ai ? s.askPlaceholder : (this.#attr("placeholder") || s.placeholder);
+    this.#input.placeholder = this.#attr("placeholder") || s.placeholder;
     this.#input.setAttribute("aria-label", this.#input.placeholder);
-    this.#els.go.textContent = ai ? s.send : s.search;
-    this.#els.layout.classList.toggle("ai", ai);
-    this.#els.panel.hidden = !ai;
-    this.#els.panel.setAttribute("aria-label", s.conversation);
+    this.#els.go.textContent = s.search;
+    this.#input.hidden = this.#els.go.hidden = ai;
+    this.#els.form.classList.toggle("solo", ai);
+    this.#els.thread.hidden = !ai;
+    this.#els.searchView.hidden = ai;
+    // the current understood chips: under the search box, or above the composer in AI Mode
+    if (ai) this.#els.dock.insertBefore(this.#els.chips, this.#els.composer);
+    else if (!this.#page) this.#els.form.after(this.#els.chips);
     this.#renderChips();
     this.#renderStatus();
     this.#renderResults();
-    this.#renderPanel();
+    if (ai) {
+      if (this.#dirty) this.#renderThread();
+      this.#renderDock();
+      this.#renderSide();
+    }
   }
 
   #filtersOpen = false;
@@ -367,16 +467,14 @@ export class FindaroSearch extends HTMLElement {
     const v = this.#view;
     const chips = v?.chips ?? [];
     const pills = v?.pills ?? [];
-    const canFilter = !!pills.length && !!v?.hits.length;
+    const canFilter = this.#mode === "search" && !!pills.length && !!v?.hits.length;
     this.#els.chips.replaceChildren();
     this.#els.chips.hidden = !chips.length && !canFilter;
     this.#els.chips.setAttribute("aria-label", s.understood);
-    {
-      for (const c of chips) {
-        this.#els.chips.append(h("span", { class: `chip ${c.kind}`, title: c.source || undefined }, c.label,
-          h("button", { type: "button", "aria-label": fmt(s.removeFilter, { label: c.label }),
-                        onclick: () => this.#applyPatch(c.remove ?? [], `− ${c.label}`) }, "×")));
-      }
+    for (const c of chips) {
+      this.#els.chips.append(h("span", { class: `chip ${c.kind}`, title: c.source || undefined }, c.label,
+        h("button", { type: "button", "aria-label": fmt(s.removeFilter, { label: c.label }),
+                      onclick: () => this.#applyPatch(c.remove ?? [], `− ${c.label}`) }, "×")));
     }
     if (canFilter) {
       this.#els.chips.append(h("button", {
@@ -421,27 +519,26 @@ export class FindaroSearch extends HTMLElement {
     const v = this.#view;
     const box = this.#els.results;
     box.replaceChildren();
-    if (!v) return;
+    if (!v || this.#mode === "ai") return;
     if (!v.hits.length) {
       box.append(h("div", { class: "empty", "data-state": "no-match" },
         h("strong", {}, fmt(s.noMatch, { q: this.#query || v.semantic })), s.noMatchHint));
       return;
     }
-    const list = h("ul", { class: "grid", role: "list" });
+    const grid = h("ul", { class: "grid", role: "list" });
     for (const hit of v.hits) {
-      const doc = hit.document as Record<string, unknown>;
-      const title = String((v.display.title && doc[v.display.title]) ?? hit.id);
-      list.append(h("li", { class: "cell" }, this.#card(hit, v),
-        h("button", { type: "button", class: "ask", "data-ask": hit.id, "aria-label": fmt(s.askAbout, { title }),
+      grid.append(h("li", { class: "cell" }, this.#card(hit, v.close),
+        h("button", { type: "button", class: "ask", "data-ask": hit.id,
+                      "aria-label": fmt(s.askAbout, { title: this.#title(hit) }),
                       onclick: (e: Event) => this.#openDrawer(hit, e.currentTarget as HTMLElement) }, s.askShort)));
     }
-    box.append(list);
+    box.append(grid);
   }
 
   #formatPrice = (value: unknown): string => {
     const n = typeof value === "number" ? value : Number(value);
     if (!Number.isFinite(n)) return value == null ? "" : String(value);
-    const cur = this.#view?.display.currency;
+    const cur = this.#disp.currency;
     try {
       return new Intl.NumberFormat(cur === "INR" ? "en-IN" : undefined, cur
         ? { style: "currency", currency: cur, maximumFractionDigits: n % 1 ? 2 : 0 }
@@ -450,6 +547,11 @@ export class FindaroSearch extends HTMLElement {
       return String(n);
     }
   };
+
+  #title(hit: Hit): string {
+    const d = this.#disp;
+    return String((d.title && (hit.document as Record<string, unknown>)[d.title]) ?? hit.id);
+  }
 
   #image(src: unknown, alt: string): HTMLElement {
     let hue = 0;
@@ -472,8 +574,9 @@ export class FindaroSearch extends HTMLElement {
     } else if (!allowed) e.preventDefault();
   }
 
-  #card(hit: Hit, v: View): HTMLElement {
-    const d = v.display;
+  /** The product card (search grid and AI Mode). `extra` goes at the end of the card body. */
+  #card(hit: Hit, close: Set<string> | string[], extra: (Node | null)[] = []): HTMLElement {
+    const d = this.#disp;
     const doc = hit.document as Record<string, unknown>;
     if (this.renderProduct) {
       const out = this.renderProduct(hit, { display: d, formatPrice: this.#formatPrice });
@@ -483,21 +586,24 @@ export class FindaroSearch extends HTMLElement {
       return wrap;
     }
     const s = this.#s;
-    const title = String((d.title && doc[d.title]) ?? hit.id);
+    const title = this.#title(hit);
     const url = safeUrl(d.url ? doc[d.url] : null);
     const price = d.price ? doc[d.price] : undefined;
     const mrp = d.compare_at_price ? doc[d.compare_at_price] : undefined;
     const rating = d.rating ? doc[d.rating] : undefined;
     const count = d.rating_count ? doc[d.rating_count] : undefined;
     const stock = d.in_stock ? doc[d.in_stock] : undefined;
+    const isClose = Array.isArray(close) ? close.includes(hit.id) : close.has(hit.id);
     const body = h("div", { class: "body" },
-      v.close.has(hit.id) ? h("span", { class: "badge" }, s.close) : null,
+      isClose ? h("span", { class: "badge" }, s.close) : null,
       h("span", { class: "title" }, title),
+      ...extra.slice(0, 1),
       price != null ? h("span", { class: "price" }, this.#formatPrice(price),
         mrp != null && Number(mrp) > Number(price) ? h("span", { class: "mrp" }, this.#formatPrice(mrp)) : null) : null,
       h("span", { class: "meta" },
         rating != null ? h("span", {}, `★ ${rating}${count != null ? ` (${count})` : ""}`) : null,
-        stock === false ? h("span", {}, s.outOfStock) : null));
+        stock === false ? h("span", { class: "oos" }, s.outOfStock) : null),
+      ...extra.slice(1));
     const attrs = { class: "card", "data-id": hit.id, onclick: (e: Event) => this.#click(hit, e) };
     return url
       ? h("a", { ...attrs, href: url, target: "_blank", rel: "noopener" }, this.#image(d.image ? doc[d.image] : null, title), body)
@@ -507,13 +613,485 @@ export class FindaroSearch extends HTMLElement {
   #mini(id: string): HTMLElement | string {
     const hit = this.#docs.get(id);
     if (!hit) return `[${id}]`;
-    const d = this.#view?.display ?? EMPTY_DISPLAY;
+    const d = this.#disp;
     const doc = hit.document as Record<string, unknown>;
-    const title = String((d.title && doc[d.title]) ?? id);
+    const title = this.#title(hit);
     const price = d.price ? doc[d.price] : undefined;
     return h("button", { type: "button", class: "mini", "data-id": id, onclick: (e: Event) => this.#click(hit, e) },
       this.#image(d.image ? doc[d.image] : null, title),
       h("span", {}, title + (price != null ? ` · ${this.#formatPrice(price)}` : "")));
+  }
+
+  // --- AI Mode thread -------------------------------------------------------------------------------------
+
+  #painted = new WeakMap<Turn, HTMLElement>();
+  #resEl = new WeakMap<Turn, HTMLElement>();
+  #pin = true; // keep the latest turn in view until the shopper scrolls
+
+  #renderThread() {
+    this.#dirty = false;
+    this.#els.log.replaceChildren();
+    for (const m of this.#msgs) this.#els.log.append(this.#paintEl(m));
+    this.#renderHello();
+  }
+
+  /** Re-render one message in place (cards are kept, so images don't reload while text streams). */
+  #paint(m: Turn) {
+    if (this.#mode !== "ai" || this.#dirty) return;
+    const old = this.#painted.get(m);
+    const el = this.#paintEl(m);
+    if (old?.parentNode === this.#els.log) old.replaceWith(el);
+    else this.#els.log.append(el);
+    this.#follow(m);
+  }
+
+  #paintEl(m: Turn): HTMLElement {
+    const s = this.#s;
+    let el: HTMLElement;
+    if (m.role === "user") {
+      el = h("div", { class: "msg user" }, h("span", { class: "sr" }, s.you), h("div", { class: "text" }, m.text));
+    } else {
+      const last = m === this.#msgs[this.#msgs.length - 1];
+      const waiting = !!m.pending && !m.text;
+      const text = h("div", { class: `text${m.pending ? " typing" : ""}${waiting ? " wait" : ""}` });
+      for (const part of m.text.split(/(\[[^\]\s]+\])/)) { // [ID] citations become inline product cards
+        const id = /^\[([^\]\s]+)\]$/.exec(part)?.[1];
+        text.append(id ? this.#mini(id) : part);
+      }
+      if (waiting) {
+        text.append(h("span", { class: "step" }, m.step || s.stepThink,
+          h("span", { class: "dots", "aria-hidden": "true" }, h("i"), h("i"), h("i"))));
+      }
+      el = h("div", { class: `msg assistant${m.error ? " err" : ""}` },
+        h("div", { class: "ahead" }, h("span", { class: "avatar" }, icon("spark")), h("strong", {}, s.assistantName),
+          h("time", { datetime: new Date(m.time).toISOString() }, hhmm(m.time))),
+        m.plan ? this.#how(m) : null,
+        m.compare?.length ? this.#compareTable(m.compare) : null,
+        text,
+        m.general?.trim() ? h("div", { class: "general" }, h("span", { class: "who" }, s.generalLabel),
+          m.general.trim()) : null,
+        m.res ? this.#resultsBlock(m) : null,
+        m.clarify && last && !m.pending ? this.#clarifyBlock(m.clarify) : null);
+    }
+    this.#painted.set(m, el);
+    return el;
+  }
+
+  /** "How I searched": what the search understood, what it loosened, how many results, how long. */
+  #how(m: Turn): HTMLElement {
+    const s = this.#s;
+    const p = m.plan!;
+    const d = h("details", { class: "how" });
+    d.open = !!m.open;
+    d.addEventListener("toggle", () => (m.open = d.open));
+    const line = (label: string, ...kids: (Node | string)[]) =>
+      h("div", { class: "how-r" }, h("span", { class: "how-k" }, label), h("span", { class: "how-v" }, ...kids));
+    d.append(
+      h("summary", {}, icon("chev"), h("span", { class: "how-t" }, s.howSearched),
+        m.ms != null ? h("span", { class: "how-m" }, fmt(s.searchedIn, { t: secs(m.ms) })) : null),
+      h("div", { class: "how-b" },
+        line(s.understood, ...(p.chips.length ? p.chips.map((c) => h("span", { class: "uchip" }, c)) : [s.byMeaning])),
+        ...p.relax.map(([label, reason]) => h("div", { class: "how-r relax" }, fmt(s.loosened, { label, reason }))),
+        m.res ? line(s.products, fmt(s.results, { n: m.res.total })) : null,
+        m.ms != null ? line(s.time, secs(m.ms)) : null));
+    return d;
+  }
+
+  #resultsBlock(m: Turn): HTMLElement {
+    const cached = this.#resEl.get(m);
+    if (cached) return cached;
+    const s = this.#s;
+    const r = m.res!;
+    let el: HTMLElement;
+    if (!r.hits.length) {
+      el = h("div", { class: "empty", "data-state": "no-match" },
+        h("strong", {}, fmt(s.noMatch, { q: r.q })), s.noMatchHint);
+    } else {
+      const grid = h("ul", { class: "grid tcards", role: "list" });
+      const add = (hits: Hit[]) => hits.forEach((hit) => grid.append(this.#tcard(hit, r.close)));
+      add(m.more ? r.hits : r.hits.slice(0, FIRST_CARDS));
+      const rest = r.hits.length - FIRST_CARDS;
+      const more = !m.more && rest > 0 ? h("button", { type: "button", class: "more", onclick: () => {
+        m.more = true;
+        const first = grid.children.length;
+        add(r.hits.slice(FIRST_CARDS));
+        more?.remove();
+        (grid.children[first]?.querySelector(".card") as HTMLElement | null)?.focus();
+      } }, fmt(s.showMore, { n: rest })) : null;
+      el = h("section", { class: "res", "aria-label": r.q },
+        h("div", { class: "res-h" }, h("h3", {}, r.q), h("span", {}, fmt(s.results, { n: r.total }))),
+        r.weak ? h("p", { class: "status weak" }, s.weak) : null,
+        grid, more);
+    }
+    this.#resEl.set(m, el);
+    return el;
+  }
+
+  #badges(doc: Record<string, unknown>): string[] {
+    const out: string[] = [];
+    for (const f of list(this.#attr("badges"), ",")) {
+      const v = doc[f];
+      for (const x of Array.isArray(v) ? v : [v]) {
+        const t = typeof x === "string" || typeof x === "number" ? String(x).trim() : "";
+        if (out.length < 2 && t && t.length <= 24 && !out.includes(t)) out.push(t);
+      }
+    }
+    return out;
+  }
+
+  #req(hit: Hit): HTMLElement | null {
+    const r = hit.requirements;
+    if (!r?.total) return null;
+    const s = this.#s;
+    const met = r.met ?? [];
+    const unmet = r.unmet ?? [];
+    const unk = r.unknown ?? [];
+    const parts = [fmt(s.matches, { m: met.length, t: r.total })];
+    if (!unmet.length && !unk.length && met.length) parts.push(met.join(", "));
+    if (unmet.length) parts.push(fmt(s.notMet, { label: unmet.join(", ") }));
+    if (unk.length) parts.push(fmt(s.notListed, { label: unk.join(", ") }));
+    const full = !unmet.length && !unk.length;
+    return h("span", { class: `req${full ? "" : " part"}` }, icon(full ? "check" : "dot"), parts.join(" · "));
+  }
+
+  #actions(): CardAction[] {
+    return [...list(this.#attr("card-actions"), ",").map((label) => ({ label })), ...this.cardActions];
+  }
+
+  /** AI Mode card: select checkbox over the image, requirement line, Ask / View / custom actions. */
+  #tcard(hit: Hit, close: string[]): HTMLElement {
+    const s = this.#s;
+    const doc = hit.document as Record<string, unknown>;
+    const title = this.#title(hit);
+    const tags = this.#badges(doc);
+    const card = this.#card(hit, close, [
+      tags.length ? h("span", { class: "tags" }, ...tags.map((t) => h("span", { class: "tag" }, t))) : null,
+      this.#req(hit)]);
+    const on = this.#sel.has(hit.id);
+    const cb = h("input", { type: "checkbox", "data-sel": hit.id, "aria-label": fmt(s.selectTitle, { title }),
+                            onchange: () => this.#toggleSel(hit, cb) });
+    cb.checked = on;
+    const url = safeUrl(this.#disp.url ? doc[this.#disp.url] : null);
+    return h("li", { class: `pc${on ? " on" : ""}`, "data-id": hit.id }, card,
+      h("label", { class: "sel" }, cb, h("span", { "aria-hidden": "true" }, s.select)),
+      h("div", { class: "acts" },
+        h("button", { type: "button", class: "act", "data-ask": hit.id, "aria-label": fmt(s.askAbout, { title }),
+                      onclick: (e: Event) => this.#openDrawer(hit, e.currentTarget as HTMLElement) }, s.askShort),
+        url ? h("a", { class: "act", href: url, target: "_blank", rel: "noopener",
+                       "aria-label": `${s.view}: ${title}` }, s.view) : null,
+        ...this.#actions().map((a) => h("button", { type: "button", class: "act", "data-action": a.label,
+                                                    onclick: () => this.#action(a, hit) }, a.label))));
+  }
+
+  #action(a: CardAction, hit: Hit) {
+    const ev = new CustomEvent("findaro:action", { detail: { action: a.label, hit }, bubbles: true, composed: true,
+                                                 cancelable: true });
+    if (this.dispatchEvent(ev)) a.onClick?.(hit);
+  }
+
+  #clarifyBlock(c: ClarifyEvent): HTMLElement {
+    const nextish = c.reason === "next" || c.reason === "suggest";
+    return h("div", { class: "clarify", role: "group", "aria-label": nextish ? this.#s.nextSteps : c.question },
+      nextish ? null : h("p", {}, c.question),
+      ...c.chips.map((chip) => h("button", { type: "button", class: "nrow", "data-clarify": c.reason,
+                                             onclick: () => this.#clickClarify(c, chip) },
+        h("span", {}, chip.label), chip.count != null ? h("small", { "aria-hidden": "true" }, String(chip.count)) : null,
+        icon("arrow"))));
+  }
+
+  #clickClarify(c: ClarifyEvent, chip: ClarifyChip) {
+    // "next" refinements apply their patch (label shown as the turn); suggestions and empty chips are sent as text
+    if (c.reason !== "suggest" && chip.patch?.length) this.#ask(chip.label, chip.patch);
+    else this.#ask(chip.label);
+  }
+
+  /** Side-by-side table of the selected products, built from their listings (no model involved). */
+  #compareTable(hits: Hit[]): HTMLElement {
+    const s = this.#s;
+    const d = this.#disp;
+    const docs = hits.map((x) => x.document as Record<string, unknown>);
+    const rows: [string, string[]][] = [];
+    if (d.price) rows.push([s.price, docs.map((doc) => doc[d.price!] != null ? this.#formatPrice(doc[d.price!]) : "—")]);
+    if (d.rating) rows.push([s.rating, docs.map((doc) => doc[d.rating!] != null ? `★ ${doc[d.rating!]}` : "—")]);
+    const facts = docs.map((doc) => new Map(this.#details(doc, d).filter(([, v]) => v.length <= 40)));
+    const seen = new Map<string, number>();
+    for (const f of facts) for (const k of f.keys()) seen.set(k, (seen.get(k) ?? 0) + 1);
+    for (const [k, n] of seen) if (n >= 2 && rows.length < 12) rows.push([k, facts.map((f) => f.get(k) ?? "—")]);
+    return h("div", { class: "cmp", role: "region", "aria-label": fmt(s.comparing, { n: hits.length }), tabindex: 0 },
+      h("table", { style: `min-width:${104 + hits.length * 130}px` },
+        h("thead", {}, h("tr", {}, h("td", {}),
+          ...hits.map((hit, i) => h("th", { scope: "col" },
+            this.#image(d.image ? docs[i][d.image] : null, this.#title(hit)), h("span", {}, this.#title(hit)))))),
+        h("tbody", {}, ...rows.map(([k, vals]) =>
+          h("tr", { class: new Set(vals).size > 1 ? "diff" : "" }, h("th", { scope: "row" }, k),
+            ...vals.map((v) => h("td", {}, v)))))));
+  }
+
+  #renderHello() {
+    const s = this.#s;
+    const el = this.#els.hello;
+    el.hidden = this.#msgs.length > 0;
+    if (el.hidden) return;
+    const starters = list(this.#attr("starters"), "|").slice(0, 4);
+    el.replaceChildren(h("span", { class: "avatar big" }, icon("spark")), h("h2", {}, s.greeting),
+      h("p", {}, s.greetingSub),
+      starters.length ? h("div", { class: "starters", role: "group", "aria-label": s.tryAsking },
+        ...starters.map((t) => h("button", { type: "button", class: "nrow", onclick: () => this.#ask(t) },
+          h("span", {}, t), icon("arrow")))) : "");
+  }
+
+  // scrolling: keep the newest turn in view (from the shopper's message down) until they scroll themselves
+  #atBottom(): boolean {
+    const sc = this.#els.scroll;
+    return sc.scrollHeight - sc.scrollTop - sc.clientHeight < 48;
+  }
+
+  #onScroll() {
+    if (this.#atBottom()) this.#els.jump.hidden = true;
+  }
+
+  #follow(m: Turn) {
+    const sc = this.#els.scroll;
+    if (this.#pin) {
+      const i = this.#msgs.indexOf(m);
+      const anchor = this.#painted.get(this.#msgs[i > 0 && m.role === "assistant" ? i - 1 : i]);
+      if (anchor) sc.scrollTop = anchor.offsetTop - 12;
+    }
+    this.#els.jump.hidden = this.#atBottom();
+  }
+
+  #toBottom(smooth = false) {
+    const sc = this.#els.scroll;
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    sc.scrollTo({ top: sc.scrollHeight, behavior: smooth && !reduce ? "smooth" : "auto" });
+    this.#els.jump.hidden = true;
+  }
+
+  // --- composer, selection ------------------------------------------------------------------------------
+
+  #sel = new Map<string, Hit>();
+  #focus: string[] | null = null; // "Ask about these": the next message is about these products
+  #notice = "";
+  #noticeTimer: ReturnType<typeof setTimeout> | undefined;
+
+  #grow() {
+    const ta = this.#ta;
+    ta.style.height = "auto";
+    ta.style.height = `${ta.scrollHeight}px`;
+    (this.#els.send as HTMLButtonElement).disabled = !ta.value.trim();
+  }
+
+  #onComposerKey(e: KeyboardEvent) {
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing && e.keyCode !== 229) {
+      e.preventDefault();
+      this.#sendComposer();
+    }
+  }
+
+  #sendComposer() {
+    const q = this.#ta.value.trim();
+    if (!q) return;
+    this.#ta.value = "";
+    this.#grow();
+    const ids = this.#focus;
+    this.#focus = null;
+    this.#renderDock();
+    this.#ask(q, undefined, false, ids ? { productIds: ids } : {});
+  }
+
+  #toggleSel(hit: Hit, cb: HTMLInputElement) {
+    if (cb.checked && !this.#sel.has(hit.id)) {
+      if (this.#sel.size >= MAX_SELECT) {
+        cb.checked = false;
+        this.#flash(fmt(this.#s.maxSelect, { n: MAX_SELECT }));
+        return;
+      }
+      this.#sel.set(hit.id, hit);
+    } else if (!cb.checked) this.#sel.delete(hit.id);
+    this.#syncSel();
+  }
+
+  #syncSel() {
+    for (const cb of this.#root.querySelectorAll<HTMLInputElement>("input[data-sel]")) {
+      cb.checked = this.#sel.has(cb.dataset.sel!);
+      cb.closest(".pc")?.classList.toggle("on", cb.checked);
+    }
+    if (this.#focus && this.#sel.size === 0) this.#focus = null;
+    this.#renderDock();
+  }
+
+  #flash(text: string) {
+    this.#notice = text;
+    this.#renderDock();
+    clearTimeout(this.#noticeTimer);
+    this.#noticeTimer = setTimeout(() => {
+      this.#notice = "";
+      this.#renderDock();
+    }, 4000);
+  }
+
+  #renderDock() {
+    const s = this.#s;
+    const n = this.#sel.size;
+    const bar = this.#els.selbar;
+    bar.hidden = !n;
+    const d = this.#disp;
+    bar.replaceChildren(
+      h("span", { class: "seln" },
+        h("span", { class: "thumbs", "aria-hidden": "true" }, ...[...this.#sel.values()].map((hit) =>
+          this.#image(d.image ? (hit.document as Record<string, unknown>)[d.image] : null, this.#title(hit)))),
+        fmt(s.selected, { n })),
+      h("button", { type: "button", class: "pri", disabled: n < 2, onclick: () => this.#compare() }, s.compare),
+      h("button", { type: "button", class: "sec", "aria-pressed": String(!!this.#focus),
+                    onclick: () => this.#askThese() }, s.askThese),
+      h("button", { type: "button", class: "sec", onclick: () => {
+        this.#sel.clear();
+        this.#syncSel();
+      } }, s.clear));
+    this.#els.notice.textContent = this.#notice;
+    this.#els.notice.hidden = !this.#notice;
+    const ph = this.#focus ? fmt(s.askSelected, { n: this.#focus.length }) : s.composerPlaceholder;
+    this.#ta.placeholder = ph;
+    this.#ta.setAttribute("aria-label", ph);
+  }
+
+  #compare() {
+    if (this.#sel.size < 2) return;
+    this.#focus = null;
+    const hits = [...this.#sel.values()];
+    this.#ask(this.#s.compareMessage, undefined, false, { productIds: hits.map((x) => x.id), compare: hits });
+    this.#renderDock();
+  }
+
+  #askThese() {
+    this.#focus = [...this.#sel.keys()];
+    this.#renderDock();
+    this.#ta.focus();
+  }
+
+  // --- conversation history (layout="page" shows it; it's stored either way) ------------------------------
+
+  #chats: Conv[] | null = null;
+  #conv: string | null = null;
+  #sideOpen = false;
+  #confirm: string | null = null;
+
+  get #pid(): string {
+    return this.#attr("project") || "default";
+  }
+
+  #chatList(): Conv[] {
+    return (this.#chats ??= loadChats(this.#pid));
+  }
+
+  #saveConv() {
+    const first = this.#msgs.find((m) => m.role === "user");
+    if (!first) return;
+    const chats = this.#chatList();
+    let c = chats.find((x) => x.id === this.#conv);
+    if (!c) {
+      c = { id: `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, title: "", updatedAt: 0,
+            sessionId: null, msgs: [] };
+      chats.unshift(c);
+      this.#conv = c.id;
+    }
+    c.title = first.text.length > 48 ? `${first.text.slice(0, 47)}…` : first.text;
+    c.updatedAt = Date.now();
+    c.sessionId = this.#session;
+    c.display = this.#display;
+    const keep = new Set([...Object.values(this.#display).filter((v): v is string => typeof v === "string"),
+      ...list(this.#attr("badges"), ",")]);
+    c.msgs = this.#msgs.map((m) => slimTurn(m, keep));
+    this.#chats = saveChats(this.#pid, chats);
+    this.#renderSide();
+  }
+
+  #openConv(id: string) {
+    const c = this.#chatList().find((x) => x.id === id);
+    if (!c) return;
+    this.#conv = c.id;
+    this.#session = c.sessionId;
+    this.#display = c.display ?? EMPTY_DISPLAY;
+    this.#msgs = c.msgs.map((m) => ({ ...m }));
+    for (const m of this.#msgs) for (const hit of [...m.res?.hits ?? [], ...m.compare ?? []]) this.#docs.set(hit.id, hit);
+    this.#lastAsked = [...this.#msgs].reverse().find((m) => m.role === "user" && !m.patch)?.text ?? "";
+    this.#reset();
+    requestAnimationFrame(() => this.#toBottom());
+  }
+
+  #newChat() {
+    this.#conv = null;
+    this.#session = null;
+    this.#msgs = [];
+    this.#lastAsked = "";
+    this.#reset();
+    this.#ta.focus();
+  }
+
+  #reset() {
+    this.#view = null;
+    this.#sel.clear();
+    this.#focus = null;
+    this.#confirm = null;
+    this.#dirty = true;
+    this.#toggleSide(false, false);
+    this.#render();
+  }
+
+  #deleteConv(id: string) {
+    this.#chats = saveChats(this.#pid, this.#chatList().filter((x) => x.id !== id));
+    this.#confirm = null;
+    if (id === this.#conv) this.#newChat();
+    else this.#renderSide();
+    (this.#els.side?.querySelector(".newchat") as HTMLElement | null)?.focus();
+  }
+
+  #toggleSide(open: boolean, focus = true) {
+    if (!this.#page) return;
+    this.#sideOpen = open;
+    this.#els.side.classList.toggle("open", open);
+    this.#els.sscrim.hidden = !open;
+    this.#els.menu.setAttribute("aria-expanded", String(open));
+    if (!focus) return;
+    if (open) (this.#els.side.querySelector(".newchat") as HTMLElement | null)?.focus();
+    else this.#els.menu.focus();
+  }
+
+  #renderSide() {
+    if (!this.#page) return;
+    const s = this.#s;
+    const today = new Date().toDateString();
+    const groups: [string, Conv[]][] = [[s.today, []], [s.earlier, []]];
+    for (const c of [...this.#chatList()].sort((a, b) => b.updatedAt - a.updatedAt)) {
+      groups[new Date(c.updatedAt).toDateString() === today ? 0 : 1][1].push(c);
+    }
+    const item = (c: Conv) => this.#confirm === c.id
+      ? h("li", { class: "ci confirm" }, h("span", {}, s.deleteConfirm),
+        h("button", { type: "button", class: "danger", "data-confirm": "", "aria-label": fmt(s.deleteChat, { title: c.title }),
+                      onclick: () => this.#deleteConv(c.id) }, s.deleteYes),
+        h("button", { type: "button", class: "cancel", onclick: () => {
+          this.#confirm = null;
+          this.#renderSide();
+          (this.#els.side.querySelector(`[data-del="${c.id}"]`) as HTMLElement | null)?.focus();
+        } }, s.cancel))
+      : h("li", { class: `ci${c.id === this.#conv ? " cur" : ""}` },
+        h("button", { type: "button", class: "conv", "aria-current": c.id === this.#conv ? "true" : null,
+                      title: c.title, onclick: () => this.#openConv(c.id) }, c.title),
+        h("button", { type: "button", class: "iconbtn del", "data-del": c.id, "aria-label": fmt(s.deleteChat, { title: c.title }),
+                      onclick: () => {
+                        this.#confirm = c.id;
+                        this.#renderSide();
+                        (this.#els.side.querySelector("[data-confirm]") as HTMLElement | null)?.focus();
+                      } }, icon("trash")));
+    this.#els.side.replaceChildren(
+      h("div", { class: "shead" }, h("span", { class: "avatar" }, icon("spark")), h("strong", {}, s.assistantName),
+        h("button", { type: "button", class: "iconbtn sclose", "aria-label": s.closeHistory,
+                      onclick: () => this.#toggleSide(false) }, icon("x"))),
+      h("button", { type: "button", class: "newchat", onclick: () => this.#newChat() }, icon("plus"), s.newChat),
+      h("nav", { class: "convs", "aria-label": s.history },
+        ...groups.filter(([, cs]) => cs.length).map(([label, cs]) =>
+          h("div", { class: "grp" }, h("h4", {}, label), h("ul", { role: "list" }, ...cs.map(item)))),
+        this.#chatList().length ? null : h("p", { class: "none" }, s.noChats)));
   }
 
   // --- product drawer (M5): a conversation about one product -------------------------------------------------
@@ -563,9 +1141,9 @@ export class FindaroSearch extends HTMLElement {
     const dr = this.#drawer;
     if (!dr) return;
     const s = this.#s;
-    const d = this.#view?.display ?? EMPTY_DISPLAY;
+    const d = this.#disp;
     const doc = dr.hit.document as Record<string, unknown>;
-    const title = String((d.title && doc[d.title]) ?? dr.hit.id);
+    const title = this.#title(dr.hit);
     const price = d.price ? doc[d.price] : undefined;
     const rating = d.rating ? doc[d.rating] : undefined;
     const stock = d.in_stock ? doc[d.in_stock] : undefined;
@@ -595,7 +1173,7 @@ export class FindaroSearch extends HTMLElement {
                                autocomplete: "off" });
     const form = h("form", { class: "box", onsubmit: (e: Event) => {
       e.preventDefault();
-      const q = (input as HTMLInputElement).value.trim();
+      const q = input.value.trim();
       if (q) this.#askProduct(q);
     } }, input, h("button", { class: "go", type: "submit" }, s.send));
 
@@ -655,38 +1233,6 @@ export class FindaroSearch extends HTMLElement {
         (this.#els.drawer.querySelector("input") as HTMLInputElement | null)?.focus();
       }
     }
-  }
-
-  #renderPanel() {
-    if (this.#mode !== "ai") return;
-    const s = this.#s;
-    const panel = this.#els.panel;
-    panel.replaceChildren();
-    for (const [i, m] of this.#msgs.entries()) {
-      const text = h("div", { class: `text${m.pending ? " typing" : ""}` });
-      if (m.role === "assistant") {
-        // [ID] citations become inline product cards
-        for (const part of m.text.split(/(\[[^\]\s]+\])/)) {
-          const id = /^\[([^\]\s]+)\]$/.exec(part)?.[1];
-          text.append(id ? this.#mini(id) : part);
-        }
-        if (m.pending && !m.text) text.append(s.thinking);
-      } else text.textContent = m.text;
-      const msg = h("div", { class: `msg ${m.role}` }, h("span", { class: "who" }, m.role === "user" ? s.you : s.assistant),
-        text);
-      const c = m.clarify;
-      if (c && i === this.#msgs.length - 1) {
-        const chips = h("div", { class: "row", role: "group", "aria-label": c.question });
-        for (const chip of c.chips) {
-          chips.append(h("button", { type: "button", class: "pill", "data-clarify": "",
-                                     onclick: () => this.#ask(chip.label, chip.patch?.length ? chip.patch : undefined) },
-            chip.label, chip.count != null ? h("small", { "aria-hidden": "true" }, String(chip.count)) : null));
-        }
-        msg.append(h("div", { class: "clarify" }, h("p", {}, c.question), chips));
-      }
-      panel.append(msg);
-    }
-    panel.scrollTop = panel.scrollHeight;
   }
 }
 

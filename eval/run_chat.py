@@ -174,6 +174,8 @@ def main() -> None:
                 g = {d["id"]: grade(d, exp["predicate"]) for d in docs}
                 nd = ndcg_at(ids, {k: v for k, v in g.items() if v}, 10)
             clar = ev.get("clarify")
+            if clar and clar.get("reason") == "next":  # next-step rows are offers, not clarifying questions
+                clar = None
             chips_prev = clar["chips"] if clar else []
             cited = re.findall(r"\[([A-Z]{2}-\d{5})\]", text)
             shown = {it["id"]: it["document"] for it in items}
@@ -226,7 +228,7 @@ def main() -> None:
         events, _ = sse_events(client, {"message": q})
         text = "".join(d["delta"] for n, d, _ in events if n == "text")
         res = next((d for n, d, _ in events if n == "results"), {})
-        clar = next((d for n, d, _ in events if n == "clarify"), None)
+        clar = next((d for n, d, _ in events if n == "clarify" and d.get("reason") != "next"), None)
         neg.append({"query": q, "quality": res.get("match_quality"), "total": res.get("total"), "text": text,
                     "clarify": clar["question"] if clar else None})
 

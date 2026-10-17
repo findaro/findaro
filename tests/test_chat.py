@@ -333,7 +333,9 @@ async def test_chat_patch_turn_and_pills(loaded, chat_llm):
     sid = first(ev, "session")["session_id"]
     res = first(ev, "results")
     assert res["pills"], "attribute choices are passive pills"
-    assert not any(e == "clarify" and d["field"] not in ("category", "price") for e, d in ev)
+    # attribute choices are never asked as questions (next-step rows are offers, not questions)
+    assert not any(e == "clarify" and d["reason"] != "next" and d["field"] not in ("category", "price")
+                   for e, d in ev)
     pill = res["pills"][0]["values"][0]
     r = await loaded.client.post("/v1/chat", json={"session_id": sid, "patch": pill["patch"]},
                                  headers=loaded.searcher)
@@ -423,3 +425,65 @@ async def test_small_talk_on_an_empty_screen_shows_no_cards(loaded, chat_llm):
     assert first(ev, "results")["items"] == []
     assert first(ev, "clarify")["reason"] == "suggest"
 
+
+
+async def test_daily_llm_budget_falls_back_to_templates(state, loaded):
+    from findaro.llm.base import LLMError
+    from findaro.llm.budget import BudgetedLLM
+
+    await state.redis.delete(*[k async for k in state.redis.scan_iter(match="llm:calls:*")] or ["-"])
+    fake = FakeChatLLM()
+    budgeted = BudgetedLLM(fake, state.redis, daily_limit=1)
+    assert json.loads(await budgeted.complete("x"))  # first call is within the budget
+    with pytest.raises(LLMError):
+        await budgeted.complete("x")
+    with pytest.raises(LLMError):
+        async for _ in budgeted.stream("x"):
+            pass
+    assert len(fake.prompts) == 1  # over-budget calls never reach the provider
+
+    state.chat_llm = budgeted
+    try:
+        ev = await chat(loaded, "water bottle")
+        assert names(ev)[-2:] == ["text", "done"]  # the turn still completes, with a template answer
+        assert "".join(d["delta"] for e, d in ev if e == "text").strip()
+    finally:
+        state.chat_llm = None
+
+
+async def test_next_steps_are_real_refinements(loaded, chat_llm):
+    ev = await chat(loaded, "water bottle")
+    nxt = [d for e, d in ev if e == "clarify" and d["reason"] == "next"]
+    assert nxt, [e for e, _ in ev]
+    chips = nxt[0]["chips"]
+    assert 1 <= len(chips) <= 3 and all(c["patch"] for c in chips)
+    sid = first(ev, "session")["session_id"]
+    for chip in chips:  # each one narrows or reorders the results on screen and still returns products
+        r = await loaded.client.post("/v1/chat", json={"session_id": sid, "patch": chip["patch"]},
+                                     headers=loaded.searcher)
+        ev2 = [(b.split("\n")[0][7:], json.loads(b.split("\n")[1][6:])) for b in r.text.strip().split("\n\n")]
+        assert first(ev2, "results")["items"], chip
+
+
+async def test_typing_a_next_step_label_applies_it(loaded, chat_llm):
+    ev = await chat(loaded, "water bottle")
+    sid = first(ev, "session")["session_id"]
+    nxt = next(d for e, d in ev if e == "clarify" and d["reason"] == "next")
+    only = next((c for c in nxt["chips"] if any(p["op"] == "add_filter" for p in c["patch"])), None)
+    assert only is not None, nxt
+    ev2 = await chat(loaded, only["label"].lower(), session_id=sid)
+    assert first(ev2, "done")["reason"] == "patch"
+    op = next(p for p in only["patch"] if p["op"] == "add_filter")
+    assert all(i["document"][op["field"]] == op["value"] for i in first(ev2, "results")["items"])
+
+
+async def test_compare_without_llm_states_the_cheapest(loaded):
+    res = await loaded.search(query="water bottle", size=3)
+    ids = [h["id"] for h in res["hits"][:3]]
+    r = await loaded.client.post("/v1/chat", json={"message": "compare these", "product_ids": ids},
+                                 headers=loaded.searcher)
+    ev = [(b.split("\n")[0][7:], json.loads(b.split("\n")[1][6:])) for b in r.text.strip().split("\n\n")]
+    text = "".join(d["delta"] for e, d in ev if e == "text")
+    low = min(h["document"]["price"] for h in res["hits"][:3])
+    cheapest = {h["id"] for h in res["hits"][:3] if h["document"]["price"] == low}  # ties: any of them
+    assert "couldn't find" not in text and any(f"[{i}]" in text for i in cheapest), text

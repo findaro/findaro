@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     understand_llm: bool = True  # allow the LLM planner when the rules plan is unsure
     planner_provider: str | None = None  # defaults to llm_provider
     planner_model: str | None = None  # default: llama3.2:3b on ollama (fits the timeout), claude-haiku-4-5 on anthropic
+    # Calls to any LLM per UTC day for this deployment (planner + chat); past it, rules and templates. 0 = no cap.
+    llm_daily_call_limit: int = 0
     planner_timeout_ms: int = 800  # past this the rules plan is used; the LLM answer is still cached
     planner_confidence_threshold: float = 0.6
     plan_cache_ttl: int = 7 * 86_400

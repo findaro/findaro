@@ -37,8 +37,14 @@ async def create_state(settings: Settings | None = None, embedder: Embedder | No
     await init_db(db)
     os_client = AsyncOpenSearch(hosts=[settings.opensearch_url], timeout=30, http_compress=False, maxsize=25)
     r = aioredis.from_url(settings.redis_url, decode_responses=False)
+    planner, chat_llm = make_planner(settings), make_chat_llm(settings)
+    if settings.llm_daily_call_limit > 0:
+        from findaro.llm.budget import BudgetedLLM
+
+        planner = planner and BudgetedLLM(planner, r, settings.llm_daily_call_limit)
+        chat_llm = chat_llm and BudgetedLLM(chat_llm, r, settings.llm_daily_call_limit)
     return State(settings=settings, db=db, os=os_client, redis=r, embedder=embedder or get_embedder(),
-                 planner=make_planner(settings), chat_llm=make_chat_llm(settings))
+                 planner=planner, chat_llm=chat_llm)
 
 
 def make_planner(settings: Settings) -> Any:
@@ -50,7 +56,8 @@ def make_planner(settings: Settings) -> Any:
         return None
     try:
         provider = settings.planner_provider or settings.llm_provider
-        model = settings.planner_model or {"anthropic": "claude-haiku-4-5", "ollama": "llama3.2:3b"}.get(provider)
+        model = settings.planner_model or {
+            "anthropic": "claude-haiku-4-5", "ollama": "llama3.2:3b", "openai": "gpt-4.1-mini"}.get(provider)
         return get_llm(provider, model)
     except LLMError as e:
         logging.getLogger("findaro").warning("query planner LLM disabled: %s", e)

@@ -53,11 +53,21 @@ class SearchRequest(BaseModel):
         return out
 
 
+class RequirementMatch(BaseModel):
+    """Which of the query's requirements (understood filters, boosts, relaxed filters) this result has, by label."""
+
+    total: int
+    met: list[str] = Field(default_factory=list)
+    unmet: list[str] = Field(default_factory=list)
+    unknown: list[str] = Field(default_factory=list)  # the document doesn't have the field
+
+
 class Hit(BaseModel):
     id: str
     score: float
     document: dict[str, Any]
     highlights: dict[str, str] | None = None
+    requirements: RequirementMatch | None = None  # set when the query asked for something checkable
 
 
 class Chip(BaseModel):

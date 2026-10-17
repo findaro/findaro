@@ -1208,6 +1208,16 @@
        }
       ],
       "title": "Highlights"
+     },
+     "requirements": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/RequirementMatch"
+       },
+       {
+        "type": "null"
+       }
+      ]
      }
     },
     "type": "object",
@@ -1454,6 +1464,41 @@
      "reason"
     ],
     "title": "RelaxedFilter"
+   },
+   "RequirementMatch": {
+    "properties": {
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "met": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Met"
+     },
+     "unmet": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Unmet"
+     },
+     "unknown": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Unknown"
+     }
+    },
+    "type": "object",
+    "required": [
+     "total"
+    ],
+    "title": "RequirementMatch",
+    "description": "Which of the query's requirements (understood filters, boosts, relaxed filters) this result has, by label."
    },
    "SearchRequest": {
     "properties": {
@@ -1814,7 +1859,8 @@
        "budget",
        "weak_match",
        "entropy",
-       "suggest"
+       "suggest",
+       "next"
       ],
       "title": "Reason",
       "type": "string"

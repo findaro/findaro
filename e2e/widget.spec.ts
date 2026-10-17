@@ -5,6 +5,7 @@ const w = (page: Page) => page.locator("findaro-search");
 const input = (page: Page) => w(page).locator("input[type=search]");
 const chips = (page: Page) => w(page).locator(".chip");
 const cards = (page: Page) => w(page).locator(".grid .card");
+const composer = (page: Page) => w(page).locator(".composer textarea"); // AI mode
 
 async function search(page: Page, q: string) {
   await input(page).fill(q);
@@ -13,8 +14,8 @@ async function search(page: Page, q: string) {
 
 async function ask(page: Page, q: string) {
   const before = await w(page).locator(".msg.assistant").count();
-  await input(page).fill(q);
-  await input(page).press("Enter");
+  await composer(page).fill(q);
+  await composer(page).press("Enter");
   // wait for this turn's answer to finish streaming
   await expect(w(page).locator(".msg.assistant")).toHaveCount(before + 1);
   await expect(w(page).locator(".msg.assistant .text").last()).not.toHaveClass(/typing/, { timeout: 20_000 });
@@ -82,7 +83,8 @@ test("clarifier chip: slightly over budget", async ({ page }) => {
   await expect(w(page).locator(".clarify p")).toContainText("₹1,000");
   await chip.click();
   await expect(chips(page).filter({ hasText: "Under ₹1,300" })).toBeVisible({ timeout: 20_000 });
-  await expect(w(page).locator("[data-clarify]")).toHaveCount(0); // never two questions in a row
+  // never two questions in a row (one-click "next" refinements may follow)
+  await expect(w(page).locator("[data-clarify]:not([data-clarify=next])")).toHaveCount(0);
 });
 
 test("ask AI: greeting offers category chips that search", async ({ page }) => {

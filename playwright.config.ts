@@ -11,6 +11,7 @@ export default defineConfig({
   projects: [
     { name: "desktop", testMatch: /widget\.spec/, use: { ...devices["Desktop Chrome"] } },
     { name: "mobile", testMatch: /widget\.spec/, use: { ...devices["Pixel 7"] } },
+    { name: "ai-mode", testMatch: /ai\.spec/, use: { ...devices["Desktop Chrome"] } },
     { name: "react", testMatch: /react\.spec/, use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:4173" } },
   ],
   // the React example (headless SDK) is built and served by vite preview

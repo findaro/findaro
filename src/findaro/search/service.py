@@ -31,6 +31,7 @@ from findaro.search.models import (
     SearchResponse,
     Understood,
 )
+from findaro.search.requirements import annotate as annotate_requirements
 from findaro.state import State
 from findaro.understand.plan import PlanFilter, QueryPlan, Relaxation
 from findaro.understand.rules import describe_price
@@ -356,6 +357,7 @@ async def search(state: State, pid: str, project: dict[str, Any], schema: Schema
     understood = build_understood(req.query, plan, schema, _symbol(schema, cached_dictionary(pid)), quality,
                                   relaxations, semantic)
     understood.close_matches = close
+    annotate_requirements(schema, result.hits, understood)
     debug = None
     if req.debug:
         debug = {

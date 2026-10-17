@@ -2,13 +2,16 @@
 # Deploy zerch (git HEAD) to a shared Docker host that runs a shared Caddy (see README.md).
 #
 #   ZERCH_DEPLOY_SSH="ubuntu@host" ZERCH_DEPLOY_KEY=~/.ssh/key \
-#   ZERCH_API_HOST=zerch.example.com ZERCH_DEMO_HOST=zerch-demo.example.com deploy/app-a1/deploy.sh
+#   ZERCH_SITE_HOST=zerch.example.com ZERCH_API_HOST=api.zerch.example.com \
+#   [ZERCH_OLD_HOSTS="old.example.com"] [ZERCH_GITHUB_URL=...] [ZERCH_COMPANY_NAME=...] deploy/app-a1/deploy.sh
 #
 # First run writes /srv/zerch/.env (random secrets, chmod 600) and creates the demo project.
 # Secrets never leave the box and are never printed.
 set -euo pipefail
 
-: "${ZERCH_DEPLOY_SSH:?user@host}" "${ZERCH_API_HOST:?}" "${ZERCH_DEMO_HOST:?}"
+: "${ZERCH_DEPLOY_SSH:?user@host}" "${ZERCH_SITE_HOST:?}" "${ZERCH_API_HOST:?}"
+GITHUB_URL="${ZERCH_GITHUB_URL:-https://github.com/rohitsaini1196/zerch}"
+COMPANY="${ZERCH_COMPANY_NAME:-zerch}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 SSH=(ssh -o BatchMode=yes ${ZERCH_DEPLOY_KEY:+-i "$ZERCH_DEPLOY_KEY"} "$ZERCH_DEPLOY_SSH")
@@ -16,14 +19,14 @@ VERSION="$(git -C "$ROOT" rev-parse --short HEAD)"
 WIDGET="$ROOT/packages/widget/dist/zerch-widget.js"
 
 [ -f "$WIDGET" ] || { echo "build the widget first: npm install && npm run build" >&2; exit 1; }
-[ -z "$(git -C "$ROOT" status --porcelain -- src packs pyproject.toml uv.lock Dockerfile docker)" ] ||
-  echo "warning: uncommitted service changes are not deployed (git HEAD is)" >&2
+[ -z "$(git -C "$ROOT" status --porcelain -- src packs site pyproject.toml uv.lock Dockerfile docker deploy)" ] ||
+  echo "warning: uncommitted changes are not deployed (git HEAD is)" >&2
 
 echo "==> shipping $VERSION"
-"${SSH[@]}" 'mkdir -p /srv/zerch/demo && rm -rf /srv/zerch/app.new && mkdir /srv/zerch/app.new'
+"${SSH[@]}" 'mkdir -p /srv/zerch && rm -rf /srv/zerch/app.new && mkdir /srv/zerch/app.new'
 git -C "$ROOT" archive HEAD | "${SSH[@]}" 'tar -x -C /srv/zerch/app.new && rm -rf /srv/zerch/app && mv /srv/zerch/app.new /srv/zerch/app'
-"${SSH[@]}" 'cat > /srv/zerch/compose.yml' < "$HERE/compose.yml"
-"${SSH[@]}" 'cat > /srv/zerch/demo/zerch-widget.js' < "$WIDGET"
+"${SSH[@]}" 'cd /srv/zerch && cp app/deploy/app-a1/compose.yml compose.yml && cp app/deploy/app-a1/backup.sh backup.sh'
+"${SSH[@]}" 'cat > /srv/zerch/zerch-widget.js' < "$WIDGET"
 
 echo "==> secrets (first run only), build, start"
 "${SSH[@]}" bash -s "$VERSION" <<'REMOTE'
@@ -41,13 +44,19 @@ ENV
 fi
 chmod 600 .env
 sed -i "/^ZERCH_VERSION=/d" .env && echo "ZERCH_VERSION=$1" >> .env
+umask 077 && mkdir -p backups/postgres backups/opensearch && chmod 700 backups
+# OpenSearch runs as uid 1000 and writes snapshots into backups/opensearch
+[ "$(stat -c %u backups/opensearch)" = 1000 ] || sudo -n chown 1000:1000 backups/opensearch
+mkdir -p site
 docker compose build --pull api opensearch
 docker tag "zerch:$1" zerch:latest
 docker compose up -d --remove-orphans
+(crontab -l 2>/dev/null | grep -v '/srv/zerch/backup.sh'; echo '17 21 * * * /srv/zerch/backup.sh >> /srv/zerch/backups/backup.log 2>&1') | crontab -
 REMOTE
 
 echo "==> caddy site"
-sed -e "s/^API_HOST /$ZERCH_API_HOST /" -e "s/^DEMO_HOST /$ZERCH_DEMO_HOST /" "$HERE/zerch.caddy.tmpl" |
+sed -e "s/__SITE_HOST__/$ZERCH_SITE_HOST/g" -e "s/__API_HOST__/$ZERCH_API_HOST/g" "$HERE/zerch.caddy.tmpl" |
+  if [ -n "${ZERCH_OLD_HOSTS:-}" ]; then sed "s/__OLD_HOSTS__/$ZERCH_OLD_HOSTS/"; else sed '/__OLD_HOSTS__/,/^}/d'; fi |
   "${SSH[@]}" 'cat > /srv/caddy/sites/zerch.caddy.new
 cd /srv/caddy
 cp sites/zerch.caddy sites/zerch.caddy.bak 2>/dev/null || true
@@ -62,9 +71,10 @@ else
 fi'
 
 echo "==> demo project"
-"${SSH[@]}" python3 - "$ZERCH_API_HOST" "$ZERCH_DEMO_HOST" < "$HERE/demo_project.py"
-sed -e "s#YOUR_PROJECT_ID#__PROJECT__#" "$ROOT/examples/plain-html/index.html" |
-  "${SSH[@]}" "cd /srv/zerch && P=\$(python3 -c 'import json;print(json.load(open(\"demo-project.json\"))[\"project_id\"])') &&
-    K=\$(python3 -c 'import json;print(json.load(open(\"demo-project.json\"))[\"search_key\"])') &&
-    sed -e \"s#__PROJECT__#\$P#\" -e \"s#YOUR_SEARCH_KEY#\$K#\" -e 's#http://localhost:8000#https://$ZERCH_API_HOST#' > demo/index.html"
-echo "done: https://$ZERCH_API_HOST/healthz  https://$ZERCH_DEMO_HOST/"
+"${SSH[@]}" python3 /srv/zerch/app/deploy/app-a1/demo_project.py "$ZERCH_API_HOST" "$ZERCH_SITE_HOST"
+
+echo "==> website"
+"${SSH[@]}" python3 /srv/zerch/app/deploy/app-a1/render_site.py "https://$ZERCH_SITE_HOST" "https://$ZERCH_API_HOST" \
+  "$GITHUB_URL" "$COMPANY"
+"${SSH[@]}" 'cd /srv/zerch && docker compose restart site >/dev/null'  # the bind mount points at the replaced dir
+echo "done: https://$ZERCH_SITE_HOST  https://$ZERCH_API_HOST/healthz"

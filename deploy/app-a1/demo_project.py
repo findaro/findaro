@@ -1,6 +1,6 @@
 """Create the demo project on the box (runs there with the system python3, stdlib only).
 
-    python3 - <api_host> <demo_host> < demo_project.py
+    python3 demo_project.py <api_host> <site_host>
 
 Reuses /srv/zerch/demo-project.json (chmod 600; holds the admin key) while its search key still works.
 Reads the bootstrap token from /srv/zerch/.env. Prints nothing secret.
@@ -15,7 +15,7 @@ import urllib.request
 
 ZERCH = "/srv/zerch"
 STATE = f"{ZERCH}/demo-project.json"
-API, DEMO = f"https://{sys.argv[1]}", f"https://{sys.argv[2]}"
+API, DEMO = f"https://{sys.argv[1]}", f"https://{sys.argv[2]}"  # api host, site host (the demo runs there)
 
 
 def call(method, path, key=None, body=None):

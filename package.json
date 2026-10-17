@@ -21,5 +21,13 @@
     "esbuild": "^0.28.2",
     "openapi-typescript": "^7.13.0",
     "typescript": "^5.9.3"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/findaro/findaro.git"
+  },
+  "bugs": {
+    "url": "https://github.com/findaro/findaro/issues"
+  },
+  "homepage": "https://github.com/findaro/findaro#readme"
 }

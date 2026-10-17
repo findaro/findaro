@@ -35,6 +35,11 @@ dependencies = [
     "pyyaml>=6.0.3",
 ]
 
+[project.urls]
+Homepage = "https://findaro.130-210-49-63.sslip.io"
+Repository = "https://github.com/findaro/findaro"
+Issues = "https://github.com/findaro/findaro/issues"
+
 [dependency-groups]
 dev = [
     "pytest>=8.2",

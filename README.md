@@ -1,4 +1,7 @@
-# findaro
+# Findaro
+
+[![CI](https://github.com/findaro/findaro/actions/workflows/ci.yml/badge.svg)](https://github.com/findaro/findaro/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 **Open-source AI search for your catalog: one API call or one script tag, and it understands how your shoppers
 actually type.**
@@ -38,7 +41,7 @@ schema to define, no search engine to tune. Apache-2.0.
 Requirements: Docker (with about 4 GB of memory for containers), `curl` and `jq`.
 
 ```bash
-git clone <repository-url> findaro && cd findaro
+git clone https://github.com/findaro/findaro.git && cd findaro
 docker compose up -d --build        # API on :8000, plus worker, OpenSearch, Postgres, Redis
 curl -s localhost:8000/healthz      # {"status":"ok"} once the API is up (the first build takes a few minutes)
 ```

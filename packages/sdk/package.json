@@ -32,5 +32,14 @@
   "sideEffects": false,
   "scripts": {
     "build": "node build.mjs && tsc -p . --emitDeclarationOnly"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/findaro/findaro.git",
+    "directory": "packages/sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/findaro/findaro/issues"
+  },
+  "homepage": "https://github.com/findaro/findaro#readme"
 }

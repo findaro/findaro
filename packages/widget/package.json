@@ -35,5 +35,14 @@
   },
   "dependencies": {
     "@findaro/sdk": "0.1.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/findaro/findaro.git",
+    "directory": "packages/widget"
+  },
+  "bugs": {
+    "url": "https://github.com/findaro/findaro/issues"
+  },
+  "homepage": "https://github.com/findaro/findaro#readme"
 }

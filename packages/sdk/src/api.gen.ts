@@ -394,6 +394,7 @@ export interface components {
             highlights?: {
                 [key: string]: string;
             } | null;
+            requirements?: components["schemas"]["RequirementMatch"] | null;
         };
         /** Limits */
         Limits: {
@@ -475,6 +476,20 @@ export interface components {
             label: string;
             /** Reason */
             reason: string;
+        };
+        /**
+         * RequirementMatch
+         * @description Which of the query's requirements (understood filters, boosts, relaxed filters) this result has, by label.
+         */
+        RequirementMatch: {
+            /** Total */
+            total: number;
+            /** Met */
+            met?: string[];
+            /** Unmet */
+            unmet?: string[];
+            /** Unknown */
+            unknown?: string[];
         };
         /**
          * SearchRequest
@@ -637,7 +652,7 @@ export interface components {
              * Reason
              * @enum {string}
              */
-            reason: "budget" | "weak_match" | "entropy" | "suggest";
+            reason: "budget" | "weak_match" | "entropy" | "suggest" | "next";
             /**
              * Field
              * @default null

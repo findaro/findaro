@@ -342,10 +342,12 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
         clar = clarify.decide(plan, resp, schema, hinglish=hinglish, just_show=wants_just_show(msg),
                               answered_clarifier=sess.clarified and turn == "refine", symbol=symbol,
                               new_search=turn == "new")
+        if clar is None and turn in ("new", "refine"):
+            clar = clarify.next_steps(plan, resp, schema, hinglish=hinglish, symbol=symbol)
         if clar:
             yield sse("clarify", {"question": clar.question, "field": clar.field, "reason": clar.reason,
                                   "chips": [c.model_dump() for c in clar.chips]})
-    sess.clarified = clar is not None
+    sess.clarified = clar is not None and clar.reason != "next"
     sess.clarify_chips = [c.model_dump() for c in clar.chips] if clar else []
 
     # answer text

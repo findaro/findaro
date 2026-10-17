@@ -47,7 +47,8 @@ class ClarifyChipView(BaseModel):
 
 class ClarifyEvent(BaseModel):
     question: str
-    reason: Literal["budget", "weak_match", "entropy", "suggest"]  # suggest: chips with an empty patch, send label
+    # suggest: chips with an empty patch, send the label as the message; next: one-click refinements of the results
+    reason: Literal["budget", "weak_match", "entropy", "suggest", "next"]
     field: str | None = None
     chips: list[ClarifyChipView]
 

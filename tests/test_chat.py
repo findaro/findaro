@@ -333,7 +333,9 @@ async def test_chat_patch_turn_and_pills(loaded, chat_llm):
     sid = first(ev, "session")["session_id"]
     res = first(ev, "results")
     assert res["pills"], "attribute choices are passive pills"
-    assert not any(e == "clarify" and d["field"] not in ("category", "price") for e, d in ev)
+    # attribute choices are never asked as questions (next-step rows are offers, not questions)
+    assert not any(e == "clarify" and d["reason"] != "next" and d["field"] not in ("category", "price")
+                   for e, d in ev)
     pill = res["pills"][0]["values"][0]
     r = await loaded.client.post("/v1/chat", json={"session_id": sid, "patch": pill["patch"]},
                                  headers=loaded.searcher)
@@ -447,3 +449,17 @@ async def test_daily_llm_budget_falls_back_to_templates(state, loaded):
         assert "".join(d["delta"] for e, d in ev if e == "text").strip()
     finally:
         state.chat_llm = None
+
+
+async def test_next_steps_are_real_refinements(loaded, chat_llm):
+    ev = await chat(loaded, "water bottle")
+    nxt = [d for e, d in ev if e == "clarify" and d["reason"] == "next"]
+    assert nxt, [e for e, _ in ev]
+    chips = nxt[0]["chips"]
+    assert 1 <= len(chips) <= 3 and all(c["patch"] for c in chips)
+    sid = first(ev, "session")["session_id"]
+    for chip in chips:  # each one narrows or reorders the results on screen and still returns products
+        r = await loaded.client.post("/v1/chat", json={"session_id": sid, "patch": chip["patch"]},
+                                     headers=loaded.searcher)
+        ev2 = [(b.split("\n")[0][7:], json.loads(b.split("\n")[1][6:])) for b in r.text.strip().split("\n\n")]
+        assert first(ev2, "results")["items"], chip

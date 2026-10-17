@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Live demo · findaro</title>
+<meta name="description" content="Try findaro on a demo store of 3,000 synthetic products: search as you type, then ask in your own words to narrow the results, compare products and get grounded answers.">
+<link rel="canonical" href="__SITE_URL__/demo/">
+<meta name="theme-color" content="#f7f9fc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a1120" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="findaro">
+<meta property="og:title" content="Live demo · findaro">
+<meta property="og:description" content="Search and ask a demo store of 3,000 synthetic products, in English or Hinglish.">
+<meta property="og:url" content="__SITE_URL__/demo/">
+<meta property="og:image" content="__SITE_URL__/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=Geist:wght@600..800&amp;display=swap">
+<link rel="stylesheet" href="/assets/site.css">
+<script src="/assets/site.js" defer></script>
+<script src="/findaro-widget.js" data-project="__DEMO_PROJECT__" data-key="__DEMO_SEARCH_KEY__" data-base-url="__API_URL__" defer onerror="document.documentElement.classList.add('no-widget')"></script>
+</head>
+<body class="demo-page">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro<span class="beta">beta</span></a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav class="nav" id="site-nav" aria-label="Main">
+      <a href="/#features">Product</a>
+      <a href="/demo/" aria-current="page">Live demo</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <a href="__GITHUB_URL__" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="/request-access.html">Request access</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="demo-main">
+  <div class="wrap">
+    <div class="demo-head">
+      <div>
+        <span class="eyebrow">Live demo</span>
+        <h1>Search it, then ask it.</h1>
+        <p>A demo store of 3,000 synthetic products. Results update as you type; press Enter to ask in your own words,
+        in English or Hinglish, and keep refining: “only leather”, “cheaper”, “which is best for school?”.</p>
+      </div>
+      <p class="demo-badge"><span>Demo store</span> 3,000 synthetic products</p>
+    </div>
+    <findaro-search id="demo" mode="unified" badges="material,tags"
+                    placeholder="Search 3,000 demo products… try “kaale joote 1000 ke andar”"
+                    starters="black shoes under 1000|kurta for a wedding|steel water bottle|gift for a 10 year old|how do these compare in quality?"></findaro-search>
+    <p class="demo-fallback" id="demo-fallback" role="status">The live demo couldn't load right now. You can run the
+      same demo locally: it ships with the <a href="__GITHUB_URL__" rel="noopener">open-source repo</a>.</p>
+  </div>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="about">
+      <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro</a>
+      <p>AI search for product catalogs: natural language, Indian English and Hinglish, grounded chat. Open source under Apache-2.0.</p>
+    </div>
+    <div>
+      <h4>Product</h4>
+      <ul>
+        <li><a href="/demo/">Live demo</a></li>
+        <li><a href="/#features">Features</a></li>
+        <li><a href="/pricing.html">Pricing</a></li>
+        <li><a href="/compare.html">Compare</a></li>
+        <li><a href="/request-access.html">Request access</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Developers</h4>
+      <ul>
+        <li><a href="/docs/">Docs</a></li>
+        <li><a href="/docs/quickstart.html">Quickstart</a></li>
+        <li><a href="/docs/api.html">API reference</a></li>
+        <li><a href="/docs/self-hosting.html">Self-hosting</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Project</h4>
+      <ul>
+        <li><a href="__GITHUB_URL__" rel="noopener">GitHub</a></li>
+        <li><a href="__GITHUB_URL__/blob/main/LICENSE" rel="noopener">License (Apache-2.0)</a></li>
+        <li><a href="/terms.html">Terms</a></li>
+        <li><a href="/privacy.html">Privacy</a></li>
+      </ul>
+    </div>
+    <div class="legal">
+      <span>© <span data-year>2026</span> __COMPANY_NAME__. findaro is open source.</span>
+      <span>Hosted beta · Oracle Cloud, Mumbai region</span>
+    </div>
+  </div>
+</footer>
+<script>
+(function () {
+  "use strict";
+  var el = document.getElementById("demo");
+  // /demo/?q=… runs the query as a question once the widget is ready
+  var q = null;
+  try { q = new URLSearchParams(location.search).get("q"); } catch (e) { /* old browser */ }
+  if (window.customElements) {
+    customElements.whenDefined("findaro-search").then(function () {
+      if (q && typeof el.search === "function") el.search(q.slice(0, 200));
+    });
+  }
+  window.addEventListener("load", function () {
+    setTimeout(function () {
+      if (!window.customElements || !customElements.get("findaro-search")) {
+        document.getElementById("demo-fallback").classList.add("show");
+      }
+    }, 3000);
+  });
+})();
+</script>
+</body>
+</html>

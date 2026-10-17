@@ -3,123 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI Mode · findaro</title>
-<meta name="description" content="Try findaro AI Mode: a conversational shopping assistant that searches a demo catalog, shows how it searched, and compares products side by side.">
-<link rel="canonical" href="__SITE_URL__/ai.html">
-<meta name="theme-color" content="#f5f2ea" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#11100d" media="(prefers-color-scheme: dark)">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="findaro">
-<meta property="og:title" content="AI Mode · findaro">
-<meta property="og:description" content="Try findaro AI Mode: a conversational shopping assistant that searches a demo catalog, shows how it searched, and compares products side by side.">
-<meta property="og:url" content="__SITE_URL__/ai.html">
-<meta property="og:image" content="__SITE_URL__/assets/og.png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image">
+<title>AI Mode moved · findaro</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="__SITE_URL__/demo/">
+<meta http-equiv="refresh" content="0; url=/demo/">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&amp;family=Instrument+Sans:wght@400..700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
 <link rel="stylesheet" href="/assets/site.css">
-<script src="/assets/site.js" defer></script>
-<style>
-  /* map the widget's theme onto the site's tokens (outer styles win over :host defaults, both themes) */
-  findaro-search#ai-widget { --findaro-bg: var(--surface); --findaro-surface: var(--bg); --findaro-fg: var(--ink);
-    --findaro-muted: var(--muted); --findaro-border: var(--line); --findaro-chip-bg: var(--accent-soft);
-    --findaro-chip-fg: var(--accent-text); --findaro-accent-ink: var(--accent-ink); --findaro-page-width: 760px;
-    height: min(82vh, 860px); min-height: 560px; }
-  .ai-frame .demo-body { padding: 0; }
-  .ai-frame .demo-fallback { margin: 16px; }
-  @media (max-width: 760px) { findaro-search#ai-widget { height: 82vh; height: 82dvh; } }
-</style>
-<script src="/findaro-widget.js" data-project="__DEMO_PROJECT__" data-key="__DEMO_SEARCH_KEY__" data-base-url="__API_URL__" defer onerror="document.documentElement.classList.add('no-widget')"></script>
+<script>location.replace("/demo/" + location.search + location.hash);</script>
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
-<header class="site-header">
-  <div class="wrap">
-    <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro<span class="beta">beta</span></a>
-    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-    </button>
-    <nav class="nav" id="site-nav" aria-label="Main">
-      <a href="/#features">Product</a>
-      <a href="/ai.html" aria-current="page">AI Mode</a>
-      <a href="/pricing.html">Pricing</a>
-      <a href="/docs/">Docs</a>
-      <a href="__GITHUB_URL__" rel="noopener">GitHub</a>
-      <a class="btn btn-primary btn-sm" href="/request-access.html">Request access</a>
-    </nav>
+<main id="main" class="notfound">
+  <div>
+    <h1 style="font-size:2rem">The AI Mode demo has moved.</h1>
+    <p><a href="/demo/">Open the live demo</a></p>
   </div>
-</header>
-<main id="main">
-<div class="wrap">
-  <div class="page-head" style="padding:40px 0 24px">
-    <div class="section-head" style="margin-bottom:0">
-      <span class="eyebrow">Live demo · AI Mode</span>
-      <h1 style="font-size:clamp(2rem, 4.2vw, 3rem)">Shop by talking it through.</h1>
-      <p>AI Mode turns the widget into a shopping assistant. Describe what you need, see how it searched, narrow the
-      results in one click, and select two or three products to compare them side by side. It runs on a synthetic
-      catalog of 3,000 products.</p>
-    </div>
-  </div>
-</div>
-<section style="padding-top:0" aria-label="AI Mode demo">
-  <div class="wrap">
-    <div class="demo-frame ai-frame">
-      <div class="demo-bar"><i></i><i></i><i></i><span>demo-store · AI Mode · synthetic data</span></div>
-      <div class="demo-body">
-        <p class="demo-fallback" id="demo-fallback" role="status">The live demo couldn't load right now. You can still
-        run the same demo locally: it ships with the <a href="__GITHUB_URL__" rel="noopener">open-source repo</a>.</p>
-        <findaro-search id="ai-widget" mode="ai" layout="page" badges="material,tags"
-                        starters="black shoes under 1000|kurta for a wedding|steel water bottle|gift for a 10 year old"></findaro-search>
-      </div>
-    </div>
-    <p class="fine" style="margin-top:1rem">One element: <code>&lt;findaro-search mode="ai" layout="page"&gt;</code>.
-    Conversations stay in your browser. See the <a href="/docs/widget.html#ai-mode">widget docs</a> for the attributes
-    and events.</p>
-  </div>
-</section>
 </main>
-<footer class="site-footer">
-  <div class="wrap">
-    <div class="about">
-      <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro</a>
-      <p>AI search for product catalogs: natural language, Indian English and Hinglish, grounded chat. Open source under Apache-2.0.</p>
-    </div>
-    <div>
-      <h4>Product</h4>
-      <ul>
-        <li><a href="/#demo">Live demo</a></li>
-        <li><a href="/#features">Features</a></li>
-        <li><a href="/pricing.html">Pricing</a></li>
-        <li><a href="/request-access.html">Request access</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Developers</h4>
-      <ul>
-        <li><a href="/docs/">Docs</a></li>
-        <li><a href="/docs/quickstart.html">Quickstart</a></li>
-        <li><a href="/docs/api.html">API reference</a></li>
-        <li><a href="/docs/self-hosting.html">Self-hosting</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Project</h4>
-      <ul>
-        <li><a href="__GITHUB_URL__" rel="noopener">GitHub</a></li>
-        <li><a href="__GITHUB_URL__/blob/main/LICENSE" rel="noopener">License (Apache-2.0)</a></li>
-        <li><a href="/terms.html">Terms</a></li>
-        <li><a href="/privacy.html">Privacy</a></li>
-      </ul>
-    </div>
-    <div class="legal">
-      <span>© <span data-year>2026</span> __COMPANY_NAME__. findaro is open source.</span>
-      <span>Hosted beta · Oracle Cloud, Mumbai region</span>
-    </div>
-  </div>
-</footer>
 </body>
 </html>

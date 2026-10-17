@@ -9,7 +9,9 @@ python3 -m http.server 8765 --directory site/public   # http://localhost:8765
 
 | Path | Page |
 |---|---|
-| `public/index.html` | Landing page, with the live widget demo |
+| `public/index.html` | Landing page (no widget on it: every demo link goes to `/demo/`) |
+| `public/demo/index.html` | The live demo: the site header plus the widget in its default unified mode (search as you type, Enter asks) on the demo project; `?q=` asks on load |
+| `public/ai.html` | Redirects to `/demo/` (old links) |
 | `public/pricing.html` | Pricing (INR by default, USD toggle remembered in localStorage) |
 | `public/request-access.html` | Request-access form, POSTs JSON to `/api/request-access` |
 | `public/docs/` | Docs: `index`, `quickstart`, `widget`, `sdk`, `api` (generated), `self-hosting` |
@@ -25,7 +27,7 @@ The deploy step replaces these strings in every file under `public/` (`.html`, `
 |---|---|---|
 | `__SITE_URL__` | Public site origin, no trailing slash (canonical/OG URLs, sitemap, widget URL in docs) | `https://findaro.example.com` |
 | `__API_URL__` | API base URL, no trailing slash (demo widget, docs snippets) | `https://api.findaro.example.com` |
-| `__DEMO_PROJECT__` | Demo project id for the landing-page widget | `prj_…` |
+| `__DEMO_PROJECT__` | Demo project id for the live demo page (`/demo/`) | `prj_…` |
 | `__DEMO_SEARCH_KEY__` | That project's **search** key (browser-safe; never an admin key) | `fdr_search_…` |
 | `__GITHUB_URL__` | Repository URL, no trailing slash | `https://github.com/org/findaro` |
 | `__COMPANY_NAME__` | Legal name of the operator (footer, terms, privacy) | |
@@ -42,7 +44,7 @@ grep -rl '__[A-Z_]*__' public && echo "unreplaced placeholders" && exit 1
 
 The deploy also has to:
 - copy the built widget (`packages/widget/dist/findaro-widget.js`, from `npm run build`) to `public/findaro-widget.js`.
-  The landing page loads it from `/findaro-widget.js`, and the docs tell customers to load it from
+  The demo page (`/demo/`) loads it from `/findaro-widget.js`, and the docs tell customers to load it from
   `__SITE_URL__/findaro-widget.js`;
 - add the site's origin to the demo project's `allowed_origins`;
 - route `POST /api/request-access` to the request-access handler. The form sends
@@ -51,7 +53,7 @@ The deploy also has to:
   later" message on 429 and a generic error otherwise;
 - serve `404.html` for missing paths.
 
-If the demo widget can't load, the landing page shows a short notice instead of an empty box.
+If the widget can't load, the demo page shows a short notice instead of an empty page.
 
 ## API reference
 
@@ -70,4 +72,7 @@ footer.
 
 The header, footer and docs sidebar are repeated in every page. If you change one, change them all. Colours and
 fonts are CSS variables at the top of `assets/site.css`, with a dark palette under
-`prefers-color-scheme: dark`.
+`prefers-color-scheme: dark`. The palette is one blue, navy ink and cool greys, with no orange, amber or yellow:
+caution states use `--note` (slate-indigo) and red (`--danger`) is only for form validation errors. Any
+`<findaro-search>` on the site is themed from these tokens (bottom of `site.css`). Fonts: Geist (headings), IBM Plex
+Sans (body), IBM Plex Mono (code).

@@ -33,6 +33,7 @@ const ICONS: Record<string, string> = {
   chev: '<path d="M9 6l6 6-6 6"/>',
   down: '<path d="M12 5v14M6 13l6 6 6-6"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h10"/>',
+  side: '<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M9.5 4.5v15"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
   trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>',

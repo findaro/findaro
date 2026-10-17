@@ -4,11 +4,15 @@
  *   <script src="findaro-widget.js" data-project="prj_…" data-key="fdr_search_…" data-base-url="…" defer></script>
  *   <findaro-search></findaro-search>
  *
- * Attributes (override the script tag): project, key, base-url, mode ("search" | "ai"), layout ("page": full-page
- * AI Mode with chat history), locale ("en" | "hi-en"), placeholder, size, theme ("light" | "dark"),
+ * Attributes (override the script tag): project, key, base-url, mode ("unified", the default: search as you type, Enter
+ * asks the assistant, which refines the same results; "search": search only, with an Ask AI toggle; "ai": the AI Mode
+ * thread), layout ("page": full-page
+ * AI Mode with chat history; with mode="search", a full-page search view), locale ("en" | "hi-en"), placeholder, size,
+ * theme ("light" | "dark"),
  * starters ("a|b|c"), badges ("field,field"), card-actions ("Add to cart,Save").
  * Properties: renderProduct, onProductClick, cardActions, strings, client.
  * Events: "findaro:product-click" (cancelable), "findaro:action" (cancelable), "findaro:results", "findaro:error".
+ * Slots (layout="page"): "sidebar-footer", shown at the bottom of the chat history sidebar.
  */
 import {
   createClient,
@@ -69,9 +73,11 @@ const SCRIPT_DEFAULTS: Record<string, string> = {};
   }
 }
 
+type Mode = "unified" | "search" | "ai";
 const EMPTY_DISPLAY: Display = {};
 const MAX_SELECT = 3; // the chat API answers about at most 3 products at once
 const FIRST_CARDS = 6;
+const SIDE_KEY = "findaro:side-collapsed"; // layout="page": the desktop sidebar's collapsed state, per browser
 const list = (v: string | null, sep: string) => (v || "").split(sep).map((t) => t.trim()).filter(Boolean);
 
 export class FindaroSearch extends HTMLElement {
@@ -90,7 +96,7 @@ export class FindaroSearch extends HTMLElement {
   client: FindaroClient | null = null;
 
   #root: ShadowRoot;
-  #mode: "search" | "ai" = "search";
+  #mode: Mode = "unified";
   #page = false;
   #query = "";
   #patches: PatchOp[] = [];
@@ -112,7 +118,7 @@ export class FindaroSearch extends HTMLElement {
 
   connectedCallback() {
     this.#page = this.#attr("layout") === "page";
-    this.#mode = this.#page || this.#attr("mode") === "ai" ? "ai" : "search";
+    this.#mode = this.#wantMode();
     this.#build();
     this.#render();
   }
@@ -123,7 +129,7 @@ export class FindaroSearch extends HTMLElement {
       this.connectedCallback();
       return;
     }
-    if (name === "mode") this.#setMode(this.#attr("mode") === "ai" || this.#page ? "ai" : "search");
+    if (name === "mode") this.#setMode(this.#wantMode());
     else if (["project", "key", "base-url"].includes(name)) {
       this.client = null;
       this.#chats = null;
@@ -133,7 +139,7 @@ export class FindaroSearch extends HTMLElement {
 
   /** Run a search (or ask the AI in "ai" mode) programmatically. */
   search(query: string) {
-    if (this.#mode === "ai") {
+    if (this.#mode !== "search") {
       if (query.trim()) this.#ask(query.trim());
       return;
     }
@@ -144,6 +150,16 @@ export class FindaroSearch extends HTMLElement {
   get #s(): Strings {
     const base = STRINGS[this.#attr("locale") || "en"] || STRINGS.en;
     return { ...base, ...this.strings };
+  }
+
+  /** layout="page" is AI Mode unless mode="search" is set explicitly; otherwise unified unless mode is "search"/"ai". */
+  #wantMode(): Mode {
+    const m = this.#attr("mode");
+    return m === "ai" || this.#page && m !== "search" ? "ai" : m === "search" ? "search" : "unified";
+  }
+
+  get #uni(): boolean {
+    return this.#mode === "unified";
   }
 
   #attr(name: string): string | null {
@@ -183,10 +199,15 @@ export class FindaroSearch extends HTMLElement {
     this.#els.modes = h("div", { class: "modes", role: "radiogroup", "aria-label": s.modeLabel },
       modeBtn("search", s.search), modeBtn("ai", s.ask));
     this.#els.go = h("button", { class: "go", type: "submit" }, s.search);
+    this.#els.reset = h("button", { class: "reset", type: "button", hidden: true, onclick: () => this.#newSearch() },
+      icon("x"), h("span", {}, s.newSearch));
     this.#els.form = h("form", { class: "box", role: "search", onsubmit: (e: Event) => {
       e.preventDefault();
       this.#submit();
-    } }, this.#els.modes, this.#input, this.#els.go);
+    } }, this.#els.modes, this.#input, this.#els.reset, this.#els.go);
+    // unified mode: the assistant panel (latest reply, earlier turns folded) and the empty-state hint + starters
+    this.#els.panel = h("section", { class: "panel", hidden: true, "aria-label": s.assistant });
+    this.#els.uhello = h("div", { class: "uhello", hidden: true });
     this.#els.chips = h("div", { class: "row chips", role: "group" });
     this.#els.pills = h("div", { class: "pills", id: "findaro-filters" });
     this.#els.status = h("div", { class: "status", role: "status", "aria-live": "polite" });
@@ -212,31 +233,44 @@ export class FindaroSearch extends HTMLElement {
     this.#els.notice = h("div", { class: "notice", "aria-live": "polite" });
     this.#els.jump = h("button", { class: "jump", type: "button", "aria-label": s.jumpLatest, title: s.jumpLatest,
                                    hidden: true, onclick: () => this.#toBottom(true) }, icon("down"));
+    this.#els.starters = h("div", { class: "starters", role: "group", "aria-label": s.tryAsking });
     this.#els.dock = h("div", { class: "dock" }, this.#els.jump, this.#els.notice, this.#els.selbar,
-      this.#els.composer);
+      this.#els.composer, this.#els.starters);
     this.#els.thread = h("div", { class: "thread-wrap" }, sc, this.#els.dock);
 
     if (this.#page) {
       this.#els.side = h("aside", { class: "side", id: "findaro-side", "aria-label": s.history });
       this.#els.menu = h("button", { class: "iconbtn", type: "button", "aria-label": s.openHistory,
-                                     "aria-controls": "findaro-side", "aria-expanded": "false",
-                                     onclick: () => this.#toggleSide(true) }, icon("menu"));
+                                     title: s.openHistory, "aria-controls": "findaro-side", "aria-expanded": "false",
+                                     onclick: () => this.#narrow() ? this.#toggleSide(true) : this.#collapse(false) },
+        icon("menu"));
       this.#els.sscrim = h("div", { class: "sscrim", hidden: true, onclick: () => this.#toggleSide(false) });
+      const slot = h("slot", { name: "sidebar-footer", onslotchange: () => {
+        this.#els.sfoot.hidden = !slot.assignedNodes().length;
+      } });
+      this.#els.sfoot = h("div", { class: "sfoot", hidden: true }, slot);
       const top = h("div", { class: "mtop" }, this.#els.menu, h("strong", {}, s.assistantName),
         h("button", { class: "iconbtn", type: "button", "aria-label": s.newChat, title: s.newChat,
                       onclick: () => this.#newChat() }, icon("plus")));
-      this.#root.append(h("div", { class: "root page", part: "root", onkeydown: (e: KeyboardEvent) => {
+      // mode="search" in a page: the search box, chips, filters and grid in one centered column
+      this.#els.spage = h("div", { class: "spage" }, h("div", { class: "sin" }, this.#els.form, this.#els.chips,
+        this.#els.pills, this.#els.searchView));
+      this.#els.root = h("div", { class: `root page${this.#collapsed ? " collapsed" : ""}`, part: "root",
+                                  onkeydown: (e: KeyboardEvent) => {
         if (e.key === "Escape" && this.#sideOpen) this.#toggleSide(false);
-      } }, this.#els.side, this.#els.sscrim, h("div", { class: "main" }, top, this.#els.thread)));
+      } }, this.#els.side, this.#els.sscrim, h("div", { class: "main" }, top, this.#els.thread, this.#els.spage));
+      this.#root.append(this.#els.root);
     } else {
-      this.#els.layout = h("div", { class: "layout" }, this.#els.thread, this.#els.searchView);
+      this.#els.layout = h("div", { class: "layout" }, this.#els.thread, this.#els.panel, this.#els.searchView);
+      // unified: the selection bar and notices float at the bottom of the widget instead of the AI Mode dock
+      this.#els.ubar = h("div", { class: "ubar" });
       this.#root.append(h("div", { class: "root", part: "root" },
-        this.#els.form, this.#els.chips, this.#els.pills, this.#els.layout));
+        this.#els.form, this.#els.uhello, this.#els.chips, this.#els.pills, this.#els.layout, this.#els.ubar));
     }
     this.#dirty = true;
   }
 
-  #setMode(m: "search" | "ai", focus = false) {
+  #setMode(m: Mode, focus = false) {
     if (m === this.#mode && this.#els.layout) {
       if (focus) (m === "ai" ? this.#ta : this.#input).focus();
       return;
@@ -250,7 +284,8 @@ export class FindaroSearch extends HTMLElement {
   #typing = false; // search-as-you-type: rules only, no LLM planner call per keystroke
 
   #onInput() {
-    if (this.#mode !== "search") return;
+    // unified: typing searches until the first question; after that the box holds the next follow-up
+    if (this.#mode === "ai" || this.#uni && this.#msgs.length) return;
     const q = this.#input.value.trim();
     if (q !== this.#query) this.#patches = [];
     this.#query = q;
@@ -259,7 +294,8 @@ export class FindaroSearch extends HTMLElement {
   }
 
   #onKey(e: KeyboardEvent) {
-    if (e.key === "Escape") {
+    if (e.key === "Escape" && this.#uni && this.#msgs.length) this.#input.value = "";
+    else if (e.key === "Escape") {
       this.#input.value = "";
       this.#query = "";
       this.#patches = [];
@@ -271,9 +307,12 @@ export class FindaroSearch extends HTMLElement {
   #submit() {
     const q = this.#input.value.trim();
     if (!q) return;
-    if (this.#mode === "ai") {
+    if (this.#mode !== "search") {
+      this.#debounced.cancel();
       this.#input.value = "";
-      this.#ask(q);
+      const ids = this.#focus;
+      this.#focus = null;
+      this.#ask(q, undefined, false, ids ? { productIds: ids } : {});
     } else {
       this.#debounced.cancel();
       if (q !== this.#query) this.#patches = [];
@@ -285,14 +324,18 @@ export class FindaroSearch extends HTMLElement {
 
   // --- search -------------------------------------------------------------------------------------------
 
+  #gen = 0; // bumped by each chat turn: a search-as-you-type answer that lands later is dropped
+
   async #runSearch() {
     if (!this.#query) return;
+    const gen = this.#gen;
     this.#loading = true;
     this.#error = "";
     this.#renderStatus();
     try {
       const res = await this.#client().search({ query: this.#query, patch: this.#patches, llm: !this.#typing,
                                                 size: Number(this.#attr("size")) || 20 });
+      if (gen !== this.#gen) return;
       this.#setView(res);
     } catch (e) {
       if ((e as Error).name === "AbortError") return;
@@ -315,7 +358,7 @@ export class FindaroSearch extends HTMLElement {
   }
 
   #applyPatch(ops: PatchOp[], label: string) {
-    if (this.#mode === "ai" && this.#session) {
+    if (this.#mode !== "search" && this.#session) {
       this.#ask(label, ops);
       return;
     }
@@ -345,6 +388,7 @@ export class FindaroSearch extends HTMLElement {
     const bot: Turn = { role: "assistant", text: "", general: "", time: Date.now(), pending: true, clarify: null,
                         step: s.stepThink, compare: opts.compare ?? null };
     const prev = this.#msgs[this.#msgs.length - 1];
+    this.#gen++;
     this.#msgs.push(user, bot);
     this.#pin = true;
     if (this.#mode === "ai") {
@@ -355,7 +399,7 @@ export class FindaroSearch extends HTMLElement {
         this.#paint(bot);
       }
       this.#renderHello();
-    }
+    } else if (this.#uni) this.#render();
     this.#saveConv();
     let sem = message;
     try {
@@ -440,16 +484,32 @@ export class FindaroSearch extends HTMLElement {
     for (const b of this.#els.modes.querySelectorAll("button")) {
       b.setAttribute("aria-checked", String(b.dataset.mode === this.#mode));
     }
-    this.#input.placeholder = this.#attr("placeholder") || s.placeholder;
+    const uni = this.#uni;
+    const talking = uni && this.#msgs.length > 0;
+    this.#input.placeholder = uni && this.#focus ? fmt(s.askSelected, { n: this.#focus.length })
+      : talking ? s.followUp : this.#attr("placeholder") || s.placeholder;
     this.#input.setAttribute("aria-label", this.#input.placeholder);
-    this.#els.go.textContent = s.search;
+    this.#els.go.textContent = talking ? s.send : s.search;
     this.#input.hidden = this.#els.go.hidden = ai;
+    this.#els.modes.hidden = uni;
+    this.#els.reset.hidden = !talking;
     this.#els.form.classList.toggle("solo", ai);
+    this.#els.form.classList.toggle("u", uni);
     this.#els.thread.hidden = !ai;
     this.#els.searchView.hidden = ai;
+    if (this.#els.ubar) {
+      // the selection bar + notices live in the AI Mode dock, or float at the bottom in unified mode
+      this.#els.ubar.hidden = !uni;
+      if (uni) this.#els.ubar.append(this.#els.notice, this.#els.selbar);
+      else this.#els.dock.prepend(this.#els.jump, this.#els.notice, this.#els.selbar);
+    }
+    if (this.#page) {
+      this.#els.spage.hidden = ai;
+      this.#els.root.classList.toggle("search", !ai);
+    }
     // the current understood chips: under the search box, or above the composer in AI Mode
     if (ai) this.#els.dock.insertBefore(this.#els.chips, this.#els.composer);
-    else if (!this.#page) this.#els.form.after(this.#els.chips);
+    else this.#els.form.after(this.#els.chips);
     this.#renderChips();
     this.#renderStatus();
     this.#renderResults();
@@ -458,6 +518,12 @@ export class FindaroSearch extends HTMLElement {
       this.#renderDock();
       this.#renderSide();
     }
+    if (uni) {
+      this.#renderPanel();
+      this.#renderDock();
+    }
+    this.#els.panel.hidden = !talking;
+    this.#renderUHello();
   }
 
   #filtersOpen = false;
@@ -467,7 +533,7 @@ export class FindaroSearch extends HTMLElement {
     const v = this.#view;
     const chips = v?.chips ?? [];
     const pills = v?.pills ?? [];
-    const canFilter = this.#mode === "search" && !!pills.length && !!v?.hits.length;
+    const canFilter = this.#mode !== "ai" && !!pills.length && !!v?.hits.length;
     this.#els.chips.replaceChildren();
     this.#els.chips.hidden = !chips.length && !canFilter;
     this.#els.chips.setAttribute("aria-label", s.understood);
@@ -520,9 +586,15 @@ export class FindaroSearch extends HTMLElement {
     const box = this.#els.results;
     box.replaceChildren();
     if (!v || this.#mode === "ai") return;
+    if (this.#uni && v.hits.length) {
+      // unified: the AI Mode cards (select to compare, requirement line, Ask / View / custom actions)
+      box.append(h("ul", { class: "grid tcards ugrid", role: "list" }, ...v.hits.map((hit) => this.#tcard(hit, v.close))));
+      return;
+    }
+    if (this.#uni && this.#msgs[this.#msgs.length - 1]?.pending) return; // still asking: no "no match" yet
     if (!v.hits.length) {
       box.append(h("div", { class: "empty", "data-state": "no-match" },
-        h("strong", {}, fmt(s.noMatch, { q: this.#query || v.semantic })), s.noMatchHint));
+        h("strong", {}, fmt(s.noMatch, { q: this.#uni ? v.semantic : this.#query || v.semantic })), s.noMatchHint));
       return;
     }
     const grid = h("ul", { class: "grid", role: "list" });
@@ -556,7 +628,8 @@ export class FindaroSearch extends HTMLElement {
   #image(src: unknown, alt: string): HTMLElement {
     let hue = 0;
     for (const ch of alt) hue = (hue * 31 + ch.charCodeAt(0)) % 360;
-    const fallback = () => h("div", { class: "img ph", "aria-hidden": "true", style: `--h:${hue}` },
+    // placeholder tints stay in the cool range (cyan to indigo) so they never read as warnings
+    const fallback = () => h("div", { class: "img ph", "aria-hidden": "true", style: `--h:${190 + hue % 60}` },
       (alt.trim()[0] || "?").toUpperCase());
     if (typeof src !== "string" || !src || !/^(https?:)?\/\//i.test(src) && !src.startsWith("/")) return fallback();
     const img = h("img", { class: "img", src, alt: "", loading: "lazy", decoding: "async" });
@@ -637,6 +710,7 @@ export class FindaroSearch extends HTMLElement {
 
   /** Re-render one message in place (cards are kept, so images don't reload while text streams). */
   #paint(m: Turn) {
+    if (this.#uni) this.#renderPanel();
     if (this.#mode !== "ai" || this.#dirty) return;
     const old = this.#painted.get(m);
     const el = this.#paintEl(m);
@@ -663,14 +737,15 @@ export class FindaroSearch extends HTMLElement {
           h("span", { class: "dots", "aria-hidden": "true" }, h("i"), h("i"), h("i"))));
       }
       el = h("div", { class: `msg assistant${m.error ? " err" : ""}` },
-        h("div", { class: "ahead" }, h("span", { class: "avatar" }, icon("spark")), h("strong", {}, s.assistantName),
+        h("div", { class: "ahead" }, h("span", { class: "avatar" }, icon("spark")),
+          h("strong", {}, this.#uni ? s.assistant : s.assistantName),
           h("time", { datetime: new Date(m.time).toISOString() }, hhmm(m.time))),
         m.plan ? this.#how(m) : null,
         m.compare?.length ? this.#compareTable(m.compare) : null,
         text,
         m.general?.trim() ? h("div", { class: "general" }, h("span", { class: "who" }, s.generalLabel),
           m.general.trim()) : null,
-        m.res ? this.#resultsBlock(m) : null,
+        m.res && !this.#uni ? this.#resultsBlock(m) : null,
         m.clarify && last && !m.pending ? this.#clarifyBlock(m.clarify) : null);
     }
     this.#painted.set(m, el);
@@ -759,7 +834,7 @@ export class FindaroSearch extends HTMLElement {
   }
 
   /** AI Mode card: select checkbox over the image, requirement line, Ask / View / custom actions. */
-  #tcard(hit: Hit, close: string[]): HTMLElement {
+  #tcard(hit: Hit, close: Set<string> | string[]): HTMLElement {
     const s = this.#s;
     const doc = hit.document as Record<string, unknown>;
     const title = this.#title(hit);
@@ -827,17 +902,21 @@ export class FindaroSearch extends HTMLElement {
             ...vals.map((v) => h("td", {}, v)))))));
   }
 
+  /** Empty conversation: greeting, then the composer and starter cards, centered (they dock after the first turn). */
   #renderHello() {
     const s = this.#s;
     const el = this.#els.hello;
-    el.hidden = this.#msgs.length > 0;
-    if (el.hidden) return;
-    const starters = list(this.#attr("starters"), "|").slice(0, 4);
-    el.replaceChildren(h("span", { class: "avatar big" }, icon("spark")), h("h2", {}, s.greeting),
-      h("p", {}, s.greetingSub),
-      starters.length ? h("div", { class: "starters", role: "group", "aria-label": s.tryAsking },
-        ...starters.map((t) => h("button", { type: "button", class: "nrow", onclick: () => this.#ask(t) },
-          h("span", {}, t), icon("arrow")))) : "");
+    const fresh = !this.#msgs.length;
+    const starters = fresh ? list(this.#attr("starters"), "|").slice(0, 4) : [];
+    el.hidden = !fresh;
+    this.#els.thread.classList.toggle("fresh", fresh);
+    this.#els.starters.hidden = !starters.length;
+    this.#els.starters.setAttribute("aria-label", s.tryAsking);
+    this.#els.starters.replaceChildren(...starters.map((q) => h("button", { type: "button", class: "nrow",
+                                                                             onclick: () => this.#ask(q) },
+      h("span", {}, q), icon("arrow"))));
+    if (fresh) el.replaceChildren(h("span", { class: "avatar big" }, icon("spark")), h("h2", {}, s.greeting),
+      h("p", {}, s.greetingSub));
   }
 
   // scrolling: keep the newest turn in view (from the shopper's message down) until they scroll themselves
@@ -966,14 +1045,86 @@ export class FindaroSearch extends HTMLElement {
   #askThese() {
     this.#focus = [...this.#sel.keys()];
     this.#renderDock();
-    this.#ta.focus();
+    if (this.#uni) {
+      this.#render();
+      this.#input.focus();
+    } else this.#ta.focus();
+  }
+
+  // --- unified mode: one box, the grid, and a compact assistant panel above it ----------------------------------
+
+  #earlierOpen = false;
+
+  /** The latest exchange in full; earlier ones folded into a "Conversation (N)" expander. */
+  #renderPanel() {
+    const panel = this.#els.panel;
+    if (!this.#uni || !panel) return;
+    const s = this.#s;
+    const msgs = this.#msgs;
+    const lastUser = msgs.length - 2;
+    if (lastUser < 0) {
+      panel.replaceChildren();
+      return;
+    }
+    let earlier: HTMLElement | null = null;
+    if (lastUser > 0) {
+      const d = h("details", { class: "earlier" });
+      d.open = this.#earlierOpen;
+      d.addEventListener("toggle", () => (this.#earlierOpen = d.open));
+      d.append(h("summary", {}, icon("chev"), fmt(s.earlierTurns, { n: lastUser / 2 })),
+        h("ol", { class: "turns" }, ...msgs.slice(0, lastUser).map((m) => h("li", { class: m.role },
+          h("span", { class: "sr" }, `${m.role === "user" ? s.you : s.assistant}: `),
+          m.role === "user" ? m.text : m.text.replace(/\[[^\]\s]+\]/g, "").trim() || "…"))));
+      earlier = d;
+    }
+    panel.replaceChildren(...[earlier, this.#paintEl(msgs[lastUser]), this.#paintEl(msgs[lastUser + 1])]
+      .filter((x): x is HTMLElement => !!x));
+  }
+
+  /** Empty state: a one-line hint and the starter queries as chips. */
+  #renderUHello() {
+    const el = this.#els.uhello;
+    if (!el) return;
+    const show = this.#uni && !this.#msgs.length && !this.#view && !this.#loading;
+    el.hidden = !show;
+    if (!show) return;
+    const s = this.#s;
+    const starters = list(this.#attr("starters"), "|").slice(0, 6);
+    el.replaceChildren(h("p", {}, s.hint), starters.length ? h("div", { class: "row starters-u", role: "group",
+                                                                      "aria-label": s.tryAsking },
+      ...starters.map((q) => h("button", { type: "button", class: "starter", onclick: () => this.#ask(q) },
+        icon("spark"), q))) : "");
+  }
+
+  /** "New search": forget the conversation, the selection and the results. */
+  #newSearch() {
+    this.#session = null;
+    this.#msgs = [];
+    this.#lastAsked = "";
+    this.#query = "";
+    this.#patches = [];
+    this.#view = null;
+    this.#error = "";
+    this.#focus = null;
+    this.#sel.clear();
+    this.#earlierOpen = false;
+    this.#input.value = "";
+    this.#render();
+    this.#input.focus();
   }
 
   // --- conversation history (layout="page" shows it; it's stored either way) ------------------------------
 
   #chats: Conv[] | null = null;
   #conv: string | null = null;
-  #sideOpen = false;
+  #sideOpen = false; // phone drawer
+  #collapsed = (() => { // desktop sidebar
+    try {
+      return localStorage.getItem(SIDE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  })();
   #confirm: string | null = null;
 
   get #pid(): string {
@@ -985,6 +1136,7 @@ export class FindaroSearch extends HTMLElement {
   }
 
   #saveConv() {
+    if (this.#uni) return; // unified mode keeps no history
     const first = this.#msgs.find((m) => m.role === "user");
     if (!first) return;
     const chats = this.#chatList();
@@ -1057,6 +1209,23 @@ export class FindaroSearch extends HTMLElement {
     else this.#els.menu.focus();
   }
 
+  /** The sidebar is a drawer when the widget is phone-width (same breakpoint as the CSS container query). */
+  #narrow(): boolean {
+    return this.getBoundingClientRect().width <= 760;
+  }
+
+  /** Desktop: hide or show the history sidebar; remembered in localStorage when it's available. */
+  #collapse(on: boolean) {
+    this.#collapsed = on;
+    try {
+      localStorage.setItem(SIDE_KEY, on ? "1" : "0");
+    } catch {
+      // storage blocked: the choice lasts until reload
+    }
+    this.#els.root.classList.toggle("collapsed", on);
+    ((on ? this.#els.menu : this.#els.side.querySelector(".scol")) as HTMLElement | null)?.focus();
+  }
+
   #renderSide() {
     if (!this.#page) return;
     const s = this.#s;
@@ -1085,13 +1254,17 @@ export class FindaroSearch extends HTMLElement {
                       } }, icon("trash")));
     this.#els.side.replaceChildren(
       h("div", { class: "shead" }, h("span", { class: "avatar" }, icon("spark")), h("strong", {}, s.assistantName),
+        h("button", { type: "button", class: "iconbtn scol", "aria-label": s.closeHistory, title: s.closeHistory,
+                      "aria-controls": "findaro-side", "aria-expanded": "true", onclick: () => this.#collapse(true) },
+          icon("side")),
         h("button", { type: "button", class: "iconbtn sclose", "aria-label": s.closeHistory,
                       onclick: () => this.#toggleSide(false) }, icon("x"))),
       h("button", { type: "button", class: "newchat", onclick: () => this.#newChat() }, icon("plus"), s.newChat),
       h("nav", { class: "convs", "aria-label": s.history },
         ...groups.filter(([, cs]) => cs.length).map(([label, cs]) =>
           h("div", { class: "grp" }, h("h4", {}, label), h("ul", { role: "list" }, ...cs.map(item)))),
-        this.#chatList().length ? null : h("p", { class: "none" }, s.noChats)));
+        this.#chatList().length ? null : h("p", { class: "none" }, s.noChats)),
+      this.#els.sfoot);
   }
 
   // --- product drawer (M5): a conversation about one product -------------------------------------------------

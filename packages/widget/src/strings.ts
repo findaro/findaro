@@ -78,6 +78,11 @@ export interface Strings {
   rating: string;
   comparing: string; // {n}
   nextSteps: string;
+  // unified mode (search + assistant in one surface)
+  newSearch: string;
+  hint: string;
+  followUp: string;
+  earlierTurns: string; // {n}
 }
 
 export const STRINGS: Record<string, Strings> = {
@@ -160,6 +165,10 @@ export const STRINGS: Record<string, Strings> = {
     rating: "Rating",
     comparing: "Comparing {n} products",
     nextSteps: "Next steps",
+    newSearch: "New search",
+    hint: "Results update as you type. Press Enter to ask: it narrows the results and answers questions.",
+    followUp: "Refine or ask a follow-up, e.g. “only leather” or “which is best for school?”",
+    earlierTurns: "Conversation ({n})",
   },
   "hi-en": {
     placeholder: "Products dhoondhiye…",
@@ -240,6 +249,10 @@ export const STRINGS: Record<string, Strings> = {
     rating: "Rating",
     comparing: "{n} products ki tulna",
     nextSteps: "Aage kya karein",
+    newSearch: "Naya search",
+    hint: "Type karte hi results badalte hain. Enter dabaiye: results chhaant kar sawalon ka jawab milega.",
+    followUp: "Aur chhaantiye ya poochhiye, jaise “sirf leather” ya “school ke liye kaunsa best hai?”",
+    earlierTurns: "Baatcheet ({n})",
   },
 };
 

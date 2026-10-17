@@ -1,11 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // Needs the stack running (docker compose up -d) and the widget built (npm run build).
-// globalSetup creates/refreshes the demo project and writes examples/plain-html/demo.html.
+// Run with `npm run e2e`: e2e/prepare.mjs creates/refreshes the demo project and writes the example pages' keys first.
 export default defineConfig({
   testDir: "e2e",
-  globalSetup: "./e2e/global-setup.ts",
   timeout: 45_000,
+  expect: { timeout: 10_000 },  // shared CI runners are slow; local runs finish far below this
   retries: 0,
   use: { baseURL: "http://localhost:8080", trace: "retain-on-failure" },
   projects: [
@@ -15,7 +15,7 @@ export default defineConfig({
   ],
   // the React example (headless SDK) is built and served by vite preview
   webServer: {
-    command: "npm run build -w zerch-react-example && npm run preview -w zerch-react-example",
+    command: "npm run build -w findaro-react-example && npm run preview -w findaro-react-example",
     url: "http://localhost:4173",
     reuseExistingServer: true,
     timeout: 120_000,

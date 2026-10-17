@@ -2,11 +2,11 @@
 
 import pytest
 
-from zerch.schema import infer_schema
-from zerch.understand.dictionary import compile_payload, value_key
-from zerch.understand.lexicon import default_lexicon, tokenize
-from zerch.understand.plan import QueryPlan, primary_price_field, validate_plan
-from zerch.understand.rules import RulesParser, describe_price
+from findaro.schema import infer_schema
+from findaro.understand.dictionary import compile_payload, value_key
+from findaro.understand.lexicon import default_lexicon, tokenize
+from findaro.understand.plan import QueryPlan, primary_price_field, validate_plan
+from findaro.understand.rules import RulesParser, describe_price
 
 from .conftest import make_catalog
 
@@ -167,7 +167,7 @@ def test_primary_price_field_prefers_selling_price():
 
 
 def test_describe_price():
-    from zerch.understand.plan import PlanFilter
+    from findaro.understand.plan import PlanFilter
 
     f = lambda v: PlanFilter(field="price", op="range", value=v)  # noqa: E731
     assert describe_price(f({"lte": 500}), "₹") == "Under ₹500"

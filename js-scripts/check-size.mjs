@@ -3,10 +3,10 @@ import { readFileSync, existsSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 
 const BUDGETS = [
-  ["packages/sdk/dist/zerch-sdk.mjs", 10 * 1024],
-  ["packages/sdk/dist/zerch-sdk.umd.js", 10 * 1024],
-  ["packages/widget/dist/zerch-widget.js", 40 * 1024], // includes the SDK
-  ["packages/widget/dist/zerch-widget.mjs", 40 * 1024],
+  ["packages/sdk/dist/findaro-sdk.mjs", 10 * 1024],
+  ["packages/sdk/dist/findaro-sdk.umd.js", 10 * 1024],
+  ["packages/widget/dist/findaro-widget.js", 40 * 1024], // includes the SDK
+  ["packages/widget/dist/findaro-widget.mjs", 40 * 1024],
 ];
 let failed = false;
 for (const [file, budget] of BUDGETS) {

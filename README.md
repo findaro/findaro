@@ -1,161 +1,62 @@
-# zerch
+# Findaro
 
-Open-source AI search as a service. Push your catalog as JSON or CSV and call one search endpoint.
-You get hybrid retrieval (BM25 + multilingual vectors), typo tolerance, Hinglish-friendly matching, filters,
-facets and highlighting. You don't need to define a schema: zerch infers field roles from your data.
+[![CI](https://github.com/findaro/findaro/actions/workflows/ci.yml/badge.svg)](https://github.com/findaro/findaro/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
-It also understands queries ("kaale joote 1000 ke andar" becomes black shoes under ₹1,000), has a
-conversational chat mode with grounded answers, and comes with a drop-in widget (`<zerch-search>`) and a headless
-TypeScript SDK (`@zerch/sdk`). Everything runs locally: the AI parts use [Ollama](https://ollama.com) by default,
-and paid LLM APIs are only used if you configure them.
+**Open-source AI search for your catalog: one API call or one script tag, and it understands how your shoppers
+actually type.**
 
-License: Apache-2.0.
+Push your catalog as JSON or CSV, call one search endpoint (or drop in a widget), and get natural-language search
+with filters inferred from the query, conversational refinement and grounded answers about your products. No
+schema to define, no search engine to tune. Apache-2.0.
 
-## Run the demo
+```text
+"kaale joote 1000 ke andar"  →  black shoes, price ≤ ₹1,000   (chips: "Under ₹1,000" ×, "Black" ×)
+```
 
-**Prerequisites:**
-- Docker, with about 4 GB of memory for containers;
-- [uv](https://docs.astral.sh/uv/) (Python 3.12) and Node.js 20 or newer;
-- [Ollama](https://ollama.com), with the two local models:
+## Why findaro
 
-  ```bash
-  ollama pull llama3.1:8b    # chat answers
-  ollama pull llama3.2:3b    # query planner, for words the rules can't read
-  ```
+- **Indian-English and Hinglish out of the box.** "sasta", "500 ke andar", "sarson ka tel", "gents chappal",
+  Devanagari (`जूते` matches `joote`) and romanised spelling variants (joota / juta / jootey) all work, through
+  language packs rather than per-catalog hacks.
+- **Filters inferred from the query.** Prices, colours, materials, sizes, brands and categories are read from the
+  words and applied as removable chips, using only values that exist in *your* catalog.
+- **Chat-style refinement.** "running shoes for men" → "only black" → "aur sasta" → "is the second one lace-up?",
+  over Server-Sent Events, with clarifying chips when they help.
+- **Grounded product Q&A.** Ask about a product the way you would on a product page ("made in India or
+  imported?", "return ho jayega?"). The model only sees the products on screen, numbers are filled in by the
+  server, and every sentence is checked in code before it streams. If the listing doesn't say, the answer says so.
+- **Drop-in widget and headless SDK.** `<findaro-search>` (one script tag, about 10 KB gzipped) or `@findaro/sdk`
+  (typed, zero dependencies, about 1.5 KB gzipped).
+- **Hybrid retrieval.** BM25 (with typo tolerance and ICU analysis) plus multilingual vectors
+  (`multilingual-e5-small`, run locally), fused with Reciprocal Rank Fusion.
+- **Schema inference.** Field roles (title, price, facet, category, ...) are inferred from your data and can be
+  overridden through the API.
+- **Runs entirely on your machine.** The AI parts use local [Ollama](https://ollama.com) models by default. Paid
+  LLM APIs are only used if you explicitly configure them, and search never depends on an LLM: it works fully
+  without one.
 
-  Without Ollama, search still works fully and chat answers fall back to plain one-line templates.
+## Quickstart: self-host in 5 minutes
 
-**Start it:**
+Requirements: Docker (with about 4 GB of memory for containers), `curl` and `jq`.
 
 ```bash
-git clone https://github.com/rohitsaini1196/zerch && cd zerch
-docker compose up -d --build                    # API :8000, worker, OpenSearch, Postgres, Redis, demo page :8080
-npm install && npm run build                    # builds the SDK and the widget
-uv run python scripts/demo_setup.py             # waits for the API, imports the demo catalog, warms the models
-```
-
-Open http://localhost:8080/demo.html. Things to try:
-- Search: `kaale joote 1000 ke andar`, then remove the "Black" chip;
-- Search: `presure coker` (typo), `sarson ka tel` (Hinglish), or `guitar strings` (nothing matches, said honestly);
-- Ask AI: `saree under 1000`, then tap "Show slightly over budget";
-- Ask AI: `running shoes for men`, then `only black`, then `is the second one lace-up?`;
-- Search `women shoes under 1000`, tap **Ask** on a card, then `What is it made of?`, `Is this made in India or
-  imported?`, `Pasand na aaye to return ho jayega?`.
-
-The first build takes a few minutes. Chat answers take a few seconds on the local 8B model.
-
-## Integrate in 5 minutes (script tag)
-
-1. Create a project and import your catalog (see the API quickstart below), and keep the **search key**. It's
-   browser-safe: read-only, search and chat only.
-2. Allow your site's origin. localhost always works (`ZERCH_ALLOW_LOCALHOST_ORIGINS=false` turns that off for
-   production).
-
-   ```bash
-   curl -X PUT localhost:8000/v1/projects/$PID/settings -H "authorization: Bearer $ADMIN" \
-     -H 'content-type: application/json' -d '{"allowed_origins": ["https://shop.example.com"]}'
-   ```
-3. Add one script tag and one element to any page:
-
-   ```html
-   <script src="zerch-widget.js" data-project="prj_…" data-key="zk_search_…" data-base-url="https://api.example.com" defer></script>
-   <zerch-search></zerch-search>
-   ```
-
-Build the widget with `npm install && npm run build`; the file is `packages/widget/dist/zerch-widget.js`, 10.3 KB
-gzipped with the SDK included. It gives you:
-- one search box with a **Search / Ask AI** toggle;
-- understood chips ("Under ₹1,000", "Black") that can be removed;
-- facet pills for refining, behind a "Filters" button;
-- a product grid (image, title, price, rating);
-- an AI panel with a streamed answer, inline product cards for the products it cites, clarifier chips (such as
-  "Show slightly over budget"), and a clear no-match state;
-- an **Ask** button on every card that opens a product drawer: the product's details, suggested questions
-  (picked from the fields it has, e.g. material, origin, warranty) and a chat about that one product.
-
-The demo page above is `examples/plain-html/index.html` with the demo project's keys filled in.
-
-**Customise:**
-
-```html
-<style>
-  zerch-search { --zerch-accent: #2563eb; --zerch-radius: 6px; --zerch-font: Inter, sans-serif; --zerch-card-min: 180px; }
-</style>
-<zerch-search locale="hi-en" mode="ai" size="24"></zerch-search>
-<script>
-  const el = document.querySelector("zerch-search");
-  el.onProductClick = (hit) => location.assign(`/p/${hit.id}`);               // replaces opening the product URL
-  el.renderProduct = (hit, { display, formatPrice }) => {                     // your own card: return an element
-    const card = document.createElement("div");                              // (textContent keeps catalog data safe;
-    card.className = "my-card";                                               // if you return an HTML string,
-    card.textContent = `${hit.document[display.title]} · ${formatPrice(hit.document[display.price])}`;
-    return card;                                                              // escape document fields yourself)
-  };
-  el.strings = { placeholder: "Search 10,000 products…" };                    // any UI text; locale="hi-en" for Hinglish
-  el.addEventListener("zerch:results", (e) => console.log(e.detail.total));  // also zerch:product-click, zerch:error
-</script>
-```
-
-- **Attributes:** `project`, `key`, `base-url` (override the script tag), `mode` (`search` | `ai`), `locale`
-  (`en` | `hi-en`), `placeholder`, `size`, `theme` (`light` | `dark`; default follows `prefers-color-scheme`).
-- **Behaviour:** the widget is mobile-first and keyboard accessible: the mode toggle is a radio group, Enter
-  searches and Escape clears, and the conversation is an ARIA live log.
-- **Safety:** product links from catalog data are only followed if they are `http(s)`. Search-as-you-type never
-  calls the LLM planner; only a submitted search can.
-
-## Headless (npm)
-
-`@zerch/sdk` is a typed client with zero dependencies (1.5 KB gzipped, ESM + UMD). Its types are generated from
-the API's OpenAPI spec (`packages/sdk/openapi.json`, regenerated by `scripts/export_openapi.py` and
-`npm run gen:types`).
-
-```ts
-import { createClient, debounce } from "@zerch/sdk";
-
-const zerch = createClient({ projectId: "prj_…", searchKey: "zk_search_…", baseUrl: "http://localhost:8000" });
-
-const res = await zerch.search("kaale joote 1000 ke andar");          // typed SearchResponse
-res.understood?.chips;  // [{ label: "Under ₹1,000", remove: [...] }, { label: "Black", remove: [...] }]
-await zerch.search({ query: res.query, patch: res.understood!.chips[1].remove });   // drop "Black"
-
-// chat: iterate events, use callbacks, or await .result
-const turn = zerch.chat("sasta wala", { sessionId, onText: (_, full) => render(full) });
-for await (const ev of turn) if (ev.type === "results") showProducts(ev.data.items);
-const { sessionId: next, clarify } = await turn.result;
-
-// talk about one product (e.g. on a product page): facts in .text, labeled general know-how in .general
-const about = await zerch.chat("Is this made in India?", { productIds: ["FW-00421"] }).result;
-
-const searchAsYouType = debounce((q: string) => zerch.search(q), 250);
-```
-
-- **Cancellation:** a new `search()` (or `chat()`) cancels the client's previous in-flight one; pass
-  `{ cancelPrevious: false }` to keep it.
-- **Retries:** network errors are retried once.
-- **Errors:** API errors throw a `ZerchError` with `status` and `code`.
-- **Example:** `examples/react/` is a 40-line Vite + React app that uses only the SDK.
-
-## 5-minute quickstart (API)
-
-Requirements: Docker with about 4 GB of memory for containers, plus `curl` and `jq`. Ollama is optional here (see
-[Run the demo](#run-the-demo)).
-
-```bash
-git clone https://github.com/rohitsaini1196/zerch && cd zerch
+git clone https://github.com/findaro/findaro.git && cd findaro
 docker compose up -d --build        # API on :8000, plus worker, OpenSearch, Postgres, Redis
 curl -s localhost:8000/healthz      # {"status":"ok"} once the API is up (the first build takes a few minutes)
 ```
 
-**1. Create a project.** Set `ZERCH_BOOTSTRAP_TOKEN` on any API others can reach; otherwise anyone can create
-projects (the API logs a warning). The response contains two keys. The `admin_key` manages data, so keep it on the server.
-The `search_key` can only search, so it is safe to use in browsers.
+**1. Create a project.** The response contains two keys. The `admin_key` manages data, so keep it on the server.
+The `search_key` can only search and chat, so it is safe to use in browsers. On any deployment others can reach,
+set `FINDARO_BOOTSTRAP_TOKEN`; otherwise anyone can create projects (the API logs a warning).
 
 ```bash
 curl -s -X POST localhost:8000/v1/projects -H 'content-type: application/json' -d '{"name":"demo"}' | tee project.json
 PID=$(jq -r .project_id project.json); ADMIN=$(jq -r .admin_key project.json); SEARCH=$(jq -r .search_key project.json)
 ```
 
-**2. Import the demo catalog** (3,000 synthetic Indian e-commerce products). The import runs as an async job:
+**2. Import a catalog.** The repo ships a synthetic demo catalog (3,000 invented Indian e-commerce products). The
+import runs as an async job:
 
 ```bash
 curl -s -X POST localhost:8000/v1/projects/$PID/import -H "authorization: Bearer $ADMIN" \
@@ -175,23 +76,182 @@ curl -s localhost:8000/v1/projects/$PID/schema -H "authorization: Bearer $ADMIN"
 
 ```bash
 curl -s -X POST localhost:8000/v1/search -H "authorization: Bearer $SEARCH" -H 'content-type: application/json' \
-  -d '{"query": "black running shoes", "filters": {"price": {"lte": 1500}}, "size": 5}' \
-  | jq '{total, hits: [.hits[] | {id, title: .document.title, price: .document.price}], colors: .facets.color.values[:5]}'
+  -d '{"query": "kaale joote 1000 ke andar", "size": 5}' \
+  | jq '{total, chips: [.understood.chips[].label], hits: [.hits[] | {id, title: .document.title, price: .document.price}]}'
 
-# typos, Hinglish, Devanagari
+# typos, Hinglish, explicit filters
 curl -s -X POST localhost:8000/v1/search -H "authorization: Bearer $SEARCH" -H 'content-type: application/json' \
   -d '{"query": "presure coker"}' | jq '[.hits[:3][].document.title]'
 curl -s -X POST localhost:8000/v1/search -H "authorization: Bearer $SEARCH" -H 'content-type: application/json' \
-  -d '{"query": "kapde rakhne wala bag"}' | jq '[.hits[:3][].document.title]'
+  -d '{"query": "black running shoes", "filters": {"price": {"lte": 1500}}, "size": 5}' | jq '[.hits[].document.title]'
 ```
 
-## API
+**5. Chat** (optional, needs a chat model; see below):
 
-All endpoints take `Authorization: Bearer <key>`. The `X-Zerch-Key: <key>` header works too.
+```bash
+curl -N -X POST localhost:8000/v1/chat -H "authorization: Bearer $SEARCH" -H 'content-type: application/json' \
+  -d '{"message": "saree under 1000"}'
+```
+
+### Local AI models (optional)
+
+Search, query understanding and chat refinement work without any LLM. For streamed chat answers and the query
+planner's fallback on unusual phrasing, install [Ollama](https://ollama.com) and pull the two default models:
+
+```bash
+ollama pull llama3.1:8b    # chat answers
+ollama pull llama3.2:3b    # query planner, for words the rules can't read
+```
+
+Without them, chat answers fall back to plain one-line templates. Hosted models (OpenAI, Anthropic) are supported
+but are never turned on by an API key alone; see [Chat](#chat-post-v1chat).
+
+## Try the demo page
+
+The demo page shows the widget on the demo catalog. It needs Node.js 20+ and [uv](https://docs.astral.sh/uv/)
+(Python 3.12) in addition to the stack above:
+
+```bash
+npm install && npm run build                    # builds the SDK and the widget
+uv run python scripts/demo_setup.py             # waits for the API, imports the demo catalog, warms the models
+```
+
+Open http://localhost:8080/demo.html. Things to try:
+- Search: `kaale joote 1000 ke andar`, then remove the "Black" chip;
+- Search: `presure coker` (typo), `sarson ka tel` (Hinglish), or `guitar strings` (nothing matches, said honestly);
+- Ask AI: `saree under 1000`, then tap "Show slightly over budget";
+- Ask AI: `running shoes for men`, then `only black`, then `is the second one lace-up?`;
+- Search `women shoes under 1000`, tap **Ask** on a card, then `What is it made of?`, `Is this made in India or
+  imported?`, `Pasand na aaye to return ho jayega?`.
+
+Chat answers take a few seconds on the local 8B model.
+
+## Hosted findaro
+
+Don't want to run OpenSearch, Postgres and the models yourself? A managed version of findaro is in **beta**: the same
+API, SDK and widget, operated for you. Request access at **https://findaro.130-210-49-63.sslip.io**.
+
+The open-source core in this repository is complete on its own; the hosted service runs the same engine.
+
+## Add search to your site (script tag)
+
+1. Create a project and import your catalog (see the [quickstart](#quickstart-self-host-in-5-minutes)), and keep
+   the **search key**. It's browser-safe: read-only, search and chat only.
+2. Allow your site's origin. localhost always works (`FINDARO_ALLOW_LOCALHOST_ORIGINS=false` turns that off for
+   production).
+
+   ```bash
+   curl -X PUT localhost:8000/v1/projects/$PID/settings -H "authorization: Bearer $ADMIN" \
+     -H 'content-type: application/json' -d '{"allowed_origins": ["https://shop.example.com"]}'
+   ```
+3. Add one script tag and one element to any page:
+
+   ```html
+   <script src="findaro-widget.js" data-project="prj_…" data-key="fdr_search_…" data-base-url="https://api.example.com" defer></script>
+   <findaro-search></findaro-search>
+   ```
+
+Build the widget with `npm install && npm run build`; the file is `packages/widget/dist/findaro-widget.js` (the
+packages are not published to npm or a CDN yet). It gives you:
+- one search box with a **Search / Ask AI** toggle;
+- understood chips ("Under ₹1,000", "Black") that can be removed;
+- facet pills for refining, behind a "Filters" button;
+- a product grid (image, title, price, rating);
+- an AI panel with a streamed answer, inline product cards for the products it cites, clarifier chips (such as
+  "Show slightly over budget"), and a clear no-match state;
+- an **Ask** button on every card that opens a product drawer: the product's details, suggested questions
+  (picked from the fields it has, e.g. material, origin, warranty) and a chat about that one product.
+
+The demo page is `examples/plain-html/index.html` with the demo project's keys filled in.
+
+**Customise:**
+
+```html
+<style>
+  findaro-search { --findaro-accent: #2563eb; --findaro-radius: 6px; --findaro-font: Inter, sans-serif; --findaro-card-min: 180px; }
+</style>
+<findaro-search locale="hi-en" mode="ai" size="24"></findaro-search>
+<script>
+  const el = document.querySelector("findaro-search");
+  el.onProductClick = (hit) => location.assign(`/p/${hit.id}`);               // replaces opening the product URL
+  el.renderProduct = (hit, { display, formatPrice }) => {                     // your own card: return an element
+    const card = document.createElement("div");                              // (textContent keeps catalog data safe;
+    card.className = "my-card";                                               // if you return an HTML string,
+    card.textContent = `${hit.document[display.title]} · ${formatPrice(hit.document[display.price])}`;
+    return card;                                                              // escape document fields yourself)
+  };
+  el.strings = { placeholder: "Search 10,000 products…" };                    // any UI text; locale="hi-en" for Hinglish
+  el.addEventListener("findaro:results", (e) => console.log(e.detail.total));  // also findaro:product-click, findaro:error
+</script>
+```
+
+- **Attributes:** `project`, `key`, `base-url` (override the script tag), `mode` (`search` | `ai`), `locale`
+  (`en` | `hi-en`), `placeholder`, `size`, `theme` (`light` | `dark`; default follows `prefers-color-scheme`).
+- **Behaviour:** the widget is mobile-first and keyboard accessible: the mode toggle is a radio group, Enter
+  searches and Escape clears, and the conversation is an ARIA live log.
+- **Safety:** product links from catalog data are only followed if they are `http(s)`. Search-as-you-type never
+  calls the LLM planner; only a submitted search can.
+
+## Headless SDK
+
+`@findaro/sdk` is a typed client with zero dependencies (ESM + UMD). Its types are generated from the API's OpenAPI
+spec (`packages/sdk/openapi.json`, regenerated by `scripts/export_openapi.py` and `npm run gen:types`).
+
+```ts
+import { createClient, debounce } from "@findaro/sdk";
+
+const findaro = createClient({ projectId: "prj_…", searchKey: "fdr_search_…", baseUrl: "http://localhost:8000" });
+
+const res = await findaro.search("kaale joote 1000 ke andar");          // typed SearchResponse
+res.understood?.chips;  // [{ label: "Under ₹1,000", remove: [...] }, { label: "Black", remove: [...] }]
+await findaro.search({ query: res.query, patch: res.understood!.chips[1].remove });   // drop "Black"
+
+// chat: iterate events, use callbacks, or await .result
+const turn = findaro.chat("sasta wala", { sessionId, onText: (_, full) => render(full) });
+for await (const ev of turn) if (ev.type === "results") showProducts(ev.data.items);
+const { sessionId: next, clarify } = await turn.result;
+
+// talk about one product (e.g. on a product page): facts in .text, labeled general know-how in .general
+const about = await findaro.chat("Is this made in India?", { productIds: ["FW-00421"] }).result;
+
+const searchAsYouType = debounce((q: string) => findaro.search(q), 250);
+```
+
+- **Cancellation:** a new `search()` (or `chat()`) cancels the client's previous in-flight one; pass
+  `{ cancelPrevious: false }` to keep it.
+- **Retries:** network errors are retried once.
+- **Errors:** API errors throw a `FindaroError` with `status` and `code`.
+- **Example:** `examples/react/` is a 40-line Vite + React app that uses only the SDK.
+
+## Architecture
+
+```text
+ browser (widget / SDK, search key)        your server (admin key)
+              │                                      │
+              ▼                                      ▼
+        FastAPI API ──── query understanding (rules + locale packs + per-project value dictionary,
+              │          optional LLM planner behind a timeout) ──── chat (SSE, grounded answers)
+              │
+   ┌──────────┼──────────────┬───────────────┐
+   ▼          ▼              ▼               ▼
+OpenSearch  Redis         Postgres        ingest worker
+(BM25+kNN)  (cache,       (projects,      (parse, infer schema,
+            rate limit,   hashed keys,     embed, index)
+            chat sessions) jobs)
+```
+
+Python 3.12 + FastAPI, OpenSearch 3 (with `analysis-icu`), Postgres, Redis, local `multilingual-e5-small`
+embeddings, and a pluggable LLM interface (Ollama by default; OpenAI and Anthropic opt-in). The engine is
+domain-agnostic: nothing in `src/findaro/` knows about any particular catalog. Everything catalog-specific is
+inferred from your data.
+
+## API reference
+
+All endpoints take `Authorization: Bearer <key>`. The `X-Findaro-Key: <key>` header works too.
 
 | Method | Path | Key | |
 |---|---|---|---|
-| POST | `/v1/projects` | bootstrap token, if `ZERCH_BOOTSTRAP_TOKEN` is set | → `project_id`, `admin_key`, `search_key` |
+| POST | `/v1/projects` | bootstrap token, if `FINDARO_BOOTSTRAP_TOKEN` is set | → `project_id`, `admin_key`, `search_key` |
 | GET / DELETE | `/v1/projects/{id}` | admin | project info (document count, schema state) / delete everything |
 | POST | `/v1/projects/{id}/documents` | admin | JSON array (or `{"documents": [...]}`); upserts by id; up to 10k per request → job |
 | POST | `/v1/projects/{id}/import` | admin | multipart `file` in `.csv`, `.jsonl` or `.json` format, up to 50 MB → job |
@@ -207,7 +267,7 @@ All endpoints take `Authorization: Bearer <key>`. The `X-Zerch-Key: <key>` heade
 
 **Browser use:**
 - Requests carrying an `Origin` header are accepted only from the project's `allowed_origins`; localhost always
-  works unless `ZERCH_ALLOW_LOCALHOST_ORIGINS=false`.
+  works unless `FINDARO_ALLOW_LOCALHOST_ORIGINS=false`.
 - Admin keys are refused from browsers.
 - Server-to-server calls, which send no `Origin`, aren't affected.
 
@@ -254,7 +314,7 @@ Filter rules:
 The response contains `total`, `hits[]` (`id`, `score`, `document`, `highlights`) and `facets`. Facets are
 term counts for facet, category and boolean fields, and min/max stats for numeric fields. The response also has
 `took_ms` and `cached`. Results are cached in Redis for 60 s per data version. Send `Cache-Control: no-cache` to
-bypass the cache. Each key is limited to 50 requests per second (`ZERCH_RATE_LIMIT_PER_SECOND`).
+bypass the cache. Each key is limited to 50 requests per second (`FINDARO_RATE_LIMIT_PER_SECOND`).
 
 ### Query understanding (`understand`, on by default)
 
@@ -268,7 +328,7 @@ It recognises:
 - **Cheap or premium intent**: "sasta", "premium".
 - **Hinglish words**, translated through the locale packs (`packs/locales/*.yaml`).
 
-What it understood comes back in `understood`. This field is meant for search UIs (M3 and M4 build on it):
+What it understood comes back in `understood`. This field is meant for search UIs (the widget and SDK build on it):
 
 ```json
 "understood": {
@@ -306,9 +366,9 @@ What it understood comes back in `understood`. This field is meant for search UI
   - `llm` / `cache`: the rules found words they couldn't account for, so the LLM planner rewrote the query.
   - `off`: understanding was off for this request (`understand: false`).
 
-The planner runs on local Ollama `llama3.2:3b` by default (`ZERCH_PLANNER_MODEL`), or on Claude Haiku with
-`ZERCH_PLANNER_PROVIDER=anthropic` and `ZERCH_ANTHROPIC_API_KEY` (paid; never enabled by a key alone). Its limits:
-- **Time:** it waits at most `ZERCH_PLANNER_TIMEOUT_MS` (default 800) and then falls back to the rules plan. A
+The planner runs on local Ollama `llama3.2:3b` by default (`FINDARO_PLANNER_MODEL`), or on Claude Haiku with
+`FINDARO_PLANNER_PROVIDER=anthropic` and `FINDARO_ANTHROPIC_API_KEY` (paid; never enabled by a key alone). Its limits:
+- **Time:** it waits at most `FINDARO_PLANNER_TIMEOUT_MS` (default 800) and then falls back to the rules plan. A
   late answer is still cached for the next identical query.
 - **Calls:** identical queries in flight share one call, and at most 2 calls run at once, so it can't be flooded.
   Requests with `"llm": false`, which the widget sends while you type, use only the rules and cached plans.
@@ -374,7 +434,7 @@ Sessions live in Redis for 30 minutes. If a patch arrives after its session expi
 | `done` | last | `timings` (ms since the request), `turn_type`, `reason`, `answer_source` (`model`, `fallback`, `error` or `template`) |
 
 **How turns are handled.** Rules classify most turns; the LLM is only used when the rules can't tell.
-- **New search:** runs the M2 planner on the message.
+- **New search:** runs the query planner on the message.
 - **Refinement:** changes the current plan. Examples: "cheaper" / "aur sasta" lowers the price ceiling and
   sorts cheapest first; "under 500" / "500 ke andar" sets the price range; "only black" / "sirf cotton" adds a
   filter; "not plastic" / "black nahi" / "not slippers" excludes; "increase it to 2000" / "2000 tak" sets a new
@@ -386,7 +446,7 @@ Sessions live in Redis for 30 minutes. If a patch arrives after its session expi
   with suggestion chips for the catalog's main categories.
 - **Small talk or a need in the shopper's own words** ("going to Goa next week, kuch suggest karo", "how's your
   day?", "gift for my dad"): when the words name nothing in the catalog and their search finds no good match, the
-  chat model replies like a shop assistant (one JSON call, `ZERCH_CHAT_CONVERSE_TIMEOUT_MS`, default 8 s). If the
+  chat model replies like a shop assistant (one JSON call, `FINDARO_CHAT_CONVERSE_TIMEOUT_MS`, default 8 s). If the
   catalog can help, it also suggests a search in the catalog's own words, which runs and fills the results
   (`done.reason` = `conversation`). If not, the results on screen stay, and suggestion chips are offered. The reply
   can't see products, so a sentence with a number, citation, price, stock, offer or delivery claim is dropped.
@@ -446,14 +506,14 @@ On top of the checks above, a product answer is dropped sentence by sentence if 
 
 If nothing survives, the reply is honest: it quotes the listed policy, or says the seller doesn't state it.
 
-**Model:** local Ollama `llama3.1:8b` by default (`ZERCH_CHAT_MODEL`). For a hosted model, set
-`ZERCH_CHAT_PROVIDER=openai` (with `OPENAI_API_KEY`, e.g. `gpt-4.1-mini`) or `anthropic` (with
-`ZERCH_ANTHROPIC_API_KEY`). These are paid, and a key in `.env` alone never turns them on. `none` disables the
+**Model:** local Ollama `llama3.1:8b` by default (`FINDARO_CHAT_MODEL`). For a hosted model, set
+`FINDARO_CHAT_PROVIDER=openai` (with `OPENAI_API_KEY`, e.g. `gpt-4.1-mini`) or `anthropic` (with
+`FINDARO_ANTHROPIC_API_KEY`). These are paid, and a key in `.env` alone never turns them on. `none` disables the
 chat LLM. `scripts/chat_cli.py` is a terminal client for trying conversations.
 
 ### Schema roles
 
-On first ingest, zerch infers one role per field from the field names and value statistics. Fields that first
+On first ingest, findaro infers one role per field from the field names and value statistics. Fields that first
 appear in later ingests are added automatically.
 
 | role | indexed as | used for |
@@ -496,28 +556,27 @@ new index, followed by an atomic alias swap. Search keeps working throughout.
   "gents" → men).
 
 These are language resources, not catalog vocabulary. Each project's own values (colours, categories, brands)
-come from its data. `ZERCH_LOCALE_PACKS` picks which packs load.
+come from its data. `FINDARO_LOCALE_PACKS` picks which packs load.
 
 ## Development
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full setup. In short:
+
 ```bash
+uv sync && docker compose up -d postgres opensearch redis
+uv run pytest                                 # integration tests use their own DB/index prefix and a hash embedder
+uv run uvicorn findaro.main:app --reload        # API on the host (FINDARO_* env vars, see src/findaro/config.py)
+uv run python -m findaro.worker                 # ingest worker (run a single worker; jobs for a project run in order)
 npm install && npm run check                  # JS: generate types, typecheck, build, bundle-size budgets
 npm run e2e                                   # Playwright: widget (desktop + mobile) and React example; needs the stack up
-uv sync
-docker compose up -d postgres opensearch redis
-uv run pytest                                 # integration tests use their own DB/index prefix and a hash embedder
-uv run uvicorn zerch.main:app --reload        # API on the host (ZERCH_* env vars, see src/zerch/config.py)
-uv run python -m zerch.worker                 # ingest worker
 ```
-
-Run a single worker. Jobs for a project run in order.
 
 ### Query log
 
-With `ZERCH_QUERY_LOG` set to a file path, every submitted search and every chat turn is appended as one JSON line:
+With `FINDARO_QUERY_LOG` set to a file path, every submitted search and every chat turn is appended as one JSON line:
 the query or message, the understood chips, match quality, total, top 10 results (id and title), and for chat the
 turn type, clarifier, answer, general tip, dropped sentences and timings. Search-as-you-type keystrokes are not
-logged. `docker compose` turns it on, writing to `./logs/queries.jsonl` (gitignored); set `ZERCH_QUERY_LOG=` to
+logged. `docker compose` turns it on, writing to `./logs/queries.jsonl` (gitignored); set `FINDARO_QUERY_LOG=` to
 turn it off. Read it with:
 
 ```bash
@@ -532,7 +591,7 @@ real deployment.
 ### Demo data and evaluation
 
 - `scripts/gen_demo_catalog.py` regenerates `data/demo_catalog.jsonl` and `.csv`. It needs Ollama (`llama3.1:8b`)
-  or `--provider anthropic` with `ZERCH_ANTHROPIC_API_KEY`. Structured attributes are sampled from a
+  or `--provider anthropic` with `FINDARO_ANTHROPIC_API_KEY`. Structured attributes are sampled from a
   taxonomy, and the LLM writes the brand names, titles and descriptions. All brands are invented, and nothing in
   the repo is scraped.
 - `scripts/enrich_demo_catalog.py` adds what shoppers ask about (country of origin, warranty, return policy, care,
@@ -551,6 +610,21 @@ real deployment.
   `eval/report.md` and saves every answer to `eval/results/` for review. `--judge` adds an LLM groundedness judge
   (local Ollama by default); the reported groundedness was reviewed by hand (`eval/chat_review_m4.md`).
 - `eval/report.md` also covers planner call and cache rates, latency per path, out-of-catalog queries and the
-  holdout (`eval/holdout.jsonl`: 20 Hinglish queries written by a different LLM, never tuned on, pending human
-  review; format in `eval/README.md`).
+  holdout (`eval/holdout.jsonl`: 20 Hinglish queries written by a different LLM, never tuned on; format in
+  `eval/README.md`).
 - No eval script calls a paid API unless you pass a paid `--provider`/`--judge-provider` yourself.
+
+A short milestone history is in [docs/history.md](docs/history.md).
+
+## Status and roadmap
+
+findaro is early (0.x): the API is versioned under `/v1` and changes additively, but expect rough edges. Not built
+yet: autocomplete, recommendations, personalization, analytics and click tracking, an admin dashboard, database
+or Shopify connectors, image and voice search, and npm/CDN packages. Ideas and pull requests are welcome; see
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Contributing, security and license
+
+- Contributing: [CONTRIBUTING.md](CONTRIBUTING.md) · Code of conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- Security issues: please report privately, see [SECURITY.md](SECURITY.md)
+- License: [Apache-2.0](LICENSE)

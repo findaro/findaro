@@ -1,9 +1,9 @@
-import { createClient, debounce } from "@zerch/sdk";
+import { createClient, debounce } from "@findaro/sdk";
 import { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 
-const zerch = createClient({ projectId: import.meta.env.VITE_ZERCH_PROJECT,
-  searchKey: import.meta.env.VITE_ZERCH_KEY, baseUrl: import.meta.env.VITE_ZERCH_URL });
+const findaro = createClient({ projectId: import.meta.env.VITE_FINDARO_PROJECT,
+  searchKey: import.meta.env.VITE_FINDARO_KEY, baseUrl: import.meta.env.VITE_FINDARO_URL });
 
 function App() {
   const [query, setQuery] = useState("");
@@ -11,11 +11,11 @@ function App() {
   const [answer, setAnswer] = useState("");
   const [session, setSession] = useState(null);
   const run = useMemo(() => debounce((q, patch) =>
-    zerch.search({ query: q, patch }).then(setRes).catch((e) => e.name !== "AbortError" && console.error(e)), 250), []);
+    findaro.search({ query: q, patch }).then(setRes).catch((e) => e.name !== "AbortError" && console.error(e)), 250), []);
 
   const ask = async () => {
     setAnswer("");
-    const turn = zerch.chat(query, { sessionId: session, onText: (_, full) => setAnswer(full),
+    const turn = findaro.chat(query, { sessionId: session, onText: (_, full) => setAnswer(full),
       onResults: (r) => setRes((prev) => ({ ...prev, hits: r.items, total: r.total })) });
     const out = await turn.result;
     setSession(out.sessionId);

@@ -165,4 +165,29 @@ async def test_delete_project(client, state):
     r = await client.delete(f"/v1/projects/{p.id}", headers=p.admin)
     assert r.status_code == 204
     assert (await client.post("/v1/search", json={"query": "x"}, headers=p.searcher)).status_code == 401
-    assert not await state.os.indices.exists(index=f"zerchtest-{p.id}-v1")
+    assert not await state.os.indices.exists(index=f"findarotest-{p.id}-v1")
+
+
+async def test_job_retries_when_search_cluster_is_unreachable(client, state, monkeypatch):
+    from opensearchpy import ConnectionError as OSConnectionError
+
+    from findaro.ingest import processor
+
+    p = await new_project(client, state, "retry")
+    r = await client.post(f"/v1/projects/{p.id}/documents", json=[{"id": "a", "title": "one"}], headers=p.admin)
+    jid = r.json()["job_id"]
+    real, calls = processor.ingest_documents, []
+
+    async def flaky(*a, **k):
+        calls.append(1)
+        if len(calls) == 1:
+            raise OSConnectionError("N/A", "connection refused", None)
+        return await real(*a, **k)
+
+    async def no_sleep(_):
+        return None
+
+    monkeypatch.setattr(processor, "ingest_documents", flaky)
+    monkeypatch.setattr(processor.asyncio, "sleep", no_sleep)
+    job = await p.finish(jid)
+    assert job["status"] == "succeeded" and len(calls) == 2

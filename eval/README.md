@@ -2,12 +2,12 @@
 
 | File | What |
 |---|---|
-| `queries.jsonl` | Main set (66 queries). Built by `build_queries.py` from the demo catalog; relevance comes from attribute predicates. Rohit reviewed the Hinglish/NL ones (`reviews.json`). |
+| `queries.jsonl` | Main set (66 queries). Built by `build_queries.py` from the demo catalog; relevance comes from attribute predicates. A maintainer reviewed the Hinglish/NL ones (`reviews.json`). |
 | `negatives.jsonl` | Out-of-catalog queries (nothing relevant exists). Used to calibrate the "no match" floor and to report how often the engine correctly says so. |
 | `holdout.jsonl` | 20 Hinglish queries written by a different LLM (`gen_holdout.py`), which never saw the lexicon or the main set. **Never used for tuning** (lexicon, thresholds, prompts). Marked `needs_review`; replace or extend them with human-written ones. |
 | `llm_queries.jsonl` | 10 queries with words the rules can't read, to exercise the LLM planner path. |
 | `conversations.jsonl` | 25 scripted chat conversations (71 turns) with per-turn expectations: turn type, required/forbidden plan filters, relevance predicate, whether a clarifier should appear. Marked `needs_review`. |
-| `reviews.json` | Rohit's review decisions for the Hinglish/NL queries in the main set. |
+| `reviews.json` | Maintainer review decisions for the Hinglish/NL queries in the main set. |
 | `baselines/m1.json` | Per-query M1 results on the reviewed set, the reference later milestones are compared against. `report_m1.md` is the original M1 report. |
 | `build_queries.py` | Builds `queries.jsonl` (relevant ids from predicates over the catalog, applying `reviews.json`). |
 | `run.py` | Search eval against a live API; writes `report.md` (keeps the chat section). Pass the admin key to also time uncached LLM planner calls. |
@@ -16,7 +16,7 @@
 | `product_chat_review_m5.md` | Hand review of every answer from the M5 run (0/48 false product claims). |
 | `chat_review_m4.md` | Hand review of every chat answer from the M4 run (groundedness 66/68). |
 | `gen_holdout.py` | Generates holdout queries with an LLM (local Ollama by default). |
-| `calibrate_floor.py` | Picks `ZERCH_MATCH_FLOOR` from `queries.jsonl` + `negatives.jsonl`. |
+| `calibrate_floor.py` | Picks `FINDARO_MATCH_FLOOR` from `queries.jsonl` + `negatives.jsonl`. |
 
 None of these scripts call a paid LLM API unless you pass a paid provider explicitly.
 

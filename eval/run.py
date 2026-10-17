@@ -1,7 +1,7 @@
-"""Run the eval against a zerch API and write eval/report.md.
+"""Run the eval against a findaro API and write eval/report.md.
 
     uv run python eval/run.py --setup                    # new project + demo catalog import, then eval
-    uv run python eval/run.py --search-key zk_search_... # existing project
+    uv run python eval/run.py --search-key fdr_search_... # existing project
 
 Passes (all with the search-result cache bypassed):
   0. warm-up: every query once, so query embeddings are cached (latency below is for warm embeddings;
@@ -105,7 +105,7 @@ class Client:
                               headers={"authorization": f"Bearer {key}", "cache-control": "no-cache"})
 
     def search(self, body: dict, bypass_plans: bool = False) -> dict:
-        headers = {"x-zerch-plan-cache": "bypass"} if bypass_plans else {}
+        headers = {"x-findaro-plan-cache": "bypass"} if bypass_plans else {}
         while True:
             r = self.c.post("/v1/search", json=body, headers=headers)
             if r.status_code == 429:  # per-key rate limit: wait it out
@@ -192,11 +192,11 @@ def seg_table(rows: list[dict], base: dict[str, dict] | None) -> tuple[list[str]
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--base-url", default=os.environ.get("ZERCH_URL", "http://localhost:8000"))
+    ap.add_argument("--base-url", default=os.environ.get("FINDARO_URL", "http://localhost:8000"))
     ap.add_argument("--search-key", help="search key, or the admin key to also measure uncached LLM planner calls "
                                          "(the plan-cache bypass header is admin-only)")
     ap.add_argument("--setup", action="store_true")
-    ap.add_argument("--bootstrap-token", default=os.environ.get("ZERCH_BOOTSTRAP_TOKEN"))
+    ap.add_argument("--bootstrap-token", default=os.environ.get("FINDARO_BOOTSTRAP_TOKEN"))
     ap.add_argument("--repeats", type=int, default=5)
     ap.add_argument("--label", default="M2 query understanding")
     ap.add_argument("--planner", default="see docker-compose.yml", help="planner LLM, for the report header")

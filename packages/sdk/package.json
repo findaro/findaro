@@ -1,23 +1,45 @@
 {
-  "name": "@zerch/sdk",
+  "name": "@findaro/sdk",
   "version": "0.1.0",
-  "description": "Headless TypeScript client for zerch AI search (search + streaming chat). Zero dependencies.",
+  "description": "Headless TypeScript client for findaro AI search (search + streaming chat). Zero dependencies.",
   "license": "Apache-2.0",
+  "author": "The findaro authors",
+  "keywords": [
+    "findaro",
+    "search",
+    "ai-search",
+    "semantic-search",
+    "sdk",
+    "typescript",
+    "hinglish"
+  ],
   "type": "module",
-  "main": "./dist/zerch-sdk.umd.js",
-  "module": "./dist/zerch-sdk.mjs",
+  "main": "./dist/findaro-sdk.umd.js",
+  "module": "./dist/findaro-sdk.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/zerch-sdk.mjs",
-      "require": "./dist/zerch-sdk.umd.js"
+      "import": "./dist/findaro-sdk.mjs",
+      "require": "./dist/findaro-sdk.umd.js"
     }
   },
-  "unpkg": "./dist/zerch-sdk.umd.js",
-  "files": ["dist", "README.md"],
+  "unpkg": "./dist/findaro-sdk.umd.js",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "node build.mjs && tsc -p . --emitDeclarationOnly"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/findaro/findaro.git",
+    "directory": "packages/sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/findaro/findaro/issues"
+  },
+  "homepage": "https://github.com/findaro/findaro#readme"
 }

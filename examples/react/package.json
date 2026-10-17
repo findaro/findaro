@@ -1,5 +1,5 @@
 {
-  "name": "zerch-react-example",
+  "name": "findaro-react-example",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +8,7 @@
     "preview": "vite preview --port 4173"
   },
   "dependencies": {
-    "@zerch/sdk": "0.1.0",
+    "@findaro/sdk": "0.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

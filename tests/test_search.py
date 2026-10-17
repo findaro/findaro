@@ -129,13 +129,13 @@ async def test_cache(loaded, state):
 
     import httpx
 
-    from zerch.main import create_app
+    from findaro.main import create_app
 
     from .conftest import make_settings
 
     st = replace(state, settings=make_settings(search_cache_ttl=30))
     app = create_app(st.settings, state.embedder)
-    app.state.zerch = st
+    app.state.findaro = st
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
         a = (await c.post("/v1/search", json={"query": "kurta"}, headers=loaded.searcher)).json()
         b = (await c.post("/v1/search", json={"query": "kurta"}, headers=loaded.searcher)).json()

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Request access · findaro</title>
+<meta name="description" content="Request access to the findaro hosted beta: AI search for your product catalog.">
+<link rel="canonical" href="__SITE_URL__/request-access.html">
+<meta name="theme-color" content="#f5f2ea" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#11100d" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="findaro">
+<meta property="og:title" content="Request access · findaro">
+<meta property="og:description" content="Request access to the findaro hosted beta: AI search for your product catalog.">
+<meta property="og:url" content="__SITE_URL__/request-access.html">
+<meta property="og:image" content="__SITE_URL__/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&amp;family=Instrument+Sans:wght@400..700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<link rel="stylesheet" href="/assets/site.css">
+<script src="/assets/site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro<span class="beta">beta</span></a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav class="nav" id="site-nav" aria-label="Main">
+      <a href="/#features">Product</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <a href="__GITHUB_URL__" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="/request-access.html">Request access</a>
+    </nav>
+  </div>
+</header>
+<main id="main">
+<section style="padding-top:64px">
+  <div class="wrap form-shell">
+    <div>
+      <span class="eyebrow">Hosted beta</span>
+      <h1 style="font-size:clamp(2.2rem,5vw,3.4rem)">Request access</h1>
+      <p class="lede">Tell us a little about your catalog. We read every request and reply by email.</p>
+      <ul class="checks">
+        <li>We set up a project for you and send your API URL, project id and keys.</li>
+        <li>You import your catalog (JSON, JSONL or CSV) and add the widget or call the API.</li>
+        <li>On Growth and above, we help you get your catalog into shape.</li>
+      </ul>
+      <p class="fine" style="margin-top:1.5rem">Would rather run it yourself? findaro is open source:
+      <a href="/docs/self-hosting.html">self-hosting guide</a>.</p>
+    </div>
+
+    <div>
+      <form class="form" id="access-form" novalidate>
+        <div class="row2">
+          <div class="field">
+            <label for="name">Your name</label>
+            <input id="name" name="name" autocomplete="name" required minlength="2" maxlength="200" aria-describedby="name-err">
+            <div class="err" id="name-err" aria-live="polite"></div>
+          </div>
+          <div class="field">
+            <label for="email">Work email</label>
+            <input id="email" name="email" type="email" autocomplete="email" required maxlength="320" aria-describedby="email-err">
+            <div class="err" id="email-err" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="company">Company</label>
+            <input id="company" name="company" autocomplete="organization" required minlength="2" maxlength="200" aria-describedby="company-err">
+            <div class="err" id="company-err" aria-live="polite"></div>
+          </div>
+          <div class="field">
+            <label for="website">Website <span class="opt">(optional)</span></label>
+            <input id="website" name="website" type="text" inputmode="url" autocomplete="url" maxlength="300" placeholder="shop.example.com" aria-describedby="website-err">
+            <div class="err" id="website-err" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="catalog_size">Catalog size</label>
+            <select id="catalog_size" name="catalog_size" required aria-describedby="catalog_size-err">
+              <option value="">Choose…</option>
+              <option value="under-1k">Under 1,000 products</option>
+              <option value="1k-10k">1,000 – 10,000</option>
+              <option value="10k-100k">10,000 – 100,000</option>
+              <option value="over-100k">Over 100,000</option>
+              <option value="unknown">Not sure yet</option>
+            </select>
+            <div class="err" id="catalog_size-err" aria-live="polite"></div>
+          </div>
+          <div class="field">
+            <label for="plan">Plan you're interested in</label>
+            <select id="plan" name="plan" required aria-describedby="plan-err">
+              <option value="free">Free</option>
+              <option value="starter">Starter</option>
+              <option value="growth">Growth</option>
+              <option value="enterprise">Enterprise</option>
+              <option value="self-host">Open source (self-host) support</option>
+              <option value="not-sure" selected>Not sure yet</option>
+            </select>
+            <div class="err" id="plan-err" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="message">Anything else? <span class="opt">(optional)</span></label>
+          <textarea id="message" name="message" maxlength="2000" placeholder="What do you sell, roughly how many searches a month, where would search live…" aria-describedby="message-err"></textarea>
+          <div class="err" id="message-err" aria-live="polite"></div>
+        </div>
+        <div class="hp" aria-hidden="true">
+          <label for="company_url_hp">Leave this field empty</label>
+          <input id="company_url_hp" name="company_url_hp" type="text" tabindex="-1" autocomplete="off">
+        </div>
+        <button class="btn btn-primary" type="submit" style="width:100%">Request access</button>
+        <div class="form-status" id="form-status" role="alert" tabindex="-1"></div>
+        <p class="fine" style="margin:1rem 0 0">We use these details only to reply to you and set up your account. See the
+        <a href="/privacy.html">privacy policy</a>.</p>
+      </form>
+
+      <div class="form thanks" id="form-thanks" hidden tabindex="-1" role="status">
+        <div class="ok" aria-hidden="true">✓</div>
+        <h2>Thanks, request received.</h2>
+        <p>We'll reply to <strong id="thanks-email">your email</strong>. Meanwhile, you can read the
+        <a href="/docs/quickstart.html">quickstart</a> or try the <a href="/#demo">live demo</a>.</p>
+      </div>
+      <noscript><p class="note" style="margin-top:1rem">This form needs JavaScript to send. You can also open an issue on
+      <a href="__GITHUB_URL__">GitHub</a>.</p></noscript>
+    </div>
+  </div>
+</section>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="about">
+      <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro</a>
+      <p>AI search for product catalogs: natural language, Indian English and Hinglish, grounded chat. Open source under Apache-2.0.</p>
+    </div>
+    <div>
+      <h4>Product</h4>
+      <ul>
+        <li><a href="/#demo">Live demo</a></li>
+        <li><a href="/#features">Features</a></li>
+        <li><a href="/pricing.html">Pricing</a></li>
+        <li><a href="/request-access.html">Request access</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Developers</h4>
+      <ul>
+        <li><a href="/docs/">Docs</a></li>
+        <li><a href="/docs/quickstart.html">Quickstart</a></li>
+        <li><a href="/docs/api.html">API reference</a></li>
+        <li><a href="/docs/self-hosting.html">Self-hosting</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Project</h4>
+      <ul>
+        <li><a href="__GITHUB_URL__" rel="noopener">GitHub</a></li>
+        <li><a href="__GITHUB_URL__/blob/main/LICENSE" rel="noopener">License (Apache-2.0)</a></li>
+        <li><a href="/terms.html">Terms</a></li>
+        <li><a href="/privacy.html">Privacy</a></li>
+      </ul>
+    </div>
+    <div class="legal">
+      <span>© <span data-year>2026</span> __COMPANY_NAME__. findaro is open source.</span>
+      <span>Hosted beta · Oracle Cloud, Mumbai region</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

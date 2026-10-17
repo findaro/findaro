@@ -1,12 +1,12 @@
 /**
- * <zerch-search>: drop-in AI search widget (Web Component, Shadow DOM, no framework).
+ * <findaro-search>: drop-in AI search widget (Web Component, Shadow DOM, no framework).
  *
- *   <script src="zerch-widget.js" data-project="prj_…" data-key="zk_search_…" data-base-url="…" defer></script>
- *   <zerch-search></zerch-search>
+ *   <script src="findaro-widget.js" data-project="prj_…" data-key="fdr_search_…" data-base-url="…" defer></script>
+ *   <findaro-search></findaro-search>
  *
  * Attributes (override the script tag): project, key, base-url, mode ("search" | "ai"), locale ("en" | "hi-en"),
  * placeholder, size, theme ("light" | "dark"). Properties: renderProduct, onProductClick, strings, client.
- * Events: "zerch:product-click" (cancelable), "zerch:results", "zerch:error".
+ * Events: "findaro:product-click" (cancelable), "findaro:results", "findaro:error".
  */
 import {
   createClient,
@@ -19,8 +19,8 @@ import {
   type PatchOp,
   type Pill,
   type SearchResponse,
-  type ZerchClient,
-} from "@zerch/sdk";
+  type FindaroClient,
+} from "@findaro/sdk";
 
 import { STRINGS, fmt, type Strings } from "./strings";
 import { CSS } from "./styles";
@@ -85,7 +85,7 @@ function safeUrl(value: unknown): string | null {
   }
 }
 
-export class ZerchSearch extends HTMLElement {
+export class FindaroSearch extends HTMLElement {
   static observedAttributes = ["mode", "locale", "placeholder", "project", "key", "base-url"];
 
   /** Custom product card. Return an element, or an HTML string (escape document fields yourself: they are data). */
@@ -95,7 +95,7 @@ export class ZerchSearch extends HTMLElement {
   /** Partial string overrides, merged over the locale's defaults. */
   strings: Partial<Strings> = {};
   /** Inject a preconfigured client (e.g. with a custom fetch). */
-  client: ZerchClient | null = null;
+  client: FindaroClient | null = null;
 
   #root: ShadowRoot;
   #mode: "search" | "ai" = "search";
@@ -143,11 +143,11 @@ export class ZerchSearch extends HTMLElement {
     return this.getAttribute(name) ?? SCRIPT_DEFAULTS[name] ?? null;
   }
 
-  #client(): ZerchClient {
+  #client(): FindaroClient {
     if (!this.client) {
       const key = this.#attr("key");
       if (!key || /^YOUR_/i.test(key)) {
-        throw new Error("zerch-search: set data-key on the script tag (or key=…) to your project's search key");
+        throw new Error("findaro-search: set data-key on the script tag (or key=…) to your project's search key");
       }
       this.client = createClient({ projectId: this.#attr("project") || "", searchKey: key,
                                    baseUrl: this.#attr("base-url") || undefined });
@@ -177,7 +177,7 @@ export class ZerchSearch extends HTMLElement {
       this.#submit();
     } }, this.#els.modes, this.#input, this.#els.go);
     this.#els.chips = h("div", { class: "row chips", role: "group" });
-    this.#els.pills = h("div", { class: "pills", id: "zerch-filters" });
+    this.#els.pills = h("div", { class: "pills", id: "findaro-filters" });
     this.#els.status = h("div", { class: "status", role: "status", "aria-live": "polite" });
     this.#els.results = h("div", {});
     this.#els.panel = h("div", { class: "panel", role: "log", "aria-live": "polite" });
@@ -261,7 +261,7 @@ export class ZerchSearch extends HTMLElement {
       display: res.display ?? EMPTY_DISPLAY, semantic: und?.semantic_text ?? res.query,
     };
     for (const hit of res.hits) this.#docs.set(hit.id, hit);
-    this.dispatchEvent(new CustomEvent("zerch:results", { detail: res, bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent("findaro:results", { detail: res, bubbles: true, composed: true }));
   }
 
   #applyPatch(ops: PatchOp[], label: string) {
@@ -276,10 +276,10 @@ export class ZerchSearch extends HTMLElement {
   #fail(e: unknown) {
     const msg = e instanceof Error ? e.message : "";
     // setup problems are shown as-is so the page owner sees what to fix; everything else gets the friendly string
-    this.#error = msg.startsWith("zerch-search:") || (e as { status?: number })?.status === 401
-      ? (msg.startsWith("zerch-search:") ? msg : "zerch-search: invalid search key (check data-key)")
+    this.#error = msg.startsWith("findaro-search:") || (e as { status?: number })?.status === 401
+      ? (msg.startsWith("findaro-search:") ? msg : "findaro-search: invalid search key (check data-key)")
       : this.#s.error;
-    this.dispatchEvent(new CustomEvent("zerch:error", { detail: e, bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent("findaro:error", { detail: e, bubbles: true, composed: true }));
   }
 
   // --- chat ---------------------------------------------------------------------------------------------
@@ -381,7 +381,7 @@ export class ZerchSearch extends HTMLElement {
     if (canFilter) {
       this.#els.chips.append(h("button", {
         type: "button", class: "filters-toggle", "aria-expanded": String(this.#filtersOpen),
-        "aria-controls": "zerch-filters", onclick: () => {
+        "aria-controls": "findaro-filters", onclick: () => {
           this.#filtersOpen = !this.#filtersOpen;
           this.#renderChips();
         },
@@ -463,7 +463,7 @@ export class ZerchSearch extends HTMLElement {
   }
 
   #click(hit: Hit, e: Event) {
-    const ev = new CustomEvent("zerch:product-click", { detail: { hit }, bubbles: true, composed: true,
+    const ev = new CustomEvent("findaro:product-click", { detail: { hit }, bubbles: true, composed: true,
                                                         cancelable: true });
     const allowed = this.dispatchEvent(ev);
     if (this.onProductClick) {
@@ -690,12 +690,12 @@ export class ZerchSearch extends HTMLElement {
   }
 }
 
-if (typeof customElements !== "undefined" && !customElements.get("zerch-search")) {
-  customElements.define("zerch-search", ZerchSearch);
+if (typeof customElements !== "undefined" && !customElements.get("findaro-search")) {
+  customElements.define("findaro-search", FindaroSearch);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "zerch-search": ZerchSearch;
+    "findaro-search": FindaroSearch;
   }
 }

@@ -1,0 +1,54 @@
+# Checks the hosted service every 15 minutes and keeps one open issue labelled `outage` while it's down.
+# Set repository variables FINDARO_SITE_URL / FINDARO_API_URL to change the targets.
+name: uptime
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.repository == 'findaro/findaro'  # forks don't monitor the hosted service
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SITE: ${{ vars.FINDARO_SITE_URL || 'https://findaro.130-210-49-63.sslip.io' }}
+      API: ${{ vars.FINDARO_API_URL || 'https://api.findaro.130-210-49-63.sslip.io' }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Check
+        id: check
+        run: |
+          failed=""
+          for url in "$SITE/" "$SITE/healthz" "$API/healthz"; do
+            ok=""
+            for attempt in 1 2 3; do
+              if curl -fsS -o /dev/null --max-time 15 "$url"; then ok=1; break; fi
+              sleep 20
+            done
+            [ -n "$ok" ] || failed="$failed $url"
+          done
+          echo "failed=$failed" >> "$GITHUB_OUTPUT"
+      - name: Open or close the outage issue
+        run: |
+          open=$(gh issue list --label outage --state open --json number --jq '.[0].number')
+          if [ -n "${{ steps.check.outputs.failed }}" ]; then
+            body="Unreachable at $(date -u +%FT%TZ):${{ steps.check.outputs.failed }}"
+            if [ -n "$open" ]; then gh issue comment "$open" --body "$body"
+            else
+              gh label create outage --color B60205 --force >/dev/null
+              gh issue create --title "Hosted service is down" --label outage --body "$body"
+            fi
+            exit 1
+          elif [ -n "$open" ]; then
+            gh issue close "$open" --comment "Back up at $(date -u +%FT%TZ)."
+          fi

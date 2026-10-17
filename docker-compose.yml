@@ -1,30 +1,30 @@
-name: zerch
+name: findaro
 
 x-app-env: &app-env
-  ZERCH_DATABASE_URL: postgresql+asyncpg://zerch:zerch@postgres:5432/zerch
-  ZERCH_OPENSEARCH_URL: http://opensearch:9200
-  ZERCH_REDIS_URL: redis://redis:6379/0
-  ZERCH_BOOTSTRAP_TOKEN: ${ZERCH_BOOTSTRAP_TOKEN:-}
-  ZERCH_RATE_LIMIT_PER_SECOND: ${ZERCH_RATE_LIMIT_PER_SECOND:-50}
-  ZERCH_OLLAMA_URL: ${ZERCH_OLLAMA_URL:-http://host.docker.internal:11434}
-  ZERCH_ANTHROPIC_API_KEY: ${ZERCH_ANTHROPIC_API_KEY:-}
-  # Query planner LLM (M2). Set ZERCH_PLANNER_PROVIDER=anthropic (+ key) to use Claude Haiku instead.
-  ZERCH_PLANNER_PROVIDER: ${ZERCH_PLANNER_PROVIDER:-ollama}
-  ZERCH_PLANNER_MODEL: ${ZERCH_PLANNER_MODEL:-llama3.2:3b}
+  FINDARO_DATABASE_URL: postgresql+asyncpg://findaro:findaro@postgres:5432/findaro
+  FINDARO_OPENSEARCH_URL: http://opensearch:9200
+  FINDARO_REDIS_URL: redis://redis:6379/0
+  FINDARO_BOOTSTRAP_TOKEN: ${FINDARO_BOOTSTRAP_TOKEN:-}
+  FINDARO_RATE_LIMIT_PER_SECOND: ${FINDARO_RATE_LIMIT_PER_SECOND:-50}
+  FINDARO_OLLAMA_URL: ${FINDARO_OLLAMA_URL:-http://host.docker.internal:11434}
+  FINDARO_ANTHROPIC_API_KEY: ${FINDARO_ANTHROPIC_API_KEY:-}
+  # Query planner LLM (M2). Set FINDARO_PLANNER_PROVIDER=anthropic (+ key) to use Claude Haiku instead.
+  FINDARO_PLANNER_PROVIDER: ${FINDARO_PLANNER_PROVIDER:-ollama}
+  FINDARO_PLANNER_MODEL: ${FINDARO_PLANNER_MODEL:-llama3.2:3b}
   # Chat (M3/M4): answers and unclear-turn classification. Local Ollama by default (free).
-  # For OpenAI set ZERCH_CHAT_PROVIDER=openai, ZERCH_CHAT_MODEL=gpt-4.1-mini and OPENAI_API_KEY (paid; cap it).
+  # For OpenAI set FINDARO_CHAT_PROVIDER=openai, FINDARO_CHAT_MODEL=gpt-4.1-mini and OPENAI_API_KEY (paid; cap it).
   OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-  ZERCH_CHAT_PROVIDER: ${ZERCH_CHAT_PROVIDER:-ollama}
-  ZERCH_CHAT_MODEL: ${ZERCH_CHAT_MODEL:-llama3.1:8b}
+  FINDARO_CHAT_PROVIDER: ${FINDARO_CHAT_PROVIDER:-ollama}
+  FINDARO_CHAT_MODEL: ${FINDARO_CHAT_MODEL:-llama3.1:8b}
   # Query log for development: every search / chat turn as a JSON line in ./logs/queries.jsonl.
-  # Set ZERCH_QUERY_LOG= (empty) to turn it off. Read it with: uv run python scripts/queries.py
-  ZERCH_QUERY_LOG: ${ZERCH_QUERY_LOG-/logs/queries.jsonl}
+  # Set FINDARO_QUERY_LOG= (empty) to turn it off. Read it with: uv run python scripts/queries.py
+  FINDARO_QUERY_LOG: ${FINDARO_QUERY_LOG-/logs/queries.jsonl}
 
 services:
   api:
     extra_hosts: ["host.docker.internal:host-gateway"]  # reach Ollama on the host (needed on Linux)
     build: .
-    image: zerch:dev
+    image: findaro:dev
     environment: *app-env
     ports: ["8000:8000"]
     volumes: ["./logs:/logs"]
@@ -40,8 +40,8 @@ services:
 
   worker:
     extra_hosts: ["host.docker.internal:host-gateway"]  # reach Ollama on the host (needed on Linux)
-    image: zerch:dev
-    command: ["python", "-m", "zerch.worker"]
+    image: findaro:dev
+    command: ["python", "-m", "findaro.worker"]
     environment: *app-env
     depends_on:
       api: {condition: service_healthy}
@@ -49,20 +49,20 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_USER: zerch
-      POSTGRES_PASSWORD: zerch
-      POSTGRES_DB: zerch
+      POSTGRES_USER: findaro
+      POSTGRES_PASSWORD: findaro
+      POSTGRES_DB: findaro
     ports: ["54329:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U zerch"]
+      test: ["CMD-SHELL", "pg_isready -U findaro"]
       interval: 3s
       timeout: 3s
       retries: 30
 
   opensearch:
     build: docker/opensearch
-    image: zerch-opensearch:3.5.0
+    image: findaro-opensearch:3.5.0
     environment:
       discovery.type: single-node
       DISABLE_SECURITY_PLUGIN: "true"

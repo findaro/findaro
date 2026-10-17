@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overview · findaro docs</title>
+<meta name="description" content="How findaro works: projects and keys, catalog import and schema inference, query understanding, hybrid retrieval and grounded chat.">
+<link rel="canonical" href="__SITE_URL__/docs/">
+<meta name="theme-color" content="#f5f2ea" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#11100d" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="findaro">
+<meta property="og:title" content="Overview · findaro docs">
+<meta property="og:description" content="How findaro works: projects and keys, catalog import and schema inference, query understanding, hybrid retrieval and grounded chat.">
+<meta property="og:url" content="__SITE_URL__/docs/">
+<meta property="og:image" content="__SITE_URL__/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&amp;family=Instrument+Sans:wght@400..700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<link rel="stylesheet" href="/assets/site.css">
+<script src="/assets/site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro<span class="beta">beta</span></a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav class="nav" id="site-nav" aria-label="Main">
+      <a href="/#features">Product</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/docs/" aria-current="page">Docs</a>
+      <a href="__GITHUB_URL__" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="/request-access.html">Request access</a>
+    </nav>
+  </div>
+</header>
+<div class="wrap docs">
+  <aside class="docs-nav" aria-label="Docs">
+    <details open>
+      <summary>Docs menu</summary>
+      <div>
+        <h4>Get started</h4>
+        <ul>
+          <li><a href="/docs/" aria-current="page">Overview</a></li>
+          <li><a href="/docs/quickstart.html">Quickstart</a></li>
+        </ul>
+        <h4>Integrate</h4>
+        <ul>
+          <li><a href="/docs/widget.html">Widget</a></li>
+          <li><a href="/docs/sdk.html">SDK (TypeScript)</a></li>
+          <li><a href="/docs/api.html">API reference</a></li>
+        </ul>
+        <h4>Run it yourself</h4>
+        <ul>
+          <li><a href="/docs/self-hosting.html">Self-hosting</a></li>
+        </ul>
+      </div>
+    </details>
+  </aside>
+  <main id="main" class="docs-main">
+<!-- content:start -->
+<span class="eyebrow">Docs</span>
+<h1>findaro documentation</h1>
+<p class="lede">findaro is AI search for product catalogs. You send a catalog, call one search endpoint (or add the
+<code>&lt;findaro-search&gt;</code> widget), and shoppers can search in their own words, including Indian English and
+Hinglish.</p>
+
+<div class="doc-cards">
+  <a href="/docs/quickstart.html"><b>Quickstart →</b><span>Keys, import a catalog, search, add the widget. About 5 minutes.</span></a>
+  <a href="/docs/widget.html"><b>Widget →</b><span>Attributes, events, theming and custom product cards.</span></a>
+  <a href="/docs/sdk.html"><b>SDK →</b><span>Headless TypeScript client: search, streaming chat, patches.</span></a>
+  <a href="/docs/api.html"><b>API reference →</b><span>Every endpoint and schema, generated from the OpenAPI spec.</span></a>
+</div>
+
+<h2 id="concepts">Concepts</h2>
+<h3 id="projects">Projects and keys</h3>
+<p>A <strong>project</strong> is one catalog plus its settings. Each project has two keys:</p>
+<ul>
+  <li><strong>Admin key</strong> (<code>fdr_admin_…</code>): imports and deletes documents, reads and overrides the
+  schema, changes settings. Server-side only: requests from a browser (with an <code>Origin</code> header) are refused.</li>
+  <li><strong>Search key</strong> (<code>fdr_search_…</code>): read-only, can only call <code>/v1/search</code> and
+  <code>/v1/chat</code>. Safe to put in a web page. Browser requests are accepted only from the project's
+  <code>allowed_origins</code>.</li>
+</ul>
+<p>Send either key as <code>Authorization: Bearer &lt;key&gt;</code> (or <code>X-Findaro-Key: &lt;key&gt;</code>).</p>
+
+<h3 id="ingest">Catalog and schema</h3>
+<p>Import JSON, JSONL or CSV (up to 50 MB per file), or push up to 10,000 documents per request as JSON. Imports run
+as background jobs. On the first import findaro infers a <strong>role</strong> for every field (title, description,
+price, facet, category, image URL…). You can review the inferred schema and override any field; overrides are applied
+by a background reindex while search keeps working.</p>
+
+<h3 id="understanding">Query understanding</h3>
+<p>Before retrieval, the query is turned into a plan built only from your project's own fields and values: price
+ranges (“under 500”, “500 ke andar”, “1.5k”), quantities (“5 L” is never a price), attribute values such as colours,
+materials, sizes and brands, categories, and cheap/premium intent. Hinglish words are translated by language packs.
+What was applied comes back in <code>understood.chips</code>; each chip carries a <code>remove</code> patch so your UI
+can undo it.</p>
+<p>A small LLM planner is used only when the rules can't account for some words. It runs behind a timeout with the
+rules plan as fallback, is cached, and is never called for search-as-you-type requests (<code>"llm": false</code>).</p>
+
+<h3 id="retrieval">Retrieval</h3>
+<p>Hybrid: BM25 keyword search (typo-tolerant, with transliteration so Devanagari matches romanised Hindi) plus
+multilingual semantic vectors, fused with Reciprocal Rank Fusion. Every response reports
+<code>match_quality</code> (<code>good</code>, <code>weak</code> or <code>none</code>), any filters that were relaxed to
+find results, and which results are close rather than exact matches.</p>
+
+<h3 id="chat">Chat</h3>
+<p><code>POST /v1/chat</code> streams Server-Sent Events: conversational refinement (“cheaper”, “only black”, “not
+slippers”), questions about the products on screen, and questions about one product (<code>product_ids</code>). Answers
+are grounded: the model sees only the products on screen, numbers are filled in from your data, and every sentence is
+checked before it streams. General know-how is sent separately as <code>part: "general"</code> so you can label it.</p>
+
+<h2 id="hosted-vs-self">Hosted or self-hosted</h2>
+<p>The API is the same either way. On the <strong>hosted beta</strong> we give you an API URL
+(<code>__API_URL__</code>), a project id and both keys. To <strong>self-host</strong>, run the open-source stack with
+docker compose and create projects yourself: see <a href="/docs/self-hosting.html">Self-hosting</a>.</p>
+
+<h2 id="limits">Limits worth knowing</h2>
+<ul>
+  <li>Search requests are rate limited per key (50 requests per second by default on self-hosted installs).</li>
+  <li>Results are cached for 60 seconds per data version; send <code>Cache-Control: no-cache</code> to bypass.</li>
+  <li>Chat sessions last 30 minutes.</li>
+  <li><code>size</code> is at most 100 results per page.</li>
+</ul>
+<p>Not built yet: autocomplete, analytics, recommendations, personalization, connectors and a dashboard.</p>
+<div class="pager"><span></span><a href="/docs/quickstart.html">Quickstart →</a></div>
+
+<!-- content:end -->
+  </main>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="about">
+      <a class="brand" href="/" aria-label="findaro home"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M20 9.5h-2.5a3 3 0 0 0-3 3v11M11 15.5h8" fill="none" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>findaro</a>
+      <p>AI search for product catalogs: natural language, Indian English and Hinglish, grounded chat. Open source under Apache-2.0.</p>
+    </div>
+    <div>
+      <h4>Product</h4>
+      <ul>
+        <li><a href="/#demo">Live demo</a></li>
+        <li><a href="/#features">Features</a></li>
+        <li><a href="/pricing.html">Pricing</a></li>
+        <li><a href="/request-access.html">Request access</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Developers</h4>
+      <ul>
+        <li><a href="/docs/">Docs</a></li>
+        <li><a href="/docs/quickstart.html">Quickstart</a></li>
+        <li><a href="/docs/api.html">API reference</a></li>
+        <li><a href="/docs/self-hosting.html">Self-hosting</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Project</h4>
+      <ul>
+        <li><a href="__GITHUB_URL__" rel="noopener">GitHub</a></li>
+        <li><a href="__GITHUB_URL__/blob/main/LICENSE" rel="noopener">License (Apache-2.0)</a></li>
+        <li><a href="/terms.html">Terms</a></li>
+        <li><a href="/privacy.html">Privacy</a></li>
+      </ul>
+    </div>
+    <div class="legal">
+      <span>© <span data-year>2026</span> __COMPANY_NAME__. findaro is open source.</span>
+      <span>Hosted beta · Oracle Cloud, Mumbai region</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

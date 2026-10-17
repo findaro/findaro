@@ -1,4 +1,4 @@
-# zerch — AI search as a service
+# findaro — AI search as a service
 
 Read this first. It is the source of truth for scope and rules across sessions.
 
@@ -37,7 +37,7 @@ a chat-style refinement mode, a headless SDK and a drop-in widget. Open source (
   catalog and whose search found no good match; its suggested search runs through the normal planner. Suggestion
   chips are `clarify` events with `reason: "suggest"` and an empty `patch` (send the label as the message).
 - Chat answers must stay grounded: the model only sees products on screen, numbers come from server-filled
-  slots, comparisons are computed in code, and every sentence is checked (`zerch.chat.slots`) before it streams.
+  slots, comparisons are computed in code, and every sentence is checked (`findaro.chat.slots`) before it streams.
 - `eval/` is the gate: changes must not regress `eval/report.md` against `eval/baselines/m1.json`.
 
 ## Stack
@@ -46,21 +46,21 @@ a chat-style refinement mode, a headless SDK and a drop-in widget. Open source (
 - OpenSearch 3.x (hybrid: BM25 + k-NN, fused with RRF in the app); custom image adds `analysis-icu`
 - Postgres: projects, keys (hashed), schemas, ingest jobs + payloads
 - Redis: search/embedding cache, per-key rate limit
-- Embeddings: local `intfloat/multilingual-e5-small` behind `zerch.embeddings.Embedder`
-- LLM: `zerch.llm` provider interface (Ollama, Anthropic, OpenAI). Local Ollama by default for the M2 planner and
-  M3 chat. Paid providers (OpenAI/Anthropic) only when explicitly set via ZERCH_CHAT_PROVIDER / ZERCH_PLANNER_PROVIDER;
+- Embeddings: local `intfloat/multilingual-e5-small` behind `findaro.embeddings.Embedder`
+- LLM: `findaro.llm` provider interface (Ollama, Anthropic, OpenAI). Local Ollama by default for the M2 planner and
+  M3 chat. Paid providers (OpenAI/Anthropic) only when explicitly set via FINDARO_CHAT_PROVIDER / FINDARO_PLANNER_PROVIDER;
   never spend paid API calls on evals, judging or data generation without asking (review eval output in-session).
 - docker compose for everything: `docker compose up -d --build`
 
 ## Rules
 
-- **Engine code is domain-agnostic; no hardcoded verticals.** Nothing under `src/zerch/` may
+- **Engine code is domain-agnostic; no hardcoded verticals.** Nothing under `src/findaro/` may
   mention products, shoes, prices-in-INR, categories of any specific catalog, etc. Field roles
   (title, price, facet, category...) are inferred from data and overridable via the schema API.
   Vertical knowledge lives only in `scripts/`, `data/`, `eval/` (demo material).
   Language-level resources (stopwords, Hinglish spelling normalisation, `packs/locales/*.yaml`) are allowed;
   they are not verticals. Query understanding gets catalog knowledge (colours, categories, brands) only from the
-  per-project value dictionary built from the data (`zerch.understand.dictionary`).
+  per-project value dictionary built from the data (`findaro.understand.dictionary`).
 - Eval hygiene: never tune on `eval/holdout.jsonl`. `eval/report.md` compares against `eval/baselines/m1.json`.
 - No real scraped data anywhere in the repo. Demo data is synthetic (`scripts/gen_demo_catalog.py`).
 - Apache-2.0. Don't add dependencies with incompatible licenses.
@@ -69,18 +69,18 @@ a chat-style refinement mode, a headless SDK and a drop-in widget. Open source (
 
 ## Layout
 
-- `src/zerch/` — service (`api/`, `index/`, `search/`, `ingest/`, `schema/`, `embeddings/`, `llm/`, `understand/`,
+- `src/findaro/` — service (`api/`, `index/`, `search/`, `ingest/`, `schema/`, `embeddings/`, `llm/`, `understand/`,
   `chat/`)
 - `packs/locales/` — language packs for query understanding (en, hi-en)
-- `src/zerch/worker.py` — ingest job worker (separate compose service)
-- `src/zerch/querylog.py` — optional JSONL query log (`ZERCH_QUERY_LOG`; compose writes `logs/queries.jsonl`, read
+- `src/findaro/worker.py` — ingest job worker (separate compose service)
+- `src/findaro/querylog.py` — optional JSONL query log (`FINDARO_QUERY_LOG`; compose writes `logs/queries.jsonl`, read
   with `scripts/queries.py`)
 - `scripts/` — demo setup (`demo_setup.py`), chat CLI, OpenAPI export, demo catalog generator, benchmark
 - `data/` — generated demo catalog (committed)
 - `eval/` — queries, conversations, runners, report (see `eval/README.md`)
 - `tests/` — pytest; needs compose services up (`docker compose up -d postgres opensearch redis`)
-- `packages/sdk` (`@zerch/sdk`, headless TS client, types generated from `packages/sdk/openapi.json`),
-  `packages/widget` (`<zerch-search>`), `examples/plain-html`, `examples/react`, `e2e/` (Playwright)
+- `packages/sdk` (`@findaro/sdk`, headless TS client, types generated from `packages/sdk/openapi.json`),
+  `packages/widget` (`<findaro-search>`), `examples/plain-html`, `examples/react`, `e2e/` (Playwright)
 - JS budgets (enforced by `npm run size`): SDK ≤ 10 KB gz, widget incl. SDK ≤ 40 KB gz. Zero runtime deps.
 
 ## Not built yet
@@ -90,4 +90,5 @@ billing, DB/Shopify connectors, image/voice search, cloud deployment, multi-regi
 
 ## Tracking
 
-Notion Global Todo (one row per milestone) if the Notion MCP is authorised; otherwise `TRACKING.md` in this repo.
+Milestone history lives in `docs/history.md`; open work is tracked in GitHub issues. Session notes and personal
+trackers stay out of the repo.

@@ -1,0 +1,54 @@
+name: Bug report
+description: Something doesn't work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please don't include API keys, bootstrap tokens or real customer data.
+        Security problems: report privately instead (see SECURITY.md).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: Minimal steps, request bodies or a small sample catalog (synthetic data only).
+      placeholder: |
+        1. docker compose up -d --build
+        2. POST /v1/search {"query": "..."}
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Search / retrieval
+        - Query understanding (filters, Hinglish)
+        - Chat (/v1/chat)
+        - Ingestion / schema inference
+        - Widget (<findaro-search>)
+        - SDK (@findaro/sdk)
+        - Docker / self-hosting
+        - Docs
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: findaro commit or version, OS, Docker version, LLM provider/model if chat is involved, browser for widget issues.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / response
+      description: Relevant API logs or the response body (`"debug": true` on /v1/search helps).
+      render: text

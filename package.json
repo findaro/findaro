@@ -1,6 +1,7 @@
 {
-  "name": "zerch-js",
+  "name": "findaro-js",
   "private": true,
+  "description": "findaro JavaScript workspace: @findaro/sdk, @findaro/widget and examples.",
   "license": "Apache-2.0",
   "workspaces": [
     "packages/sdk",
@@ -9,10 +10,10 @@
   ],
   "scripts": {
     "gen:types": "openapi-typescript packages/sdk/openapi.json -o packages/sdk/src/api.gen.ts",
-    "build": "npm run build -w @zerch/sdk && npm run build -w @zerch/widget",
+    "build": "npm run build -w @findaro/sdk && npm run build -w @findaro/widget",
     "typecheck": "tsc -p packages/sdk && tsc -p packages/widget --noEmit",
     "size": "node js-scripts/check-size.mjs",
-    "e2e": "playwright test",
+    "e2e": "node e2e/prepare.mjs && playwright test",
     "check": "npm run gen:types && npm run typecheck && npm run build && npm run size"
   },
   "devDependencies": {
@@ -20,5 +21,13 @@
     "esbuild": "^0.28.2",
     "openapi-typescript": "^7.13.0",
     "typescript": "^5.9.3"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/findaro/findaro.git"
+  },
+  "bugs": {
+    "url": "https://github.com/findaro/findaro/issues"
+  },
+  "homepage": "https://github.com/findaro/findaro#readme"
 }

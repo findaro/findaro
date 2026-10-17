@@ -1,6 +1,6 @@
 """Integration fixtures. Needs `docker compose up -d postgres opensearch redis`.
 
-Tests use their own database (zerch_test), Redis DB 15 and index prefix, and the deterministic hash
+Tests use their own database (findaro_test), Redis DB 15 and index prefix, and the deterministic hash
 embedder, so they never interfere with a running dev stack.
 """
 
@@ -16,21 +16,21 @@ import httpx
 import pytest
 from sqlalchemy.engine import make_url
 
-from zerch.config import Settings
-from zerch.embeddings.hashing import HashEmbedder
-from zerch.ingest.processor import run_pending
-from zerch.main import create_app
-from zerch.state import State, create_state
+from findaro.config import Settings
+from findaro.embeddings.hashing import HashEmbedder
+from findaro.ingest.processor import run_pending
+from findaro.main import create_app
+from findaro.state import State, create_state
 
-TEST_DB = os.environ.get("ZERCH_TEST_DATABASE_URL", "postgresql+asyncpg://zerch:zerch@localhost:54329/zerch_test")
+TEST_DB = os.environ.get("FINDARO_TEST_DATABASE_URL", "postgresql+asyncpg://findaro:findaro@localhost:54329/findaro_test")
 
 
 def make_settings(**over: Any) -> Settings:
     base = dict(
         database_url=TEST_DB,
-        opensearch_url=os.environ.get("ZERCH_TEST_OPENSEARCH_URL", "http://localhost:19200"),
-        redis_url=os.environ.get("ZERCH_TEST_REDIS_URL", "redis://localhost:63799/15"),
-        index_prefix="zerchtest",
+        opensearch_url=os.environ.get("FINDARO_TEST_OPENSEARCH_URL", "http://localhost:19200"),
+        redis_url=os.environ.get("FINDARO_TEST_REDIS_URL", "redis://localhost:63799/15"),
+        index_prefix="findarotest",
         embedder="hash",
         search_cache_ttl=0,
         rate_limit_per_second=0,
@@ -61,7 +61,7 @@ async def _ensure_database(url: str) -> None:
 async def state() -> AsyncIterator[State]:
     await _ensure_database(TEST_DB)
     st = await create_state(make_settings(), HashEmbedder())
-    await st.os.indices.delete(index="zerchtest-*", ignore_unavailable=True, params={"expand_wildcards": "all"})
+    await st.os.indices.delete(index="findarotest-*", ignore_unavailable=True, params={"expand_wildcards": "all"})
     async with st.db.begin() as conn:
         await conn.exec_driver_sql("TRUNCATE projects, api_keys, jobs, job_payloads CASCADE")
     await st.redis.flushdb()
@@ -72,7 +72,7 @@ async def state() -> AsyncIterator[State]:
 @pytest.fixture(scope="session")
 async def client(state: State) -> AsyncIterator[httpx.AsyncClient]:
     app = create_app(state.settings, state.embedder)
-    app.state.zerch = state  # lifespan is not run by ASGITransport
+    app.state.findaro = state  # lifespan is not run by ASGITransport
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as c:
         yield c
 

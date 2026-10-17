@@ -122,7 +122,7 @@ jobs:
       - name: Start the stack
         run: |
           docker compose up -d --build --wait
-          curl -fs -X PUT localhost:19200/_cluster/settings -H 'content-type: application/json' \
+          curl -fsS --retry 10 --retry-all-errors --retry-delay 3 -X PUT localhost:19200/_cluster/settings -H 'content-type: application/json' \
             -d '{"persistent": {"cluster.routing.allocation.disk.threshold_enabled": false}}'
       - run: uv sync --frozen
       - run: npm ci && npm run build

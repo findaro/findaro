@@ -286,6 +286,27 @@ def fallback_search_text(total: int, quality: str, docs: list[tuple[str, dict, b
     return (f"Sabse upar: [{did}]" if hinglish else f"Top result: [{did}]")
 
 
+def fallback_product_text(focus: dict[str, dict[str, Any]], schema: Schema, hinglish: bool, symbol: str) -> str:
+    """No chat LLM, a turn about specific products: say only what their own fields show (cheapest, by price)."""
+    if not focus:
+        return "Ye product ab nahi mila." if hinglish else "I couldn't find that product anymore."
+    if len(focus) == 1:
+        return ("Iski saari details upar hain." if hinglish else "Its full details are above.")
+    from findaro.understand.plan import primary_price_field
+
+    pf = primary_price_field(schema)
+    priced = [(float(doc[pf]), pid) for pid, doc in focus.items()
+              if pf and isinstance(doc.get(pf), int | float)]
+    n = len(focus)
+    head = f"Ye {n} products saath mein dekhiye." if hinglish else f"Here are the {n} products side by side."
+    if len(priced) >= 2:
+        price, pid = min(priced)
+        amount = f"{symbol}{price:,.0f}" if price == int(price) else f"{symbol}{price:,.2f}"
+        head += (f" Sabse sasta [{pid}] hai, {amount} mein." if hinglish
+                 else f" The cheapest is [{pid}] at {amount}.")
+    return head
+
+
 # --- product conversation (M5) ------------------------------------------------------------------------------
 
 GENERAL_MARKER = "General:"

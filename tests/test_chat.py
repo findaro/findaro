@@ -463,3 +463,27 @@ async def test_next_steps_are_real_refinements(loaded, chat_llm):
                                      headers=loaded.searcher)
         ev2 = [(b.split("\n")[0][7:], json.loads(b.split("\n")[1][6:])) for b in r.text.strip().split("\n\n")]
         assert first(ev2, "results")["items"], chip
+
+
+async def test_typing_a_next_step_label_applies_it(loaded, chat_llm):
+    ev = await chat(loaded, "water bottle")
+    sid = first(ev, "session")["session_id"]
+    nxt = next(d for e, d in ev if e == "clarify" and d["reason"] == "next")
+    only = next((c for c in nxt["chips"] if any(p["op"] == "add_filter" for p in c["patch"])), None)
+    assert only is not None, nxt
+    ev2 = await chat(loaded, only["label"].lower(), session_id=sid)
+    assert first(ev2, "done")["reason"] == "patch"
+    op = next(p for p in only["patch"] if p["op"] == "add_filter")
+    assert all(i["document"][op["field"]] == op["value"] for i in first(ev2, "results")["items"])
+
+
+async def test_compare_without_llm_states_the_cheapest(loaded):
+    res = await loaded.search(query="water bottle", size=3)
+    ids = [h["id"] for h in res["hits"][:3]]
+    r = await loaded.client.post("/v1/chat", json={"message": "compare these", "product_ids": ids},
+                                 headers=loaded.searcher)
+    ev = [(b.split("\n")[0][7:], json.loads(b.split("\n")[1][6:])) for b in r.text.strip().split("\n\n")]
+    text = "".join(d["delta"] for e, d in ev if e == "text")
+    low = min(h["document"]["price"] for h in res["hits"][:3])
+    cheapest = {h["id"] for h in res["hits"][:3] if h["document"]["price"] == low}  # ties: any of them
+    assert "couldn't find" not in text and any(f"[{i}]" in text for i in cheapest), text

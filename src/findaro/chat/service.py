@@ -205,6 +205,13 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
     delta: PlanDelta | None = None
     turn: str | None = None
 
+    # a next-step row typed as its label ("only copper") does exactly what clicking it does
+    if not req.patch and req.apply is None and msg and old_plan is not None and sess.clarify_chips:
+        typed = next((c for c in sess.clarify_chips if c.get("patch") and not c.get("plan_patch")
+                      and chip_label(c["label"]) == chip_label(msg)), None)
+        if typed:
+            req.patch = [PatchOp.model_validate(p) for p in typed["patch"]]
+
     # structured patch (chip removal, pill, clarifier chip): no classification needed
     if req.patch and old_plan is not None:
         turn, reason = "refine", "patch"
@@ -372,6 +379,11 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
             first = time.perf_counter()
         elif turn == "chitchat":
             text = answer.chitchat_reply(msg, hinglish, bool(sess.last_docs))
+            yield sse("text", {"delta": text})
+            text_parts.append(text)
+            first = time.perf_counter()
+        elif chat_llm is None and turn == "product":
+            text = answer.fallback_product_text(focus_docs, schema, hinglish, symbol)
             yield sse("text", {"delta": text})
             text_parts.append(text)
             first = time.perf_counter()

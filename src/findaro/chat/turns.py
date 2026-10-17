@@ -301,7 +301,7 @@ def refine(message: str, plan: QueryPlan, parsed: QueryPlan, schema: Schema, lex
                 delta.exclude.append(PlanFilter(field=f.field, op="not", value=f.value, origin="chat",
                                                 text=f.text, confidence=0.95))
         for b in sub.boosts:
-            if b.origin in ("facet", "category", "fuzzy") and not isinstance(b.value, list):
+            if b.origin in ("facet", "facet_head", "category", "fuzzy") and not isinstance(b.value, list):
                 delta.exclude.append(PlanFilter(field=b.field, op="not", value=b.value, origin="chat",
                                                 text=b.text, confidence=0.9))
         negated_words.update(phrase.split())
@@ -320,11 +320,12 @@ def refine(message: str, plan: QueryPlan, parsed: QueryPlan, schema: Schema, lex
     for b in parsed.boosts:
         by_text.setdefault(b.text or "", []).append(b)
     for b in parsed.boosts:
-        if b.origin in ("facet", "category") and not (set((b.text or "").split()) & negated_words):
+        # facet_head ("steel" for "Stainless Steel") only ranks in a search, but "only steel" is explicit
+        if b.origin in ("facet", "facet_head", "category") and not (set((b.text or "").split()) & negated_words):
             if b.origin == "category" and isinstance(b.value, list):
                 continue
-            same = [x for x in by_text.get(b.text or "", []) if x.origin == "facet"]
-            if len(same) > 1 and b.origin == "facet":
+            same = [x for x in by_text.get(b.text or "", []) if x.origin in ("facet", "facet_head")]
+            if len(same) > 1 and b.origin in ("facet", "facet_head"):
                 # "copper" is both a colour and a material, "5 L" both capacity and volume: keep the one field
                 # where the value is most common among the products on screen
                 def hits(x) -> int:

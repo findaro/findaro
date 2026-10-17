@@ -55,6 +55,9 @@ class Compiled:
     canon: dict[str, dict[str, str]]
     top_values: dict[str, list[tuple[str, int]]]
     single_word_keys: dict[str, list[str]] = field(default_factory=dict)  # first letter -> keys (fuzzy)
+    # keys that are the last word of multi-word facet values ("steel" for "Stainless Steel"): they match every
+    # value of the field ending in that word
+    head_keys: set[str] = field(default_factory=set)
     currency: str | None = None
     _buckets: dict[tuple[str, int], list[str]] | None = None
 
@@ -194,6 +197,23 @@ def compile_payload(payload: dict[str, Any], schema: Schema, lex: Lexicon) -> Co
     for hk, rows in heads.items():  # a whole segment or a facet value with the same words wins
         if hk not in segments and hk not in values:
             segments[hk] = rows
+    # the head word of a multi-word facet value names it too ("steel" -> "Stainless Steel", "Carbon Steel"), unless
+    # it is already a value or a category word, or a word of the field's own name ("Free Size" never makes "size"
+    # a filter on the size field)
+    value_heads: dict[str, list[tuple[str, str, int]]] = defaultdict(list)
+    for k, rows in values.items():
+        if not 2 <= len(k.split()) <= 3:  # "Stainless Steel", "Navy Blue"; not lists like "Open Face or Full Face"
+            continue
+        hk = k.split()[-1]
+        for fname, v, c in rows:
+            if hk not in {singular(w) for w in re.split(r"[^a-z0-9]+", fname.lower()) if w}:
+                value_heads[hk].append((fname, v, c))
+    head_keys = set()
+    for hk, rows in value_heads.items():
+        if len(hk) >= 4 and hk.isalpha() and hk not in lex.function_words and hk not in values \
+                and hk not in segments:
+            values[hk] = rows
+            head_keys.add(hk)
     single: dict[str, list[str]] = defaultdict(list)
     for k in values:
         if " " not in k and len(k) >= 5 and k.isalpha():
@@ -202,7 +222,7 @@ def compile_payload(payload: dict[str, Any], schema: Schema, lex: Lexicon) -> Co
         data_version=payload.get("data_version", 0), n_docs=payload.get("n_docs", 0),
         coverage=payload.get("coverage", {}), values=dict(values), segments=dict(segments),
         vocab=payload.get("vocab", {}), canon=dict(canon), top_values=top, single_word_keys=dict(single),
-        currency=currency,
+        currency=currency, head_keys=head_keys,
     )
 
 

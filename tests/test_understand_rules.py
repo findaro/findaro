@@ -178,3 +178,21 @@ def test_describe_price():
 def test_codes_are_not_unparsed_words():
     assert P.parse("p017").unparsed_tokens == []
     assert P.parse("x200 charger").unparsed_tokens == []
+
+
+def test_head_word_of_a_facet_value_matches_every_value_ending_in_it():
+    docs = []
+    for i, (mat, size) in enumerate([("Stainless Steel", "Free Size"), ("Carbon Steel", "M"), ("Plastic", "L"),
+                                     ("Stainless Steel", "M"), ("Glass", "Free Size"), ("Plastic", "S")] * 4):
+        docs.append({"id": f"p{i}", "title": f"{mat} bottle {i}", "category": "Home > Bottles", "material": mat,
+                     "size": size, "price": 100 + i})
+    schema, d = payload_from(docs)
+    assert "steel" in d.head_keys
+    assert "size" not in d.values  # a word of the field's own name never becomes a value of that field
+    plan = validate_plan(RulesParser(schema, LEX, d).parse("steel bottle"), schema, d)
+    assert not any(f.field == "material" for f in plan.filters)  # too weak to filter on: ranks instead
+    b = next(b for b in plan.boosts if b.field == "material")
+    assert sorted(b.value) == ["Carbon Steel", "Stainless Steel"]
+    plan = validate_plan(RulesParser(schema, LEX, d).parse("stainless steel bottle"), schema, d)
+    f = next(f for f in plan.filters if f.field == "material")
+    assert f.value == "Stainless Steel"  # the full value still wins over its head word

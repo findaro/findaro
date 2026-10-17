@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>findaro demo: search and ask</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; background: #fff; color: #0f1b33; }
+    main { max-width: 1160px; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    p { margin: 0 0 20px; color: #56647c; font-size: 14px; }
+    @media (prefers-color-scheme: dark) { body { background: #0c1322; color: #e6edf8; } p { color: #98a5bc; } }
+  </style>
+  <!-- One script tag + one element. Replace the two placeholders with your project's id and *search* key
+       (python scripts/demo_setup.py writes unified-demo.html with real values). -->
+  <script src="./findaro-widget.js" data-project="YOUR_PROJECT_ID" data-key="YOUR_SEARCH_KEY"
+          data-base-url="http://localhost:8000" defer></script>
+  <script>
+    // Local demo convenience: this template still has placeholder keys; scripts/demo_setup.py writes
+    // unified-demo.html with real ones. If that exists, go there. (The key name is split so demo_setup's replace
+    // leaves it alone.)
+    if (document.querySelector('script[data-key="YOUR_' + 'SEARCH_KEY"]')) {
+      fetch("unified-demo.html", { method: "HEAD" }).then((r) => { if (r.ok) location.replace("unified-demo.html"); });
+    }
+  </script>
+</head>
+<body>
+  <main>
+    <h1>Demo store</h1>
+    <p>Results update as you type. Press Enter to ask, then keep refining: “only leather”, “cheaper”, “which is best
+      for school?”.</p>
+    <!-- mode="unified" is the default; it is spelled out here for clarity -->
+    <findaro-search mode="unified" badges="material,tags"
+                    starters="black shoes under 1000|kurta for a wedding|steel water bottle|gift for a 10 year old|how do these compare in quality?">
+    </findaro-search>
+  </main>
+</body>
+</html>

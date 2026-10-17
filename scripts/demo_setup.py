@@ -1,4 +1,4 @@
-"""Create a demo project, import the demo catalog, and write examples/plain-html/demo.html and ai-demo.html with its keys.
+"""Create a demo project, import the demo catalog, and write examples/plain-html/demo.html and unified-demo.html with its keys.
 
     docker compose up -d --build && uv run python scripts/demo_setup.py
     open http://localhost:8080/demo.html
@@ -85,7 +85,7 @@ def main() -> None:
         if r.status_code != 200:
             p = None
     p = p or create()
-    for template, out in (("index.html", "demo.html"), ("ai.html", "ai-demo.html")):
+    for template, out in (("index.html", "demo.html"), ("unified.html", "unified-demo.html")):
         html = (EXAMPLE / template).read_text()
         html = html.replace("YOUR_PROJECT_ID", p["project_id"]).replace("YOUR_SEARCH_KEY", p["search_key"])
         (EXAMPLE / out).write_text(html)
@@ -95,7 +95,7 @@ def main() -> None:
     else:
         print("warning: run `npm install && npm run build` to build the widget", file=sys.stderr)
     warm_models()
-    print(f"wrote {EXAMPLE / 'demo.html'} and ai-demo.html; open http://localhost:8080/demo.html or /ai-demo.html")
+    print(f"wrote {EXAMPLE / 'demo.html'} and unified-demo.html; open http://localhost:8080/demo.html or /unified-demo.html")
 
 
 if __name__ == "__main__":

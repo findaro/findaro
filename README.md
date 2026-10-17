@@ -152,17 +152,21 @@ The open-source core in this repository is complete on its own; the hosted servi
    ```
 
 Build the widget with `npm install && npm run build`; the file is `packages/widget/dist/findaro-widget.js` (the
-packages are not published to npm or a CDN yet). It gives you:
-- one search box with a **Search / Ask AI** toggle;
-- understood chips ("Under ₹1,000", "Black") that can be removed;
-- facet pills for refining, behind a "Filters" button;
-- a product grid (image, title, price, rating);
-- an AI panel with a streamed answer, inline product cards for the products it cites, clarifier chips (such as
-  "Show slightly over budget"), and a clear no-match state;
+packages are not published to npm or a CDN yet). By default (`mode="unified"`) it gives you one surface:
+- one search box: results update as you type (rules only, no LLM); **Enter asks the assistant**, and follow-ups typed
+  in the same box ("only leather", "cheaper", "is the first one leather?") continue the conversation;
+- understood chips ("Under ₹1,000", "Black") that can be removed, and facet pills behind a "Filters" button;
+- a compact assistant panel above the results: the latest streamed answer with inline cards for the products it cites,
+  "How I searched", one-click next steps and clarifier rows ("Show slightly over budget"); earlier turns fold into a
+  "Conversation (N)" expander;
+- a product grid (image, title, price, rating, a "Matches 2/2" requirement line), where shoppers select 2–3 products
+  to compare them side by side or ask about them;
 - an **Ask** button on every card that opens a product drawer: the product's details, suggested questions
   (picked from the fields it has, e.g. material, origin, warranty) and a chat about that one product.
 
-The demo page is `examples/plain-html/index.html` with the demo project's keys filled in.
+`mode="search"` is search only (with a Search / Ask AI toggle); `mode="ai"` and `layout="page"` give the older
+full-page conversational AI Mode. The demo pages are `examples/plain-html/unified.html` (the default mode) and
+`index.html` (`mode="search"`), with the demo project's keys filled in by `scripts/demo_setup.py`.
 
 **Customise:**
 
@@ -185,7 +189,7 @@ The demo page is `examples/plain-html/index.html` with the demo project's keys f
 </script>
 ```
 
-- **Attributes:** `project`, `key`, `base-url` (override the script tag), `mode` (`search` | `ai`), `locale`
+- **Attributes:** `project`, `key`, `base-url` (override the script tag), `mode` (`unified` | `search` | `ai`), `locale`
   (`en` | `hi-en`), `placeholder`, `size`, `theme` (`light` | `dark`; default follows `prefers-color-scheme`).
 - **Behaviour:** the widget is mobile-first and keyboard accessible: the mode toggle is a radio group, Enter
   searches and Escape clears, and the conversation is an ARIA live log.

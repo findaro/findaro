@@ -7,11 +7,19 @@ Drop-in AI search for any page: a `<findaro-search>` Web Component (Shadow DOM, 
 <findaro-search></findaro-search>
 ```
 
-Theme with CSS variables (`--findaro-accent`, `--findaro-bg`, `--findaro-fg`, `--findaro-radius`, …), customise cards with
+By default (`mode="unified"`) search and the assistant share one surface: results update as you type (rules only, no
+LLM), Enter asks the assistant (`/v1/chat`), which refines the same grid and answers in a compact panel above it
+(latest reply, "How I searched", next steps; earlier turns folded into "Conversation (N)"). Follow-ups in the same box
+continue the session; chips, filter pills and next-step rows apply patches to it; cards can be selected (2–3) to compare
+or ask about; "New search" starts over. `starters="a|b|c"` shows example requests as chips in the empty state.
+`mode="search"` is search only (with a Search / Ask AI toggle).
+
+Theme with CSS variables (`--findaro-accent`, `--findaro-bg`, `--findaro-fg`, `--findaro-radius`, `--findaro-font`,
+`--findaro-font-heading`, `--findaro-accent-soft`, `--findaro-warn` for close-match/partial states, …), customise cards with
 `el.renderProduct = (hit, { display, formatPrice }) => …`, handle clicks with `el.onProductClick`, and override text with
 `el.strings = { … }` (`locale="hi-en"` for Hinglish defaults). See the repository README.
 
-## AI Mode
+## AI Mode (full page, kept for existing integrations)
 
 ```html
 <style>findaro-search { height: 100dvh; }</style>

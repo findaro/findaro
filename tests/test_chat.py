@@ -530,3 +530,36 @@ async def test_compare_question_without_llm_ranks_by_rating(loaded):
     text = "".join(d["delta"] for e, d in ev2 if e == "text")
     order = sorted(shown, key=lambda h: (-h["document"]["rating"]))
     assert "can't answer" not in text and text.index(f"[{order[0]['id']}]") < text.index(f"[{order[-1]['id']}]"), text
+
+
+async def test_field_of_shown_results_is_a_question_not_a_search(loaded):
+    ev = await chat(loaded, "water bottle")
+    sid = first(ev, "session")["session_id"]
+    shown = first(ev, "results")["items"]
+    ev2 = await chat(loaded, "give me rating of top 5", session_id=sid)
+    assert first(ev2, "done")["turn_type"] == "question", first(ev2, "done")
+    text = "".join(d["delta"] for e, d in ev2 if e == "text")
+    for item in shown[:5]:
+        assert f"[{item['id']}] {item['document']['rating']:g}★" in text, text
+    assert f"[{shown[5]['id']}]" not in text  # only the five asked for
+    ev3 = await chat(loaded, "price of these 3", session_id=sid)
+    text = "".join(d["delta"] for e, d in ev3 if e == "text")
+    assert first(ev3, "done")["turn_type"] == "question" and text.count("₹") == 3, text
+
+
+def test_field_question_rule_leaves_searches_alone():
+    fields = {"rating", "price", "material", "color"}
+    t, _ = classify("steel water bottle under 500", True, True, plan_for("steel water bottle under 500"), DICT,
+                    fields=fields)
+    assert t != "question"
+
+
+async def test_cheapest_question_without_llm_ranks_by_price(loaded):
+    ev = await chat(loaded, "water bottle")
+    sid = first(ev, "session")["session_id"]
+    shown = first(ev, "results")["items"][:3]
+    ev2 = await chat(loaded, "which one is cheapest?", session_id=sid)
+    text = "".join(d["delta"] for e, d in ev2 if e == "text")
+    order = sorted(shown, key=lambda h: h["document"]["price"])
+    assert text.startswith("Cheapest first:"), text
+    assert text.index(f"[{order[0]['id']}]") < text.index(f"[{order[-1]['id']}]"), text

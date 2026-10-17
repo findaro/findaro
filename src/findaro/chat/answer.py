@@ -313,9 +313,57 @@ def fallback_product_text(focus: dict[str, dict[str, Any]], schema: Schema, hing
     return head
 
 
-COMPARE_Q = re.compile(r"\b(compare|comparison|vs|versus|better|best|which (one|is)|quality|difference|differ|"
+COMPARE_Q = re.compile(r"\b(compare|comparison|vs|versus|better|best|which (one|is)|quality|difference|differ|cheap\w*|"
                        r"kaun ?sa|kaunsa|behtar|accha|achha)\b", re.I)
 _HOW_MANY = re.compile(r"\b(?:these|those|top|first|pehle|in)\s+(\d)\b", re.I)
+
+
+CHEAP_Q = re.compile(r"\b(cheap\w*|sasta|saste|sasti|lowest price|least expensive|kam (daam|price))\b", re.I)
+DEAR_Q = re.compile(r"\b(costliest|most expensive|expensive|mehenga|mehnga|highest price|premium)\b", re.I)
+_NUM_SCOPE = re.compile(r"\b(?:top|first|pehle|these|those|in|un)\s+(\d+)\b", re.I)
+
+
+def _field_listing(message: str, shown: list[tuple[str, dict[str, Any]]], schema: Schema, hinglish: bool,
+                   symbol: str) -> str | None:
+    """"rating of top 5", "price of these 3": the asked fields of the products meant, from their listings."""
+    from findaro.understand.lexicon import singular
+
+    words = {singular(w) for w in re.findall(r"[a-z]+", message.lower())}
+    asked = [f for f in schema.fields
+             if any(len(w) >= 4 and singular(w) in words for w in re.split(r"[^a-z]+", f.name.lower()))]
+    if not ({"count", "review"} & words):  # "rating" shows the review count inside the rating, not twice
+        asked = [f for f in asked if "count" not in f.name.lower()] or asked
+    if not asked or not shown:
+        return None
+    m = _NUM_SCOPE.search(message)
+    n = max(1, min(int(m.group(1)), 10, len(shown))) if m else min(5, len(shown))
+    names = {f.name for f in asked}
+    count = next((f.name for f in schema.fields if f.name not in names and "rating" in f.name.lower()
+                  and "count" in f.name.lower()), None)
+    price_roles = {Role.price}
+
+    def show(f, doc: dict[str, Any]) -> str | None:
+        v = doc.get(f.name)
+        if v is None or v == "":
+            return None
+        if f.role in price_roles and isinstance(v, int | float):
+            return f"{symbol}{float(v):,.0f}"
+        if "rating" in f.name.lower() and "count" not in f.name.lower() and isinstance(v, int | float):
+            reviews = doc.get(count) if count else None
+            if not isinstance(reviews, int | float):
+                return f"{v:g}★"
+            return f"{v:g}★ ({int(reviews):,} review{'' if int(reviews) == 1 else 's'})"
+        if isinstance(v, list):
+            v = ", ".join(map(str, v))
+        return str(v).split(" > ")[-1]
+
+    lines = []
+    for did, doc in shown[:n]:
+        vals = [x for x in (show(f, doc) for f in asked) if x]
+        lines.append(f"[{did}] " + (", ".join(vals) if vals else ("listing mein nahi" if hinglish else "not listed")))
+    label = ", ".join(f.name.replace("_", " ") for f in asked)
+    head = f"Pehle {n} products ka {label}:" if hinglish else f"{label.capitalize()} of the first {n} shown:"
+    return head + " " + "; ".join(lines) + "."
 
 
 def fallback_question_text(message: str, shown: list[tuple[str, dict[str, Any]]], schema: Schema, hinglish: bool,
@@ -324,6 +372,9 @@ def fallback_question_text(message: str, shown: list[tuple[str, dict[str, Any]]]
     listings' own rating, review count and price, ranked in code; anything else gets an honest 'can't'."""
     cant = ("Is sawal ka jawab abhi nahi de sakta." if hinglish
             else "I can't answer questions about products right now.")
+    listed = _field_listing(message, shown, schema, hinglish, symbol)
+    if listed:
+        return listed
     if not COMPARE_Q.search(message) or len(shown) < 2:
         return cant
     m = _HOW_MANY.search(message)
@@ -341,14 +392,20 @@ def fallback_question_text(message: str, shown: list[tuple[str, dict[str, Any]]]
     def part(did: str, doc: dict[str, Any]) -> str:
         bits = []
         if rating and isinstance(doc.get(rating), int | float):
-            bits.append(f"{doc[rating]:g}★" + (f" from {int(doc[count]):,} reviews"
-                                               if count and isinstance(doc.get(count), int | float) else ""))
+            n = int(doc[count]) if count and isinstance(doc.get(count), int | float) else None
+            bits.append(f"{doc[rating]:g}★" + (f" from {n:,} review{'' if n == 1 else 's'}" if n is not None else ""))
         if price and isinstance(doc.get(price), int | float):
             bits.append(money(doc[price]))
         return f"[{did}] " + ", ".join(bits) if bits else f"[{did}]"
 
     rated = [(did, doc) for did, doc in docs if rating and isinstance(doc.get(rating), int | float)]
-    if len(rated) == len(docs):
+    by_price = CHEAP_Q.search(message) or DEAR_Q.search(message)
+    if by_price and price and all(isinstance(doc.get(price), int | float) for _, doc in docs):
+        dear = bool(DEAR_Q.search(message)) and not CHEAP_Q.search(message)
+        ranked = sorted(docs, key=lambda x: float(x[1][price]), reverse=dear)
+        head = (("Sabse mehenga pehle:" if dear else "Sabse sasta pehle:") if hinglish
+                else ("Most expensive first:" if dear else "Cheapest first:"))
+    elif len(rated) == len(docs):
         ranked = sorted(docs, key=lambda x: (-float(x[1][rating]), -float((x[1].get(count) or 0)
                                                                          if count else 0)))
         head = ("Rating hi yahan quality ka sabse kareeb signal hai. Rating ke hisaab se:" if hinglish

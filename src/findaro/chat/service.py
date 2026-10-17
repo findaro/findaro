@@ -25,6 +25,7 @@ from findaro.chat.turns import (
     apply_delta,
     chip_label,
     classify,
+    field_words,
     is_hinglish,
     refine,
     shown_category,
@@ -245,7 +246,8 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
     if turn is None:
         # products on screen only anchor a refinement if they were a good match for what was asked
         context = shown_category(schema, sess.last_docs) if sess.last_quality == "good" else None
-        turn, reason = classify(msg, old_plan is not None, bool(sess.last_docs), parsed, d, context)
+        turn, reason = classify(msg, old_plan is not None, bool(sess.last_docs), parsed, d, context,
+                                fields=field_words([f.name for f in schema.fields]))
         if turn is None:
             if chat_llm is not None:
                 llm_out = await _llm_classify(chat_llm, msg, old_plan, sess.last_docs, schema, d,

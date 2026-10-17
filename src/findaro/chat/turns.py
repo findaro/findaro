@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from findaro.schema.model import NUMBER_ROLES, Role, Schema
 from findaro.understand.dictionary import Compiled
-from findaro.understand.lexicon import Lexicon, fold, tokenize
+from findaro.understand.lexicon import Lexicon, fold, singular, tokenize
 from findaro.understand.plan import PlanFilter, PlanSort, QueryPlan, primary_price_field, validate_plan
 from findaro.understand.rules import RulesParser
 
@@ -156,8 +156,24 @@ def shown_category(schema: Schema, docs: list[dict[str, Any]]) -> str | None:
     return " > ".join(common) if common else None
 
 
+# "top 5", "first 3", "these 4", "pehle 2", "all of them": a reference to the results on screen
+SHOWN_SCOPE = re.compile(r"\b(?:top|first|pehle|these|those|in|un)\s+\d+\b|\ball (?:of )?(?:them|these)\b"
+                         r"|\bsab(?:ka|ki|ke)?\b", re.I)
+
+
+def field_words(schema_fields: list[str]) -> set[str]:
+    """Words that name the catalog's own fields ("rating", "price", "material"), taken from the schema."""
+    out: set[str] = set()
+    for name in schema_fields:
+        for w in re.split(r"[^a-z]+", name.lower()):
+            if len(w) >= 4:
+                out.add(singular(w))
+    return out
+
+
 def classify(message: str, has_plan: bool, has_results: bool, parsed: QueryPlan,
-             d: Compiled | None, context_category: str | None = None) -> tuple[TurnType | None, str]:
+             d: Compiled | None, context_category: str | None = None,
+             fields: set[str] | None = None) -> tuple[TurnType | None, str]:
     """Rules. Returns (type, reason); type None means 'unclear, ask the LLM'."""
     toks = tokenize(message)
     norm = " ".join(toks)
@@ -177,6 +193,10 @@ def classify(message: str, has_plan: bool, has_results: bool, parsed: QueryPlan,
             return "question", "asks about shown results"
         if asks and _superlative(toks) and not _category_mentioned(parsed):
             return "question", "superlative question about shown results"
+        # "give me rating of top 5", "price of these 3": a field of the shown items, not a new search
+        named = fields and {singular(t) for t in toks} & fields
+        if named and (SHOWN_SCOPE.search(message) or deictic) and not parsed.filters:
+            return "question", "asks for a field of shown results"
     if not has_plan:
         return "new", "no current search"
     if bare_price(toks, parsed) is not None and not _category_mentioned(parsed):

@@ -404,6 +404,7 @@ export class FindaroSearch extends HTMLElement {
       display: res.display ?? EMPTY_DISPLAY, semantic: und?.semantic_text ?? res.query,
     };
     for (const hit of res.hits) this.#docs.set(hit.id, hit);
+    if (res.display && Object.keys(res.display).length) this.#display = res.display; // compare/drawer in either mode
     this.dispatchEvent(new CustomEvent("findaro:results", { detail: res, bubbles: true, composed: true }));
   }
 
@@ -1362,8 +1363,10 @@ export class FindaroSearch extends HTMLElement {
     for (const [k, v] of Object.entries(doc)) {
       if (skip.has(k) || v == null || v === "" || typeof v === "object" && !Array.isArray(v)) continue;
       if (d.currency && v === d.currency) continue; // "Currency: INR" adds nothing next to the price
-      const label = k.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
-      const text = Array.isArray(v) ? v.join(", ") : String(v);
+      // vowel-less short codes read as acronyms ("mrp" -> "MRP", "sku" -> "SKU"); other names in sentence case
+      const label = /^[bcdfghjklmnpqrstvwxz]{2,4}$/i.test(k) ? k.toUpperCase() : k.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+      const text = typeof v === "boolean" ? (v ? this.#s.yes : this.#s.no)
+        : Array.isArray(v) ? v.join(", ") : String(v);
       out.push([label, text.includes(" > ") ? text.split(" > ").pop()! : text]);
     }
     return out;

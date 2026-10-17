@@ -31,6 +31,8 @@ export interface Strings {
   viewProduct: string;
   closeDrawer: string;
   allDetails: string;
+  yes: string; // boolean fields in details and comparisons
+  no: string;
   /** suggested questions by document field ("*" = always) */
   suggest: Record<string, string>;
   // AI Mode (thread, sidebar, cards, compare)
@@ -120,6 +122,8 @@ export const STRINGS: Record<string, Strings> = {
     viewProduct: "View product",
     closeDrawer: "Close",
     allDetails: "All details",
+    yes: "Yes",
+    no: "No",
     suggest: { material: "What is it made of?", country_of_origin: "Where is it made?",
                warranty: "Is there a warranty?", care: "How do I take care of it?",
                return_policy: "Can I return it?", "*": "Tell me more about it" },
@@ -205,6 +209,8 @@ export const STRINGS: Record<string, Strings> = {
     viewProduct: "Product dekhein",
     closeDrawer: "Band karein",
     allDetails: "Saari details",
+    yes: "Haan",
+    no: "Nahi",
     suggest: { material: "Ye kis cheez se bana hai?", country_of_origin: "Kahan bana hai?",
                warranty: "Warranty hai kya?", care: "Iski dekhbhal kaise karein?",
                return_policy: "Return ho sakta hai?", "*": "Iske baare mein aur bataiye" },

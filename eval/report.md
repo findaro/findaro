@@ -207,7 +207,7 @@ Cold-embedding and 10k-document numbers: `eval/latency_10k.md` (`scripts/bench.p
 ## M3 — chat search
 
 - Date: 2026-10-11 00:01 UTC · 25 conversations, 71 turns (`eval/conversations.jsonl`, marked needs_review)
-- Chat model: see docker-compose.yml / ZERCH_CHAT_MODEL · judge: ollama:llama3.1:8b (OpenAI in place of claude-haiku-4-5, approved by Rohit 2026-10-08)
+- Chat model: see docker-compose.yml / ZERCH_CHAT_MODEL · judge: ollama:llama3.1:8b
 
 | Target / metric | Result | |
 |---|---|---|

@@ -90,4 +90,5 @@ billing, DB/Shopify connectors, image/voice search, cloud deployment, multi-regi
 
 ## Tracking
 
-Notion Global Todo (one row per milestone) if the Notion MCP is authorised; otherwise `TRACKING.md` in this repo.
+Milestone history lives in `docs/history.md`; open work is tracked in GitHub issues. Session notes and personal
+trackers stay out of the repo.

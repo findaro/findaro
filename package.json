@@ -1,6 +1,7 @@
 {
   "name": "zerch-js",
   "private": true,
+  "description": "zerch JavaScript workspace: @zerch/sdk, @zerch/widget and examples.",
   "license": "Apache-2.0",
   "workspaces": [
     "packages/sdk",

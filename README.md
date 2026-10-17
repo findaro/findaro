@@ -1,35 +1,114 @@
 # zerch
 
-Open-source AI search as a service. Push your catalog as JSON or CSV and call one search endpoint.
-You get hybrid retrieval (BM25 + multilingual vectors), typo tolerance, Hinglish-friendly matching, filters,
-facets and highlighting. You don't need to define a schema: zerch infers field roles from your data.
+**Open-source AI search for your catalog: one API call or one script tag, and it understands how your shoppers
+actually type.**
 
-It also understands queries ("kaale joote 1000 ke andar" becomes black shoes under ₹1,000), has a
-conversational chat mode with grounded answers, and comes with a drop-in widget (`<zerch-search>`) and a headless
-TypeScript SDK (`@zerch/sdk`). Everything runs locally: the AI parts use [Ollama](https://ollama.com) by default,
-and paid LLM APIs are only used if you configure them.
+Push your catalog as JSON or CSV, call one search endpoint (or drop in a widget), and get natural-language search
+with filters inferred from the query, conversational refinement and grounded answers about your products. No
+schema to define, no search engine to tune. Apache-2.0.
 
-License: Apache-2.0.
+```text
+"kaale joote 1000 ke andar"  →  black shoes, price ≤ ₹1,000   (chips: "Under ₹1,000" ×, "Black" ×)
+```
 
-## Run the demo
+## Why zerch
 
-**Prerequisites:**
-- Docker, with about 4 GB of memory for containers;
-- [uv](https://docs.astral.sh/uv/) (Python 3.12) and Node.js 20 or newer;
-- [Ollama](https://ollama.com), with the two local models:
+- **Indian-English and Hinglish out of the box.** "sasta", "500 ke andar", "sarson ka tel", "gents chappal",
+  Devanagari (`जूते` matches `joote`) and romanised spelling variants (joota / juta / jootey) all work, through
+  language packs rather than per-catalog hacks.
+- **Filters inferred from the query.** Prices, colours, materials, sizes, brands and categories are read from the
+  words and applied as removable chips, using only values that exist in *your* catalog.
+- **Chat-style refinement.** "running shoes for men" → "only black" → "aur sasta" → "is the second one lace-up?",
+  over Server-Sent Events, with clarifying chips when they help.
+- **Grounded product Q&A.** Ask about a product the way you would on a product page ("made in India or
+  imported?", "return ho jayega?"). The model only sees the products on screen, numbers are filled in by the
+  server, and every sentence is checked in code before it streams. If the listing doesn't say, the answer says so.
+- **Drop-in widget and headless SDK.** `<zerch-search>` (one script tag, about 10 KB gzipped) or `@zerch/sdk`
+  (typed, zero dependencies, about 1.5 KB gzipped).
+- **Hybrid retrieval.** BM25 (with typo tolerance and ICU analysis) plus multilingual vectors
+  (`multilingual-e5-small`, run locally), fused with Reciprocal Rank Fusion.
+- **Schema inference.** Field roles (title, price, facet, category, ...) are inferred from your data and can be
+  overridden through the API.
+- **Runs entirely on your machine.** The AI parts use local [Ollama](https://ollama.com) models by default. Paid
+  LLM APIs are only used if you explicitly configure them, and search never depends on an LLM: it works fully
+  without one.
 
-  ```bash
-  ollama pull llama3.1:8b    # chat answers
-  ollama pull llama3.2:3b    # query planner, for words the rules can't read
-  ```
+## Quickstart: self-host in 5 minutes
 
-  Without Ollama, search still works fully and chat answers fall back to plain one-line templates.
-
-**Start it:**
+Requirements: Docker (with about 4 GB of memory for containers), `curl` and `jq`.
 
 ```bash
-git clone https://github.com/rohitsaini1196/zerch && cd zerch
-docker compose up -d --build                    # API :8000, worker, OpenSearch, Postgres, Redis, demo page :8080
+git clone <repository-url> zerch && cd zerch
+docker compose up -d --build        # API on :8000, plus worker, OpenSearch, Postgres, Redis
+curl -s localhost:8000/healthz      # {"status":"ok"} once the API is up (the first build takes a few minutes)
+```
+
+**1. Create a project.** The response contains two keys. The `admin_key` manages data, so keep it on the server.
+The `search_key` can only search and chat, so it is safe to use in browsers. On any deployment others can reach,
+set `ZERCH_BOOTSTRAP_TOKEN`; otherwise anyone can create projects (the API logs a warning).
+
+```bash
+curl -s -X POST localhost:8000/v1/projects -H 'content-type: application/json' -d '{"name":"demo"}' | tee project.json
+PID=$(jq -r .project_id project.json); ADMIN=$(jq -r .admin_key project.json); SEARCH=$(jq -r .search_key project.json)
+```
+
+**2. Import a catalog.** The repo ships a synthetic demo catalog (3,000 invented Indian e-commerce products). The
+import runs as an async job:
+
+```bash
+curl -s -X POST localhost:8000/v1/projects/$PID/import -H "authorization: Bearer $ADMIN" \
+  -F file=@data/demo_catalog.jsonl | tee job.json
+curl -s localhost:8000$(jq -r .status_url job.json) -H "authorization: Bearer $ADMIN" | jq '{status, succeeded, failed}'
+```
+
+Repeat the status call until `status` is `succeeded`. It takes about 30 seconds, most of it spent embedding.
+
+**3. Look at the inferred schema:**
+
+```bash
+curl -s localhost:8000/v1/projects/$PID/schema -H "authorization: Bearer $ADMIN" | jq -c '.schema.fields[] | {name, role}'
+```
+
+**4. Search:**
+
+```bash
+curl -s -X POST localhost:8000/v1/search -H "authorization: Bearer $SEARCH" -H 'content-type: application/json' \
+  -d '{"query": "kaale joote 1000 ke andar", "size": 5}' \
+  | jq '{total, chips: [.understood.chips[].label], hits: [.hits[] | {id, title: .document.title, price: .document.price}]}'
+
+# typos, Hinglish, explicit filters
+curl -s -X POST localhost:8000/v1/search -H "authorization: Bearer $SEARCH" -H 'content-type: application/json' \
+  -d '{"query": "presure coker"}' | jq '[.hits[:3][].document.title]'
+curl -s -X POST localhost:8000/v1/search -H "authorization: Bearer $SEARCH" -H 'content-type: application/json' \
+  -d '{"query": "black running shoes", "filters": {"price": {"lte": 1500}}, "size": 5}' | jq '[.hits[].document.title]'
+```
+
+**5. Chat** (optional, needs a chat model; see below):
+
+```bash
+curl -N -X POST localhost:8000/v1/chat -H "authorization: Bearer $SEARCH" -H 'content-type: application/json' \
+  -d '{"message": "saree under 1000"}'
+```
+
+### Local AI models (optional)
+
+Search, query understanding and chat refinement work without any LLM. For streamed chat answers and the query
+planner's fallback on unusual phrasing, install [Ollama](https://ollama.com) and pull the two default models:
+
+```bash
+ollama pull llama3.1:8b    # chat answers
+ollama pull llama3.2:3b    # query planner, for words the rules can't read
+```
+
+Without them, chat answers fall back to plain one-line templates. Hosted models (OpenAI, Anthropic) are supported
+but are never turned on by an API key alone; see [Chat](#chat-post-v1chat).
+
+## Try the demo page
+
+The demo page shows the widget on the demo catalog. It needs Node.js 20+ and [uv](https://docs.astral.sh/uv/)
+(Python 3.12) in addition to the stack above:
+
+```bash
 npm install && npm run build                    # builds the SDK and the widget
 uv run python scripts/demo_setup.py             # waits for the API, imports the demo catalog, warms the models
 ```
@@ -42,12 +121,19 @@ Open http://localhost:8080/demo.html. Things to try:
 - Search `women shoes under 1000`, tap **Ask** on a card, then `What is it made of?`, `Is this made in India or
   imported?`, `Pasand na aaye to return ho jayega?`.
 
-The first build takes a few minutes. Chat answers take a few seconds on the local 8B model.
+Chat answers take a few seconds on the local 8B model.
 
-## Integrate in 5 minutes (script tag)
+## Hosted zerch
 
-1. Create a project and import your catalog (see the API quickstart below), and keep the **search key**. It's
-   browser-safe: read-only, search and chat only.
+Don't want to run OpenSearch, Postgres and the models yourself? A managed version of zerch is in **beta**: the same
+API, SDK and widget, operated for you. Request access at **https://zerch.130-210-49-63.sslip.io**.
+
+The open-source core in this repository is complete on its own; the hosted service runs the same engine.
+
+## Add search to your site (script tag)
+
+1. Create a project and import your catalog (see the [quickstart](#quickstart-self-host-in-5-minutes)), and keep
+   the **search key**. It's browser-safe: read-only, search and chat only.
 2. Allow your site's origin. localhost always works (`ZERCH_ALLOW_LOCALHOST_ORIGINS=false` turns that off for
    production).
 
@@ -62,8 +148,8 @@ The first build takes a few minutes. Chat answers take a few seconds on the loca
    <zerch-search></zerch-search>
    ```
 
-Build the widget with `npm install && npm run build`; the file is `packages/widget/dist/zerch-widget.js`, 10.3 KB
-gzipped with the SDK included. It gives you:
+Build the widget with `npm install && npm run build`; the file is `packages/widget/dist/zerch-widget.js` (the
+packages are not published to npm or a CDN yet). It gives you:
 - one search box with a **Search / Ask AI** toggle;
 - understood chips ("Under ₹1,000", "Black") that can be removed;
 - facet pills for refining, behind a "Filters" button;
@@ -73,7 +159,7 @@ gzipped with the SDK included. It gives you:
 - an **Ask** button on every card that opens a product drawer: the product's details, suggested questions
   (picked from the fields it has, e.g. material, origin, warranty) and a chat about that one product.
 
-The demo page above is `examples/plain-html/index.html` with the demo project's keys filled in.
+The demo page is `examples/plain-html/index.html` with the demo project's keys filled in.
 
 **Customise:**
 
@@ -103,11 +189,10 @@ The demo page above is `examples/plain-html/index.html` with the demo project's 
 - **Safety:** product links from catalog data are only followed if they are `http(s)`. Search-as-you-type never
   calls the LLM planner; only a submitted search can.
 
-## Headless (npm)
+## Headless SDK
 
-`@zerch/sdk` is a typed client with zero dependencies (1.5 KB gzipped, ESM + UMD). Its types are generated from
-the API's OpenAPI spec (`packages/sdk/openapi.json`, regenerated by `scripts/export_openapi.py` and
-`npm run gen:types`).
+`@zerch/sdk` is a typed client with zero dependencies (ESM + UMD). Its types are generated from the API's OpenAPI
+spec (`packages/sdk/openapi.json`, regenerated by `scripts/export_openapi.py` and `npm run gen:types`).
 
 ```ts
 import { createClient, debounce } from "@zerch/sdk";
@@ -135,57 +220,29 @@ const searchAsYouType = debounce((q: string) => zerch.search(q), 250);
 - **Errors:** API errors throw a `ZerchError` with `status` and `code`.
 - **Example:** `examples/react/` is a 40-line Vite + React app that uses only the SDK.
 
-## 5-minute quickstart (API)
+## Architecture
 
-Requirements: Docker with about 4 GB of memory for containers, plus `curl` and `jq`. Ollama is optional here (see
-[Run the demo](#run-the-demo)).
-
-```bash
-git clone https://github.com/rohitsaini1196/zerch && cd zerch
-docker compose up -d --build        # API on :8000, plus worker, OpenSearch, Postgres, Redis
-curl -s localhost:8000/healthz      # {"status":"ok"} once the API is up (the first build takes a few minutes)
+```text
+ browser (widget / SDK, search key)        your server (admin key)
+              │                                      │
+              ▼                                      ▼
+        FastAPI API ──── query understanding (rules + locale packs + per-project value dictionary,
+              │          optional LLM planner behind a timeout) ──── chat (SSE, grounded answers)
+              │
+   ┌──────────┼──────────────┬───────────────┐
+   ▼          ▼              ▼               ▼
+OpenSearch  Redis         Postgres        ingest worker
+(BM25+kNN)  (cache,       (projects,      (parse, infer schema,
+            rate limit,   hashed keys,     embed, index)
+            chat sessions) jobs)
 ```
 
-**1. Create a project.** Set `ZERCH_BOOTSTRAP_TOKEN` on any API others can reach; otherwise anyone can create
-projects (the API logs a warning). The response contains two keys. The `admin_key` manages data, so keep it on the server.
-The `search_key` can only search, so it is safe to use in browsers.
+Python 3.12 + FastAPI, OpenSearch 3 (with `analysis-icu`), Postgres, Redis, local `multilingual-e5-small`
+embeddings, and a pluggable LLM interface (Ollama by default; OpenAI and Anthropic opt-in). The engine is
+domain-agnostic: nothing in `src/zerch/` knows about any particular catalog. Everything catalog-specific is
+inferred from your data.
 
-```bash
-curl -s -X POST localhost:8000/v1/projects -H 'content-type: application/json' -d '{"name":"demo"}' | tee project.json
-PID=$(jq -r .project_id project.json); ADMIN=$(jq -r .admin_key project.json); SEARCH=$(jq -r .search_key project.json)
-```
-
-**2. Import the demo catalog** (3,000 synthetic Indian e-commerce products). The import runs as an async job:
-
-```bash
-curl -s -X POST localhost:8000/v1/projects/$PID/import -H "authorization: Bearer $ADMIN" \
-  -F file=@data/demo_catalog.jsonl | tee job.json
-curl -s localhost:8000$(jq -r .status_url job.json) -H "authorization: Bearer $ADMIN" | jq '{status, succeeded, failed}'
-```
-
-Repeat the status call until `status` is `succeeded`. It takes about 30 seconds, most of it spent embedding.
-
-**3. Look at the inferred schema:**
-
-```bash
-curl -s localhost:8000/v1/projects/$PID/schema -H "authorization: Bearer $ADMIN" | jq -c '.schema.fields[] | {name, role}'
-```
-
-**4. Search:**
-
-```bash
-curl -s -X POST localhost:8000/v1/search -H "authorization: Bearer $SEARCH" -H 'content-type: application/json' \
-  -d '{"query": "black running shoes", "filters": {"price": {"lte": 1500}}, "size": 5}' \
-  | jq '{total, hits: [.hits[] | {id, title: .document.title, price: .document.price}], colors: .facets.color.values[:5]}'
-
-# typos, Hinglish, Devanagari
-curl -s -X POST localhost:8000/v1/search -H "authorization: Bearer $SEARCH" -H 'content-type: application/json' \
-  -d '{"query": "presure coker"}' | jq '[.hits[:3][].document.title]'
-curl -s -X POST localhost:8000/v1/search -H "authorization: Bearer $SEARCH" -H 'content-type: application/json' \
-  -d '{"query": "kapde rakhne wala bag"}' | jq '[.hits[:3][].document.title]'
-```
-
-## API
+## API reference
 
 All endpoints take `Authorization: Bearer <key>`. The `X-Zerch-Key: <key>` header works too.
 
@@ -268,7 +325,7 @@ It recognises:
 - **Cheap or premium intent**: "sasta", "premium".
 - **Hinglish words**, translated through the locale packs (`packs/locales/*.yaml`).
 
-What it understood comes back in `understood`. This field is meant for search UIs (M3 and M4 build on it):
+What it understood comes back in `understood`. This field is meant for search UIs (the widget and SDK build on it):
 
 ```json
 "understood": {
@@ -374,7 +431,7 @@ Sessions live in Redis for 30 minutes. If a patch arrives after its session expi
 | `done` | last | `timings` (ms since the request), `turn_type`, `reason`, `answer_source` (`model`, `fallback`, `error` or `template`) |
 
 **How turns are handled.** Rules classify most turns; the LLM is only used when the rules can't tell.
-- **New search:** runs the M2 planner on the message.
+- **New search:** runs the query planner on the message.
 - **Refinement:** changes the current plan. Examples: "cheaper" / "aur sasta" lowers the price ceiling and
   sorts cheapest first; "under 500" / "500 ke andar" sets the price range; "only black" / "sirf cotton" adds a
   filter; "not plastic" / "black nahi" / "not slippers" excludes; "increase it to 2000" / "2000 tak" sets a new
@@ -500,17 +557,16 @@ come from its data. `ZERCH_LOCALE_PACKS` picks which packs load.
 
 ## Development
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full setup. In short:
+
 ```bash
-npm install && npm run check                  # JS: generate types, typecheck, build, bundle-size budgets
-npm run e2e                                   # Playwright: widget (desktop + mobile) and React example; needs the stack up
-uv sync
-docker compose up -d postgres opensearch redis
+uv sync && docker compose up -d postgres opensearch redis
 uv run pytest                                 # integration tests use their own DB/index prefix and a hash embedder
 uv run uvicorn zerch.main:app --reload        # API on the host (ZERCH_* env vars, see src/zerch/config.py)
-uv run python -m zerch.worker                 # ingest worker
+uv run python -m zerch.worker                 # ingest worker (run a single worker; jobs for a project run in order)
+npm install && npm run check                  # JS: generate types, typecheck, build, bundle-size budgets
+npm run e2e                                   # Playwright: widget (desktop + mobile) and React example; needs the stack up
 ```
-
-Run a single worker. Jobs for a project run in order.
 
 ### Query log
 
@@ -551,6 +607,21 @@ real deployment.
   `eval/report.md` and saves every answer to `eval/results/` for review. `--judge` adds an LLM groundedness judge
   (local Ollama by default); the reported groundedness was reviewed by hand (`eval/chat_review_m4.md`).
 - `eval/report.md` also covers planner call and cache rates, latency per path, out-of-catalog queries and the
-  holdout (`eval/holdout.jsonl`: 20 Hinglish queries written by a different LLM, never tuned on, pending human
-  review; format in `eval/README.md`).
+  holdout (`eval/holdout.jsonl`: 20 Hinglish queries written by a different LLM, never tuned on; format in
+  `eval/README.md`).
 - No eval script calls a paid API unless you pass a paid `--provider`/`--judge-provider` yourself.
+
+A short milestone history is in [docs/history.md](docs/history.md).
+
+## Status and roadmap
+
+zerch is early (0.x): the API is versioned under `/v1` and changes additively, but expect rough edges. Not built
+yet: autocomplete, recommendations, personalization, analytics and click tracking, an admin dashboard, database
+or Shopify connectors, image and voice search, and npm/CDN packages. Ideas and pull requests are welcome; see
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Contributing, security and license
+
+- Contributing: [CONTRIBUTING.md](CONTRIBUTING.md) · Code of conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- Security issues: please report privately, see [SECURITY.md](SECURITY.md)
+- License: [Apache-2.0](LICENSE)

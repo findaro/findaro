@@ -14,6 +14,9 @@ schema to define, no search engine to tune. Apache-2.0.
 "kaale joote 1000 ke andar"  →  black shoes, price ≤ ₹1,000   (chips: "Under ₹1,000" ×, "Black" ×)
 ```
 
+**Try it:** [live demo](https://findaro.fortwinai.com/demo/) on a 3,000-product synthetic store (Search and AI Mode),
+or see [findaro.fortwinai.com](https://findaro.fortwinai.com).
+
 ## Why findaro
 
 - **Indian-English and Hinglish out of the box.** "sasta", "500 ke andar", "sarson ka tel", "gents chappal",
@@ -129,9 +132,12 @@ Chat answers take a few seconds on the local 8B model.
 ## Hosted findaro
 
 Don't want to run OpenSearch, Postgres and the models yourself? A managed version of findaro is in **beta**: the same
-API, SDK and widget, operated for you. Request access at **https://findaro.fortwinai.com**.
+API, SDK and widget, operated for you in India (Mumbai). [Request access](https://findaro.fortwinai.com/request-access.html)
+or [try the live demo](https://findaro.fortwinai.com/demo/).
 
-The open-source core in this repository is complete on its own; the hosted service runs the same engine.
+The open-source core in this repository is complete on its own; the hosted service runs the same engine. How we
+deploy it (one Docker host behind a shared Caddy, fronted by a Cloudflare Worker so the server's address stays
+private) is in [`deploy/app-a1`](deploy/app-a1/README.md) and [`deploy/cloudflare`](deploy/cloudflare/deploy.sh).
 
 ## Add search to your site (script tag)
 

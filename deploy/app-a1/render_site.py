@@ -4,8 +4,10 @@
 
 Copies app/site/{public,server}, fills the placeholders listed in site/README.md and adds the built widget. The live
 demo is the site's own page, public/demo/index.html. The search key it writes is the demo project's browser-safe key.
+Stylesheet, script and widget URLs get a content hash (?v=…) so a CDN in front never serves a stale copy.
 """
 
+import hashlib
 import json
 import shutil
 import sys
@@ -31,6 +33,18 @@ for f in (new / "public").rglob("*"):
         for k, v in values.items():
             text = text.replace(k, v)
         f.write_text(text)
+
+# cache-busting: /assets/site.css -> /assets/site.css?v=<hash of its content>
+versioned = {}
+for rel in ("assets/site.css", "assets/site.js", "findaro-widget.js"):
+    f = new / "public" / rel
+    if f.exists():
+        versioned["/" + rel] = "/" + rel + "?v=" + hashlib.sha256(f.read_bytes()).hexdigest()[:10]
+for f in (new / "public").rglob("*.html"):
+    text = f.read_text()
+    for url, with_v in versioned.items():
+        text = text.replace(f'href="{url}"', f'href="{with_v}"').replace(f'src="{url}"', f'src="{with_v}"')
+    f.write_text(text)
 
 old = FINDARO / "site.old"
 shutil.rmtree(old, ignore_errors=True)

@@ -19,6 +19,9 @@ python3 -m http.server 8765 --directory site/public   # http://localhost:8765
 | `public/404.html`, `robots.txt`, `sitemap.xml` | |
 | `public/assets/` | `site.css`, `site.js`, `favicon.svg`, `og.png` |
 
+Deploys render this folder with `deploy/app-a1/render_site.py`: placeholders are filled in and the CSS, JS and
+widget URLs get a content hash (`site.css?v=…`), so a CDN in front never serves a stale file after a deploy.
+
 ## Placeholders
 
 The deploy step replaces these strings in every file under `public/` (`.html`, `.xml`, `.txt`):

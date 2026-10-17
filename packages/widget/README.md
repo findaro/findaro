@@ -22,7 +22,7 @@ these switch to AI Mode and fire `findaro:mode` (`detail.mode`). The in-box AI M
 `--findaro-thread-height` (composer docked at its bottom) and exposes `::part(thread)`. The site's
 [live demo](../../site/public/demo/index.html) is built this way.
 
-Light defaults: white, neutral greys, near-black text, one deep teal accent (no warm colours); `theme="light"` /
+Light defaults: white, cool greys, navy text, one cobalt accent (no warm colours); `theme="light"` /
 `theme="dark"` force a scheme, otherwise it follows the OS. Theme with CSS variables (`--findaro-accent`, `--findaro-bg`, `--findaro-fg`, `--findaro-radius`, `--findaro-font`,
 `--findaro-font-heading`, `--findaro-accent-soft`, `--findaro-warn` for close-match/partial states, …), customise cards with
 `el.renderProduct = (hit, { display, formatPrice }) => …`, handle clicks with `el.onProductClick`, and override text with

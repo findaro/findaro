@@ -230,7 +230,10 @@ def build_understood(query: str, plan: QueryPlan | None, schema: Schema, symbol:
     for f in plan.filters:
         if f.origin == "category_anchor":  # shown by the category's own chip, which also removes it
             continue
-        chips.append(Chip(label=_filter_label(f, schema, symbol), kind="filter", field=f.field, op=f.op,
+        label = _filter_label(f, schema, symbol)
+        if f.op == "in" and isinstance(f.value, list) and len(f.value) > 2 and f.text and len(f.text) <= 24:
+            label = f.text.strip().capitalize()  # "leather" covers every kind of leather: label it as asked
+        chips.append(Chip(label=label, kind="filter", field=f.field, op=f.op,
                           value=f.value, source=f.text or "", confidence=round(f.confidence, 2),
                           remove=remove_ops("filter", f.field, f.op, f.value, schema)))
     seen = set()

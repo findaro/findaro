@@ -58,6 +58,9 @@ class Compiled:
     # keys that are the last word of multi-word facet values ("steel" for "Stainless Steel"): they match every
     # value of the field ending in that word
     head_keys: set[str] = field(default_factory=set)
+    # a word that is itself a value and also ends other values of the same field means the whole family:
+    # "leather" -> {"material": ["Leather", "Genuine Leather", "Synthetic Leather"]}
+    families: dict[str, dict[str, list[str]]] = field(default_factory=dict)
     currency: str | None = None
     _buckets: dict[tuple[str, int], list[str]] | None = None
 
@@ -208,6 +211,14 @@ def compile_payload(payload: dict[str, Any], schema: Schema, lex: Lexicon) -> Co
         for fname, v, c in rows:
             if hk not in {singular(w) for w in re.split(r"[^a-z0-9]+", fname.lower()) if w}:
                 value_heads[hk].append((fname, v, c))
+    families: dict[str, dict[str, list[str]]] = {}
+    for hk, rows in value_heads.items():
+        exact = {fname: v for fname, v, _ in values.get(hk, [])}
+        for fname, v, _ in rows:
+            if fname in exact:
+                fam = families.setdefault(hk, {}).setdefault(fname, [exact[fname]])
+                if v not in fam:
+                    fam.append(v)
     head_keys = set()
     for hk, rows in value_heads.items():
         if len(hk) >= 4 and hk.isalpha() and hk not in lex.function_words and hk not in values \
@@ -222,7 +233,7 @@ def compile_payload(payload: dict[str, Any], schema: Schema, lex: Lexicon) -> Co
         data_version=payload.get("data_version", 0), n_docs=payload.get("n_docs", 0),
         coverage=payload.get("coverage", {}), values=dict(values), segments=dict(segments),
         vocab=payload.get("vocab", {}), canon=dict(canon), top_values=top, single_word_keys=dict(single),
-        currency=currency, head_keys=head_keys,
+        currency=currency, head_keys=head_keys, families=families,
     )
 
 

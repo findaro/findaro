@@ -71,6 +71,7 @@ class Settings(BaseSettings):
     max_documents_per_request: int = 10_000
     bulk_batch_size: int = 256
     worker_poll_interval: float = 0.5
+    usage_flush_interval: float = 60.0  # seconds between moving Redis usage counters into Postgres (worker)
 
     # Query log (JSONL, one line per search / chat turn). Off when unset; queries are end-user data.
     query_log: str | None = None

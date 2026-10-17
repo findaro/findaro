@@ -15,7 +15,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, ValidationError
 
-from zerch import querylog
+from zerch import querylog, usage
 from zerch.chat import answer, clarify
 from zerch.chat import session as sess_mod
 from zerch.chat.slots import AFTER_SALE, SlotFiller
@@ -174,6 +174,7 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
         timings[name] = round((time.perf_counter() - t0) * 1000, 1)
 
     s = state.settings
+    chat_llm = state.chat_llm if usage.llm_allowed(project) else None  # operator limit: no LLM
     sess = await sess_mod.load(state.redis, pid, req.session_id)
     sess.turn += 1
     yield sse("session", {"session_id": sess.session_id, "turn": sess.turn})
@@ -238,8 +239,8 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
         context = shown_category(schema, sess.last_docs) if sess.last_quality == "good" else None
         turn, reason = classify(msg, old_plan is not None, bool(sess.last_docs), parsed, d, context)
         if turn is None:
-            if state.chat_llm is not None:
-                llm_out = await _llm_classify(state.chat_llm, msg, old_plan, sess.last_docs, schema, d,
+            if chat_llm is not None:
+                llm_out = await _llm_classify(chat_llm, msg, old_plan, sess.last_docs, schema, d,
                                               s.chat_classify_timeout_ms / 1000)
                 mark("classify_llm")
             if llm_out:
@@ -271,7 +272,7 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
     # assistant and, when the catalog can help, run the search it suggests. Plain searches never get here: only
     # turns whose words name nothing in the catalog and whose search found no good match.
     conv: dict[str, Any] | None = None
-    if state.chat_llm is not None and msg and not focus_docs and not req.patch:
+    if chat_llm is not None and msg and not focus_docs and not req.patch:
         talk = turn == "chitchat" and (reason == "llm" or not answer.SIMPLE_TALK.match(msg))
         if turn == "new" and plan is not None and not _talks_catalog(plan):
             sreq = SearchRequest(query=msg, size=req.size, highlight=False)
@@ -279,7 +280,7 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
             mark("search")
             talk = (resp.understood.match_quality if resp.understood else "good") != "good"
         if talk:
-            conv = await _converse(state.chat_llm, msg, schema, d, sess, hinglish, s.chat_converse_timeout_ms / 1000)
+            conv = await _converse(chat_llm, msg, schema, d, sess, hinglish, s.chat_converse_timeout_ms / 1000)
             mark("converse")
         if conv and conv["search"]:
             turn, reason, resp = "new", "conversation", None
@@ -372,7 +373,7 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
             yield sse("text", {"delta": text})
             text_parts.append(text)
             first = time.perf_counter()
-        elif state.chat_llm is None:
+        elif chat_llm is None:
             docs = [(h.id, answer.doc_view(h.document, schema), False) for h in (resp.hits if resp else [])[:5]]
             text = (answer.fallback_search_text(resp.total if resp else 0,
                                                 resp.understood.match_quality if resp and resp.understood else "good",
@@ -419,7 +420,7 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
                                 known_values=known)
 
             async def model_stream():
-                async for c in _stream_text(state.chat_llm, prompt, system):
+                async for c in _stream_text(chat_llm, prompt, system):
                     if "first_model_token" not in timings:
                         mark("first_model_token")
                     yield c
@@ -440,7 +441,7 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
             if turn in ("question", "product") and missed and not "".join(text_parts).strip():
                 timings["retried"] = 1
                 retry_prompt = prompt + answer.retry_hint(list(dict.fromkeys(missed)))
-                async for part, chunk in filler.stream_parts(_stream_text(state.chat_llm, retry_prompt, system),
+                async for part, chunk in filler.stream_parts(_stream_text(chat_llm, retry_prompt, system),
                                                              answer.GENERAL_MARKER):
                     if part != "answer":
                         continue  # the general tip, if any, was already sent

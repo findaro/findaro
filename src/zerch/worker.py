@@ -6,6 +6,7 @@ import asyncio
 import logging
 import signal
 
+from zerch import usage
 from zerch.ingest.processor import requeue_stale, run_pending
 from zerch.state import create_state
 
@@ -22,8 +23,15 @@ async def main() -> None:
         loop.add_signal_handler(sig, stop.set)
     await requeue_stale(state)
     log.info("worker ready (embedder=%s dim=%d)", state.embedder.name, state.embedder.dim)
+    next_flush = loop.time() + state.settings.usage_flush_interval
     try:
         while not stop.is_set():
+            if loop.time() >= next_flush:
+                next_flush = loop.time() + state.settings.usage_flush_interval
+                try:
+                    await usage.flush(state)
+                except Exception:  # noqa: BLE001 - counters stay in Redis until the next flush
+                    log.exception("usage flush error")
             try:
                 n = await run_pending(state)
             except Exception:  # noqa: BLE001 - keep the worker alive on DB/OS hiccups
@@ -35,6 +43,10 @@ async def main() -> None:
                 except TimeoutError:
                     pass
     finally:
+        try:
+            await usage.flush(state)
+        except Exception:  # noqa: BLE001
+            log.exception("usage flush error")
         await state.close()
 
 

@@ -38,6 +38,13 @@ async def get_project(db: AsyncEngine | AsyncConnection, pid: str) -> dict[str, 
     return dict(row) if row else None
 
 
+async def list_projects(db: AsyncEngine) -> list[dict[str, Any]]:
+    async with db.connect() as conn:
+        rows = (await conn.execute(select(projects.c.id, projects.c.name, projects.c.created_at, projects.c.limits)
+                                   .order_by(projects.c.created_at))).mappings().all()
+    return [dict(r) for r in rows]
+
+
 async def delete_project(db: AsyncEngine, pid: str) -> None:
     async with db.begin() as conn:
         await conn.execute(delete(projects).where(projects.c.id == pid))

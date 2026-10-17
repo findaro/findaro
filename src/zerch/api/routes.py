@@ -8,8 +8,16 @@ from fastapi import APIRouter, Depends, File, Query, Request, Response, UploadFi
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, ValidationError
 
-from zerch import querylog, store
-from zerch.auth import Principal, authenticate, cached_project, check_bootstrap, forget_project, require_admin
+from zerch import querylog, store, usage
+from zerch.auth import (
+    Principal,
+    authenticate,
+    cached_project,
+    check_bootstrap,
+    check_operator,
+    forget_project,
+    require_admin,
+)
 from zerch.chat.service import ChatRequest, chat_turn
 from zerch.errors import ApiError
 from zerch.index import ops
@@ -47,6 +55,16 @@ class DeleteIds(BaseModel):
     ids: list[str] = Field(min_length=1, max_length=100_000)
 
 
+async def _check_document_limit(state: State, project_id: str) -> None:
+    lim = usage.limits_of(await store.get_project(state.db, project_id))  # uncached: ingest changes the row
+    if lim.documents is None:
+        return
+    n = await ops.count(state.os, ops.alias_name(state.settings.index_prefix, project_id))
+    if n >= lim.documents:
+        raise ApiError(403, "document_limit_reached",
+                       f"this project has {n} documents; its limit is {lim.documents}")
+
+
 def _accepted(jid: str, pid: str) -> dict[str, Any]:
     return {"job_id": jid, "status": "queued", "status_url": f"/v1/projects/{pid}/jobs/{jid}"}
 
@@ -75,7 +93,23 @@ async def get_project(project_id: str, _: Principal = Depends(admin_for),
         "document_count": await ops.count(state.os, ops.alias_name(state.settings.index_prefix, project_id)),
         "has_schema": p["schema"] is not None, "schema_version": p["schema_version"],
         "reindex_pending": p["pending_schema"] is not None, "allowed_origins": p["allowed_origins"] or [],
+        "limits": usage.limits_of(p).model_dump(exclude_none=True),
     }
+
+
+@router.get("/v1/projects/{project_id}/usage")
+async def get_usage(project_id: str, period: str | None = Query(None, pattern=r"^\d{4}-\d{2}$"),
+                    _: Principal = Depends(admin_for), state: State = Depends(get_state)) -> dict[str, Any]:
+    """This month's (or `period`=YYYY-MM) metered requests against the project's limits. `search` and `chat`
+    count toward `searches_per_month`; search-as-you-type requests (`llm: false`) are `typeahead` and don't."""
+    p = await store.get_project(state.db, project_id)
+    if p is None:
+        raise ApiError(404, "not_found", "project not found")
+    period = period or usage.current_period()
+    counts = (await usage.totals(state, [project_id], period))[project_id]
+    docs = await ops.count(state.os, ops.alias_name(state.settings.index_prefix, project_id))
+    return {"period": period, "limits": usage.limits_of(p).model_dump(exclude_none=True),
+            **usage.report(usage.limits_of(p), counts, docs)}
 
 
 @router.put("/v1/projects/{project_id}/settings")
@@ -130,6 +164,7 @@ async def upsert_documents(project_id: str, request: Request, _: Principal = Dep
     if len(data) > state.settings.max_documents_per_request:
         raise ApiError(413, "too_many_documents",
                        f"at most {state.settings.max_documents_per_request} documents per request; use /import")
+    await _check_document_limit(state, project_id)
     jid = await store.create_job(state.db, project_id, "upsert", payload=orjson.dumps(data), fmt="json",
                                  total=len(data))
     return _accepted(jid, project_id)
@@ -149,6 +184,7 @@ async def import_file(project_id: str, file: UploadFile = File(...),
         raise ApiError(413, "too_large", f"file exceeds {state.settings.max_upload_mb} MB")
     if not data.strip():
         raise ApiError(400, "empty_file", "uploaded file is empty")
+    await _check_document_limit(state, project_id)
     jid = await store.create_job(state.db, project_id, "import", payload=data, fmt=fmt,
                                  params={"filename": file.filename})
     return _accepted(jid, project_id)
@@ -240,6 +276,7 @@ async def search(body: SearchRequest, request: Request, p: Principal = Depends(p
     project = await cached_project(state, p.project_id)
     if project is None:
         raise ApiError(404, "not_found", "project not found")
+    await usage.meter(state, p.project_id, project, "typeahead" if body.llm is False else "search")
     schema = store.load_schema(project["schema"])
     no_cache = "no-cache" in request.headers.get("cache-control", "")
     # Eval/benchmark hook (admin key only): force the query planner to run instead of reusing a cached plan.
@@ -271,6 +308,39 @@ async def chat(body: ChatRequest, p: Principal = Depends(principal),
     project = await cached_project(state, p.project_id)
     if project is None:
         raise ApiError(404, "not_found", "project not found")
+    await usage.meter(state, p.project_id, project, "chat")
     schema = store.load_schema(project["schema"])
     return StreamingResponse(chat_turn(state, p.project_id, project, schema, body), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+# --- operator (bootstrap token) -------------------------------------------------------------------
+
+@router.put("/v1/operator/projects/{project_id}/limits")
+async def put_limits(project_id: str, body: usage.Limits, request: Request,
+                     state: State = Depends(get_state)) -> dict[str, Any]:
+    """Replace a project's limits (see zerch.usage). Needs the bootstrap token; an empty body removes all limits."""
+    check_operator(request, state)
+    async with state.db.begin() as conn:
+        if await store.get_project(conn, project_id) is None:
+            raise ApiError(404, "not_found", "project not found")
+        await store.update_project(conn, project_id, limits=body.model_dump(exclude_none=True))
+    forget_project(project_id)
+    return {"project_id": project_id, "limits": body.model_dump(exclude_none=True)}
+
+
+@router.get("/v1/operator/usage")
+async def operator_usage(request: Request, period: str | None = Query(None, pattern=r"^\d{4}-\d{2}$"),
+                         state: State = Depends(get_state)) -> dict[str, Any]:
+    """Every project with its limits and usage for the month. Needs the bootstrap token."""
+    check_operator(request, state)
+    period = period or usage.current_period()
+    rows = await store.list_projects(state.db)
+    counts = await usage.totals(state, [r["id"] for r in rows], period)
+    out = []
+    for r in rows:
+        lim = usage.limits_of(r)
+        docs = await ops.count(state.os, ops.alias_name(state.settings.index_prefix, r["id"]))
+        out.append({"project_id": r["id"], "name": r["name"], "created_at": r["created_at"].isoformat(),
+                    "limits": lim.model_dump(exclude_none=True), **usage.report(lim, counts[r["id"]], docs)})
+    return {"period": period, "projects": out}

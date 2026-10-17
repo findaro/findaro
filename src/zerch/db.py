@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import (
     JSON,
+    BigInteger,
     Column,
     DateTime,
     ForeignKey,
@@ -34,6 +35,8 @@ projects = Table(
     Column("data_version", Integer, nullable=False, server_default="0"),
     # Browser origins allowed to use the search key, e.g. ["https://shop.example.com", "https://*.example.com"].
     Column("allowed_origins", J, nullable=False, server_default="[]"),
+    # Operator-set limits (zerch.usage): searches_per_month, documents, llm, block_at_percent, plan. {} = unlimited.
+    Column("limits", J, nullable=False, server_default="{}"),
 )
 
 api_keys = Table(
@@ -86,6 +89,17 @@ project_dicts = Table(
 )
 
 
+# Metered API use per project and calendar month (UTC), flushed from Redis counters by the worker.
+usage = Table(
+    "usage",
+    metadata,
+    Column("project_id", String(40), ForeignKey("projects.id", ondelete="CASCADE"), primary_key=True),
+    Column("period", String(7), primary_key=True),  # YYYY-MM
+    Column("metric", String(24), primary_key=True),  # search | typeahead | chat
+    Column("count", BigInteger, nullable=False, server_default="0"),
+)
+
+
 def make_engine(url: str) -> AsyncEngine:
     return create_async_engine(url, pool_size=10, max_overflow=10, pool_pre_ping=True)
 
@@ -98,3 +112,5 @@ async def init_db(engine: AsyncEngine) -> None:
         # Columns added after a table first existed (create_all doesn't alter tables).
         await conn.exec_driver_sql(
             "ALTER TABLE projects ADD COLUMN IF NOT EXISTS allowed_origins JSONB NOT NULL DEFAULT '[]'::jsonb")
+        await conn.exec_driver_sql(
+            "ALTER TABLE projects ADD COLUMN IF NOT EXISTS limits JSONB NOT NULL DEFAULT '{}'::jsonb")

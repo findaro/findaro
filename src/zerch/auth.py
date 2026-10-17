@@ -117,6 +117,16 @@ def check_bootstrap(request: Request, state: State) -> None:
         raise ApiError(401, "unauthorized", "creating projects requires the bootstrap token")
 
 
+def check_operator(request: Request, state: State) -> None:
+    """Operator endpoints (limits, usage across projects) need the bootstrap token and are off without one."""
+    token = state.settings.bootstrap_token
+    if not token:
+        raise ApiError(404, "not_found", "operator endpoints need ZERCH_BOOTSTRAP_TOKEN to be set")
+    given = extract_key(request) or ""
+    if not hmac.compare_digest(given.encode(), token.encode()):
+        raise ApiError(401, "unauthorized", "operator endpoints need the bootstrap token")
+
+
 async def cached_project(state: State, pid: str) -> dict[str, Any] | None:
     now = time.monotonic()
     hit = _project_cache.get(pid)

@@ -10,6 +10,7 @@ from typing import Any
 
 import orjson
 
+from zerch import usage
 from zerch.llm.base import LLMError
 from zerch.schema.model import Schema
 from zerch.understand import dictionary as dict_mod
@@ -79,6 +80,7 @@ async def understand(state: Any, pid: str, project: dict[str, Any], schema: Sche
     info: dict[str, Any] = {"llm": "not_needed", "dictionary_ms": round((t_dict - t0) * 1000, 2),
                             "rules_ms": round((time.perf_counter() - t_dict) * 1000, 2)}
     need = bool(plan.unparsed_tokens) or plan.confidence < s.planner_confidence_threshold
+    allow_llm = allow_llm and usage.llm_allowed(project)
     if not need or not s.understand_llm:
         return plan, info
     if not allow_llm:  # e.g. search-as-you-type: rules only, but still use a plan the LLM made earlier

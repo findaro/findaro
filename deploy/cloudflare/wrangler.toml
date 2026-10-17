@@ -1,0 +1,7 @@
+# Cloudflare edge Worker for the hosted Findaro. Deployed by deploy/cloudflare/deploy.sh, which sets the
+# hostnames as vars and the custom domains; the edge secret is a Worker secret, never in this file.
+name = "findaro-edge"
+main = "worker.js"
+# routes and [vars] are appended by deploy.sh
+compatibility_date = "2026-10-01"
+workers_dev = false

@@ -79,6 +79,11 @@ app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None
 
 
 def _client_ip(request: Request) -> str:
+    # behind the Cloudflare edge Worker the shopper's IP arrives as X-Client-IP (the origin only serves requests
+    # carrying the edge's secret header, so it can't be set by anyone else)
+    edge = request.headers.get("x-client-ip", "").strip()
+    if edge:
+        return edge
     fwd = request.headers.get("x-forwarded-for", "")
     return fwd.split(",")[0].strip() or (request.client.host if request.client else "")
 

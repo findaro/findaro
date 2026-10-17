@@ -1,0 +1,50 @@
+# findaro behind the Cloudflare edge Worker (deploy/cloudflare). Rendered by deploy.sh into
+# /srv/caddy/sites/findaro.caddy; __EDGE_SECRET__ is filled in on the box from /srv/findaro/.env.
+# The origin hostnames only serve requests carrying the edge's secret header; anything else (someone using the
+# server's address directly) is redirected to the public hostnames.
+(findaro_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+}
+
+__SITE_HOST__ {
+	@edge header X-Findaro-Edge "__EDGE_SECRET__"
+	handle @edge {
+		import findaro_headers
+		encode zstd gzip
+		request_body {
+			max_size 64KB
+		}
+		header X-Frame-Options DENY
+		reverse_proxy findaro-site:8080
+	}
+	handle {
+		redir https://__PUBLIC_SITE_HOST__{uri} 308
+	}
+}
+
+__API_HOST__ {
+	@edge header X-Findaro-Edge "__EDGE_SECRET__"
+	handle @edge {
+		import findaro_headers
+		@compress not path /v1/chat
+		encode @compress zstd gzip
+		request_body {
+			max_size 60MB
+		}
+		reverse_proxy findaro-api:8000 {
+			flush_interval -1
+		}
+	}
+	handle {
+		redir https://__PUBLIC_API_HOST__{uri} 308
+	}
+}
+
+__OLD_HOSTS__ {
+	redir https://__PUBLIC_SITE_HOST__{uri} 308
+}

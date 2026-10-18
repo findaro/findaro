@@ -248,6 +248,39 @@ main > section:last-child, main > .last { padding-bottom: var(--gap-section); }
 .rules strong { display: block; color: var(--ink); }
 .rules span { color: var(--slate); }
 
+/* ---------- AI Mode: a window that looks like the widget's AI Mode ---------- */
+.aim-split { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 56px; align-items: center; }
+@media (max-width: 960px) { .aim-split { grid-template-columns: minmax(0, 1fr); gap: 32px; } }
+.aim { border: 1px solid var(--hairline); border-radius: 16px; background: var(--paper); box-shadow: 0 1px 2px rgba(20, 33, 61, .04), 0 12px 32px -12px rgba(20, 33, 61, .14); overflow: hidden; min-width: 0; }
+.aim-bar { display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-bottom: 1px solid var(--hairline); font-weight: 650; font-size: .9375rem; }
+.aim-store { margin-left: auto; font-weight: 500; color: var(--slate); font-size: var(--t-14); }
+.aim-av { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--cobalt); color: #fff; flex: none; }
+.aim-av svg { width: 12px; height: 12px; }
+.aim-body { display: grid; gap: 16px; padding: 20px 18px; background: var(--paper); }
+.aim .say { font-size: .9375rem; }
+.aim .turn { display: grid; gap: 10px; min-width: 0; }
+.aim .turn > p { margin: 0; font-size: .9375rem; }
+.aim .count { margin: 0; color: var(--slate); font-size: var(--t-14); }
+.aim-who { display: flex; align-items: center; gap: 8px; font-weight: 650; font-size: var(--t-14); }
+.aim-how { justify-self: start; font-size: .8125rem; color: var(--slate); border: 1px solid var(--hairline); border-radius: var(--r-chip); padding: 3px 10px; }
+.aim .pcards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.aim .pimg { aspect-ratio: 16 / 9; font-size: 1.1rem; }
+.aim .ptxt { padding: 8px 10px 10px; }
+.aim-next { display: grid; gap: 6px; }
+.aim-next span { display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--hairline); border-radius: var(--r-btn); padding: 8px 12px; font-size: var(--t-14); }
+.aim-next svg, .aim-send svg { width: 14px; height: 14px; color: var(--slate); }
+.aim .cmp-mini { font-size: .8125rem; }
+.aim-composer { display: flex; align-items: center; justify-content: space-between; margin: 0 18px 18px; border: 1px solid var(--rule); border-radius: var(--r-card); padding: 10px 10px 10px 14px; color: var(--slate); font-size: .9375rem; }
+.aim-send { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--mist); }
+.aim-side .rules { margin-bottom: 28px; }
+.aim-side .rules span { display: block; margin-top: 2px; }
+@media (max-width: 560px) {
+  .aim-body { padding: 16px 12px; }
+  .aim .pcards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .aim .pcards > :nth-child(3) { display: none; }
+  .aim-composer { margin: 0 12px 12px; }
+}
+
 /* ---------- 4. add it to your store ---------- */
 .steps { list-style: none; margin: 0; padding: 0; counter-reset: step; display: grid; gap: 0; max-width: 880px; }
 .steps > li { counter-increment: step; display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 0 16px; padding: 28px 0; border-top: 1px solid var(--hairline); }

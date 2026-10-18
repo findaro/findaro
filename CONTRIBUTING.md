@@ -72,6 +72,9 @@ Search quality is measured, not eyeballed. `eval/` holds the query sets, runners
    style messages (`feat:`, `fix:`, `docs:`, ...).
 3. Open a PR and fill in the template. CI must pass.
 
+Maintainers can pause the "CI must pass before merging" rule on `main` with `scripts/pr-gate.sh off` (and restore it
+with `on`); checks still run on every PR, and force pushes and branch deletion stay blocked either way.
+
 No CLA or DCO sign-off is required. By submitting a contribution you agree that it is licensed under the
 project's Apache-2.0 license (section 5 of the license).
 

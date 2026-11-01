@@ -84,6 +84,9 @@ const FIRST_CARDS = 6;
 const SIDE_KEY = "findaro:side-collapsed"; // layout="page": the desktop sidebar's collapsed state, per browser
 const list = (v: string | null, sep: string) => (v || "").split(sep).map((t) => t.trim()).filter(Boolean);
 
+const COMPARE_ASK = /\b(compar\w*|side[ -]by[ -]side|tulna)\b|^\W*(?:\w+ ){0,4}table\b/i;
+const VERSUS = /\b(vs|versus)\b/i;
+
 export class FindaroSearch extends HTMLElement {
   static observedAttributes = ["mode", "locale", "placeholder", "project", "key", "base-url", "layout", "starters",
     "badges", "card-actions", "toggle", "cards"];
@@ -433,6 +436,12 @@ export class FindaroSearch extends HTMLElement {
   async #ask(message: string, patch?: PatchOp[], retried = false,
              opts: { productIds?: string[]; compare?: Hit[] } = {}): Promise<void> {
     const s = this.#s;
+    const shown = this.#view?.hits ?? [];
+    if (!patch && !opts.productIds && shown.length >= 2 && COMPARE_ASK.test(message) && !VERSUS.test(message)) {
+      // "give me a table comparing these": compare what's on screen, like selecting the cards and pressing Compare
+      const hits = shown.slice(0, 5);
+      opts = { productIds: hits.map((x) => x.id), compare: hits };
+    }
     if (!patch && !opts.productIds) this.#lastAsked = message;
     let expired = false;
     const user: Turn = { role: "user", text: message, time: Date.now(), ...(patch ? { patch: true } : {}) };

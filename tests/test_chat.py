@@ -15,7 +15,7 @@ from findaro.chat.turns import (
     wants_just_show,
 )
 from findaro.search.models import SearchResponse, Understood
-from findaro.understand.plan import PlanFilter, validate_plan
+from findaro.understand.plan import PlanFilter, PlanSort, validate_plan
 from findaro.understand.rules import RulesParser
 
 from .conftest import make_catalog
@@ -47,10 +47,22 @@ BOTTLES = [d for d in CATALOG if "Water Bottle" in d["title"]][:6]
     ("dusra wala kitne ka hai?", True, True, "question"),
     ("which is the cheapest?", True, True, "question"),
     ("start over", True, True, "new"),
+    ("give me simple table comparison of the quality", True, True, "question"),
+    ("compare these", True, True, "question"),
 ])
 def test_classify(msg, has_plan, has_results, expected):
     turn, _ = classify(msg, has_plan, has_results, parse(msg), DICT)
     assert turn == expected
+
+
+def test_superlative_sort_is_hard_and_survives_cheaper():
+    from findaro.chat.turns import harden_sort
+
+    plan = harden_sort(parse("cheapest water bottle"))
+    assert plan.sort and plan.sort.mode == "hard"
+    assert harden_sort(parse("cheap water bottle")).sort.mode == "soft"
+    delta = PlanDelta(sort=PlanSort(field=plan.sort.field, order="asc", mode="soft", text="cheaper"))
+    assert apply_delta(plan, delta, SCHEMA, DICT).sort.mode == "hard"
 
 
 def test_category_inside_current_results_is_a_refinement():

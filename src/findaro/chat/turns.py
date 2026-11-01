@@ -35,6 +35,9 @@ ORDINALS = {"first": 1, "1st": 1, "pehla": 1, "pehle": 1, "pehli": 1, "second": 
             "fourth": 4, "4th": 4, "chautha": 4, "fifth": 5, "5th": 5, "last": -1, "aakhri": -1, "akhri": -1}
 QUESTION_WORDS = {"which", "what", "does", "do", "is", "are", "can", "kya", "kaunsa", "konsa", "kaunsi", "konsi",
                   "kaun", "kitna", "kitni", "kitne", "how", "compare", "difference", "fark", "batao", "bataiye"}
+# "compare these", "give me a comparison of the quality": a request about the products on screen
+COMPARE_WORDS = {"compare", "comparison", "comparing", "versus", "vs", "difference", "differences", "fark",
+                 "tulna"}
 DEICTIC = {"this", "that", "these", "those", "it", "ye", "yeh", "wo", "woh", "isme", "usme", "iska", "uska",
            "inme", "unme", "iski", "uski", "inka", "unka"}
 REFINE_START = {"only", "sirf", "just", "bas", "and", "aur", "but", "in", "with", "without", "not", "no", "under",
@@ -191,6 +194,8 @@ def classify(message: str, has_plan: bool, has_results: bool, parsed: QueryPlan,
         if (ordinal and (asks or deictic or len(toks) <= 6)) or (asks and deictic) or (
                 asks and toks[0] in QUESTION_WORDS and not parsed.filters and _superlative(toks)):
             return "question", "asks about shown results"
+        if COMPARE_WORDS & set(toks) and not parsed.filters and not _category_mentioned(parsed):
+            return "question", "asks to compare shown results"
         if asks and _superlative(toks) and not _category_mentioned(parsed):
             return "question", "superlative question about shown results"
         # "give me rating of top 5", "price of these 3": a field of the shown items, not a new search
@@ -225,6 +230,15 @@ def classify(message: str, has_plan: bool, has_results: bool, parsed: QueryPlan,
     if leftover and not constraint:
         return "new", "new product words"
     return None, "mixed constraints and new words"
+
+
+def harden_sort(plan: QueryPlan) -> QueryPlan:
+    """"cheapest", "lowest price", "sabse sasta" ask for an order, not a lean: sort strictly, and keep sorting
+    through every refinement. "cheap" or "sasta" alone stay a soft re-rank."""
+    s = plan.sort
+    if s is None or s.mode == "hard" or not _superlative(tokenize(s.text or "")):
+        return plan
+    return plan.model_copy(update={"sort": s.model_copy(update={"mode": "hard"})})
 
 
 def _superlative(toks: list[str]) -> bool:
@@ -446,7 +460,8 @@ def apply_delta(plan: QueryPlan, delta: PlanDelta, schema: Schema, d: Compiled |
             new.filters = [f for f in new.filters if f.field != price_field]
             new.filters.append(PlanFilter(field=price_field, op="range", value=delta.price, strict=True,
                                           origin="price", confidence=0.95, text="price"))
-    if delta.sort:
+    if delta.sort and not (new.sort and new.sort.mode == "hard" and (new.sort.field, new.sort.order) ==
+                           (delta.sort.field, delta.sort.order)):
         new.sort = delta.sort
     if delta.semantic_text:
         new.semantic_text = delta.semantic_text

@@ -26,6 +26,7 @@ from findaro.chat.turns import (
     chip_label,
     classify,
     field_words,
+    harden_sort,
     is_hinglish,
     refine,
     shown_category,
@@ -310,6 +311,7 @@ async def chat_turn(state: Any, pid: str, project: dict[str, Any], schema: Schem
 
     symbol = CURRENCY_SYMBOLS.get(str(getattr(d, "currency", "") or "").upper(), "")
     if turn in ("new", "refine") and plan is not None:
+        plan = harden_sort(plan)
         if resp is None:
             sreq = SearchRequest(query=(conv or {}).get("search") or msg or plan.semantic_text, size=req.size,
                                  highlight=False)
